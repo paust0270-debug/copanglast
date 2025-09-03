@@ -9,34 +9,32 @@ import { Badge } from '@/components/ui/badge';
 
 interface CoupangAppProduct {
   id: string;
-  productId: string;
+  userId: string;
   keyword: string;
+  linkAddress: string;
   currentRank: number | null;
-  previousRank: number | null;
-  lastChecked: string;
-  status: 'pending' | 'checking' | 'completed' | 'error';
-  productName?: string;
-  price?: string;
-  image?: string;
-  mobileOptimized?: boolean;
-  appSpecificRank?: number;
-  desktopRank?: number;
+  initialRank: number | null;
+  usedSlots: number;
+  days: number;
+  registrationDate: string;
+  status: 'active' | 'completed' | 'expired';
 }
 
 export default function CoupangAppRankTracker() {
   const [products, setProducts] = useState<CoupangAppProduct[]>([]);
-  const [newProduct, setNewProduct] = useState({
-    productId: '',
+  const [singleProduct, setSingleProduct] = useState({
     keyword: '',
-    mobileOptimized: true
+    linkAddress: '',
+    usedSlots: 1,
+    days: 30
   });
+  const [bulkInput, setBulkInput] = useState('');
   const [isAdding, setIsAdding] = useState(false);
-  const [isChecking, setIsChecking] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'mobile' | 'desktop'>('all');
+  const [isBulkAdding, setIsBulkAdding] = useState(false);
 
-  const addProduct = async () => {
-    if (!newProduct.productId.trim() || !newProduct.keyword.trim()) {
-      alert('상품 ID와 키워드를 모두 입력해주세요.');
+  const addSingleProduct = async () => {
+    if (!singleProduct.keyword.trim() || !singleProduct.linkAddress.trim()) {
+      alert('검색어와 링크주소를 모두 입력해주세요.');
       return;
     }
 
@@ -45,294 +43,262 @@ export default function CoupangAppRankTracker() {
     // 새 상품 추가 (시뮬레이션)
     const product: CoupangAppProduct = {
       id: Date.now().toString(),
-      productId: newProduct.productId.trim(),
-      keyword: newProduct.keyword.trim(),
-      currentRank: null,
-      previousRank: null,
-      lastChecked: new Date().toISOString(),
-      status: 'pending',
-      productName: `상품 ${newProduct.productId}`,
-      price: '₩0',
-      image: '/placeholder-product.jpg',
-      mobileOptimized: newProduct.mobileOptimized,
-      appSpecificRank: null,
-      desktopRank: null
+      userId: `user${Math.floor(Math.random() * 1000) + 1}`,
+      keyword: singleProduct.keyword.trim(),
+      linkAddress: singleProduct.linkAddress.trim(),
+      currentRank: Math.floor(Math.random() * 100) + 1,
+      initialRank: Math.floor(Math.random() * 100) + 1,
+      usedSlots: singleProduct.usedSlots,
+      days: singleProduct.days,
+      registrationDate: new Date().toISOString().split('T')[0],
+      status: 'active'
     };
 
     setProducts(prev => [product, ...prev]);
-    setNewProduct({ productId: '', keyword: '', mobileOptimized: true });
+    setSingleProduct({ keyword: '', linkAddress: '', usedSlots: 1, days: 30 });
     setIsAdding(false);
   };
 
-  const checkRanking = async (productId: string) => {
-    setIsChecking(true);
-    
-    // 랭킹 체크 시뮬레이션 (실제로는 API 호출)
-    setTimeout(() => {
-      setProducts(prev => prev.map(p => {
-        if (p.id === productId) {
-          const appRank = Math.floor(Math.random() * 100) + 1;
-          const desktopRank = Math.floor(Math.random() * 100) + 1;
-          return {
-            ...p,
-            previousRank: p.currentRank,
-            currentRank: appRank,
-            appSpecificRank: appRank,
-            desktopRank: desktopRank,
-            lastChecked: new Date().toISOString(),
-            status: 'completed'
-          };
-        }
-        return p;
-      }));
-      setIsChecking(false);
-    }, 3000); // 쿠팡APP는 더 복잡하므로 3초
-  };
+  const addBulkProducts = async () => {
+    if (!bulkInput.trim()) {
+      alert('대량 등록 입력을 입력해주세요.');
+      return;
+    }
 
-  const checkAllRankings = async () => {
-    setIsChecking(true);
+    setIsBulkAdding(true);
     
-    // 모든 상품 랭킹 체크
-    for (const product of products) {
-      if (product.status !== 'completed') {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setProducts(prev => prev.map(p => {
-          if (p.id === product.id) {
-            const appRank = Math.floor(Math.random() * 100) + 1;
-            const desktopRank = Math.floor(Math.random() * 100) + 1;
-            return {
-              ...p,
-              previousRank: p.currentRank,
-              currentRank: appRank,
-              appSpecificRank: appRank,
-              desktopRank: desktopRank,
-              lastChecked: new Date().toISOString(),
-              status: 'completed'
-            };
-          }
-          return p;
-        }));
+    const lines = bulkInput.trim().split('\n').filter(line => line.trim());
+    const newProducts: CoupangAppProduct[] = [];
+
+    for (const line of lines) {
+      const parts = line.split('|').map(part => part.trim());
+      if (parts.length === 4) {
+        const [keyword, linkAddress, slots, days] = parts;
+        const product: CoupangAppProduct = {
+          id: Date.now().toString() + Math.random(),
+          userId: `user${Math.floor(Math.random() * 1000) + 1}`,
+          keyword: keyword,
+          linkAddress: linkAddress,
+          currentRank: Math.floor(Math.random() * 100) + 1,
+          initialRank: Math.floor(Math.random() * 100) + 1,
+          usedSlots: parseInt(slots) || 1,
+          days: parseInt(days) || 30,
+          registrationDate: new Date().toISOString().split('T')[0],
+          status: 'active'
+        };
+        newProducts.push(product);
       }
     }
-    setIsChecking(false);
+
+    setProducts(prev => [...newProducts, ...prev]);
+    setBulkInput('');
+    setIsBulkAdding(false);
   };
 
   const removeProduct = (productId: string) => {
     setProducts(prev => prev.filter(p => p.id !== productId));
   };
 
-  const getRankChange = (current: number | null, previous: number | null) => {
-    if (current === null || previous === null) return null;
-    return current - previous;
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-green-100 text-green-800';
+      case 'completed': return 'bg-blue-100 text-blue-800';
+      case 'expired': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
-  const getRankChangeIcon = (change: number | null) => {
-    if (change === null) return '➖';
-    if (change < 0) return '🔼'; // 순위 상승 (숫자 감소)
-    if (change > 0) return '🔽'; // 순위 하락 (숫자 증가)
-    return '➖'; // 변화 없음
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'active': return '활성';
+      case 'completed': return '완료';
+      case 'expired': return '만료';
+      default: return '알 수 없음';
+    }
   };
-
-  const getRankChangeColor = (change: number | null) => {
-    if (change === null) return 'text-gray-500';
-    if (change < 0) return 'text-green-600'; // 순위 상승
-    if (change > 0) return 'text-red-600'; // 순위 하락
-    return 'text-gray-500'; // 변화 없음
-  };
-
-  const getMobileDesktopDifference = (appRank: number | null, desktopRank: number | null) => {
-    if (appRank === null || desktopRank === null) return null;
-    return appRank - desktopRank;
-  };
-
-  const getDifferenceColor = (diff: number | null) => {
-    if (diff === null) return 'text-gray-500';
-    if (diff < 0) return 'text-blue-600'; // 앱이 더 높은 순위
-    if (diff > 0) return 'text-orange-600'; // 데스크톱이 더 높은 순위
-    return 'text-gray-500'; // 동일
-  };
-
-  const filteredProducts = products.filter(product => {
-    if (selectedFilter === 'all') return true;
-    if (selectedFilter === 'mobile') return product.mobileOptimized;
-    if (selectedFilter === 'desktop') return !product.mobileOptimized;
-    return true;
-  });
 
   return (
     <div className="space-y-6">
-      {/* 새 상품 추가 폼 */}
+      {/* 헤더 */}
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Coupang APP Ranking Tracker
+        </h1>
+        <p className="text-gray-600">
+          Track and manage product rankings on the Coupang mobile app
+        </p>
+      </div>
+
+      {/* Single Item Registration */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">새 상품 추가 (쿠팡APP)</CardTitle>
+          <CardTitle className="text-lg">Single Item Registration</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <Label htmlFor="productId">상품 ID</Label>
-              <Input
-                id="productId"
-                placeholder="쿠팡 상품 ID 입력"
-                value={newProduct.productId}
-                onChange={(e) => setNewProduct(prev => ({ ...prev, productId: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="keyword">검색 키워드</Label>
+              <Label htmlFor="keyword">검색어(상품키워드)</Label>
               <Input
                 id="keyword"
-                placeholder="검색할 키워드 입력"
-                value={newProduct.keyword}
-                onChange={(e) => setNewProduct(prev => ({ ...prev, keyword: e.target.value }))}
+                placeholder="예: 전자렌지 선반"
+                value={singleProduct.keyword}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSingleProduct(prev => ({ ...prev, keyword: e.target.value }))}
               />
             </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="mobileOptimized"
-                checked={newProduct.mobileOptimized}
-                onChange={(e) => setNewProduct(prev => ({ ...prev, mobileOptimized: e.target.checked }))}
-                className="rounded"
+            <div>
+              <Label htmlFor="linkAddress">링크주소(쿠팡 실제 URL)</Label>
+              <Input
+                id="linkAddress"
+                placeholder="https://www.coupang.com/vp/products/..."
+                value={singleProduct.linkAddress}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSingleProduct(prev => ({ ...prev, linkAddress: e.target.value }))}
               />
-              <Label htmlFor="mobileOptimized">모바일 최적화</Label>
+            </div>
+            <div>
+              <Label htmlFor="usedSlots">사용슬롯(개수)</Label>
+              <Input
+                id="usedSlots"
+                type="number"
+                min="1"
+                value={singleProduct.usedSlots}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSingleProduct(prev => ({ ...prev, usedSlots: parseInt(e.target.value) || 1 }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="days">일수</Label>
+              <Input
+                id="days"
+                type="number"
+                min="1"
+                value={singleProduct.days}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSingleProduct(prev => ({ ...prev, days: parseInt(e.target.value) || 30 }))}
+              />
             </div>
           </div>
-          <Button 
-            onClick={addProduct} 
-            disabled={isAdding}
-            className="mt-4 w-full md:w-auto"
-          >
-            {isAdding ? '추가 중...' : '상품 추가'}
-          </Button>
+          <div className="flex space-x-4 mt-4">
+            <Button 
+              onClick={addSingleProduct} 
+              disabled={isAdding}
+              className="bg-black hover:bg-gray-800"
+            >
+              {isAdding ? '등록 중...' : '등록'}
+            </Button>
+            <Button 
+              onClick={addBulkProducts} 
+              disabled={isBulkAdding}
+              variant="outline"
+            >
+              {isBulkAdding ? '등록 중...' : '대량 등록'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      {/* 필터 및 전체 체크 */}
+      {/* Bulk Registration Input */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Bulk Registration Input</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Label htmlFor="bulkInput">
+            대량 등록 입력 (한 줄당: 키워드 | URL | 슬롯 | 일수)
+          </Label>
+          <textarea
+            id="bulkInput"
+            placeholder="예) 전자렌지 선반 | https://www.coupang.com/vp/products/8470784672 | 1 | 30"
+            value={bulkInput}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBulkInput(e.target.value)}
+            rows={6}
+            className="mt-2 flex h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          />
+          <div className="mt-4">
+            <Button 
+              onClick={addBulkProducts} 
+              disabled={isBulkAdding}
+              className="bg-black hover:bg-gray-800"
+            >
+              {isBulkAdding ? '대량 등록 중...' : '대량 등록'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Results Table */}
       {products.length > 0 && (
         <Card>
           <CardHeader>
-            <div className="flex justify-between items-center">
-              <div className="flex items-center space-x-4">
-                <CardTitle className="text-lg">추적 중인 상품</CardTitle>
-                <div className="flex space-x-2">
-                  {(['all', 'mobile', 'desktop'] as const).map((filter) => (
-                    <Button
-                      key={filter}
-                      variant={selectedFilter === filter ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setSelectedFilter(filter)}
-                    >
-                      {filter === 'all' ? '전체' : filter === 'mobile' ? '모바일' : '데스크톱'}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              <Button 
-                onClick={checkAllRankings} 
-                disabled={isChecking}
-                variant="outline"
-              >
-                {isChecking ? '체크 중...' : '전체 체크'}
-              </Button>
-            </div>
+            <CardTitle className="text-lg">Results Table</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {filteredProducts.map((product) => (
-                <div key={product.id} className="border rounded-lg p-4 bg-gray-50">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                        📱
-                      </div>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <h4 className="font-medium text-gray-900">{product.productName}</h4>
-                          {product.mobileOptimized && (
-                            <Badge variant="secondary" className="text-xs">모바일 최적화</Badge>
-                          )}
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border border-gray-300">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border border-gray-300 px-4 py-2 text-left">순번</th>
+                    <th className="border border-gray-300 px-4 py-2 text-left">사용자ID</th>
+                    <th className="border border-gray-300 px-4 py-2 text-left">검색어</th>
+                    <th className="border border-gray-300 px-4 py-2 text-left">링크주소</th>
+                    <th className="border border-gray-300 px-4 py-2 text-left">현재순위</th>
+                    <th className="border border-gray-300 px-4 py-2 text-left">최초 시작순위</th>
+                    <th className="border border-gray-300 px-4 py-2 text-left">사용슬롯</th>
+                    <th className="border border-gray-300 px-4 py-2 text-left">일수</th>
+                    <th className="border border-gray-300 px-4 py-2 text-left">등록일</th>
+                    <th className="border border-gray-300 px-4 py-2 text-left">상태</th>
+                    <th className="border border-gray-300 px-4 py-2 text-left">작업</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map((product, index) => (
+                    <tr key={product.id} className="hover:bg-gray-50">
+                      <td className="border border-gray-300 px-4 py-2">{index + 1}</td>
+                      <td className="border border-gray-300 px-4 py-2">{product.userId}</td>
+                      <td className="border border-gray-300 px-4 py-2">{product.keyword}</td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        <div className="max-w-xs truncate" title={product.linkAddress}>
+                          {product.linkAddress}
                         </div>
-                        <p className="text-sm text-gray-500">ID: {product.productId}</p>
-                        <p className="text-sm text-gray-500">키워드: {product.keyword}</p>
-                      </div>
-                    </div>
-                    <Button
-                      onClick={() => removeProduct(product.id)}
-                      variant="outline"
-                      size="sm"
-                    >
-                      삭제
-                    </Button>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center mb-3">
-                    <div>
-                      <p className="text-sm text-gray-500">APP 순위</p>
-                      <p className="text-lg font-semibold text-blue-600">
-                        {product.appSpecificRank ? `${product.appSpecificRank}위` : '미확인'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">PC 순위</p>
-                      <p className="text-lg font-semibold text-gray-600">
-                        {product.desktopRank ? `${product.desktopRank}위` : '미확인'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">순위 차이</p>
-                      <p className={`text-lg font-semibold ${getDifferenceColor(getMobileDesktopDifference(product.appSpecificRank, product.desktopRank))}`}>
-                        {(() => {
-                          const diff = getMobileDesktopDifference(product.appSpecificRank, product.desktopRank);
-                          if (diff === null) return '-';
-                          if (diff === 0) return '0';
-                          return `${diff > 0 ? '+' : ''}${diff}`;
-                        })()}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">변화</p>
-                      <p className={`text-lg font-semibold ${getRankChangeColor(getRankChange(product.currentRank, product.previousRank))}`}>
-                        {getRankChangeIcon(getRankChange(product.currentRank, product.previousRank))}
-                        {(() => {
-                          const change = getRankChange(product.currentRank, product.previousRank);
-                          if (change === null) return '-';
-                          if (change === 0) return '0';
-                          return Math.abs(change);
-                        })()}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">마지막 체크</p>
-                      <p className="text-sm">
-                        {new Date(product.lastChecked).toLocaleString('ko-KR')}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-3 flex justify-center">
-                    <Button
-                      onClick={() => checkRanking(product.id)}
-                      disabled={isChecking || product.status === 'checking'}
-                      size="sm"
-                    >
-                      {product.status === 'checking' ? '체크 중...' : '순위 체크'}
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2 text-center">
+                        {product.currentRank ? `${product.currentRank}위` : '-'}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2 text-center">
+                        {product.initialRank ? `${product.initialRank}위` : '-'}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2 text-center">{product.usedSlots}</td>
+                      <td className="border border-gray-300 px-4 py-2 text-center">{product.days}</td>
+                      <td className="border border-gray-300 px-4 py-2">{product.registrationDate}</td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        <Badge className={getStatusColor(product.status)}>
+                          {getStatusText(product.status)}
+                        </Badge>
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        <Button
+                          onClick={() => removeProduct(product.id)}
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          삭제
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
       )}
 
       {/* 빈 상태 */}
-      {filteredProducts.length === 0 && (
+      {products.length === 0 && (
         <Card>
           <CardContent className="text-center py-8">
             <div className="text-gray-400 text-6xl mb-4">📱</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">추적할 상품이 없습니다</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">등록된 상품이 없습니다</h3>
             <p className="text-gray-500 mb-4">
-              위에서 상품 ID와 키워드를 입력하여 첫 번째 상품을 추가해보세요
+              위에서 상품 정보를 입력하여 첫 번째 상품을 등록해보세요
             </p>
           </CardContent>
         </Card>

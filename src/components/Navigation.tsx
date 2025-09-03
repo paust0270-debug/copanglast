@@ -1,113 +1,196 @@
 'use client';
+
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 export default function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
 
-  const navigation = [
-    {
-      name: '무료 서비스',
-      href: '/',
-      description: '쿠팡 랭킹 체커'
+  // 로그인 상태 확인
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+  }, []);
+
+  // 로그아웃 함수
+  const handleLogout = async () => {
+    try {
+      // 서버에 로그아웃 요청
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('로그아웃 API 호출 실패:', error);
+    } finally {
+      // 클라이언트 상태 정리
+      localStorage.removeItem('user');
+      setUser(null);
+      router.push('/login');
+    }
+  };
+
+  const navigationItems = [
+    { 
+      name: '무료 서비스', 
+      href: '/dashboard',
+      subItems: []
     },
-    {
-      name: '메인서비스',
-      href: '/coupang-app',
-      description: '쿠팡APP 순위체커'
+    { 
+      name: '메인서비스', 
+      href: '/coupangapp',
+      subItems: [
+        { name: '슬롯 관리', href: '/coupangapp' },
+        { name: '슬롯 추가', href: '/coupangapp/add' }
+      ]
     },
-    {
-      name: '고객관리',
+    { 
+      name: '고객관리', 
       href: '/customer',
-      description: '고객 및 슬롯 관리'
+      subItems: [
+        { name: '고객관리', href: '/customer' },
+        { name: '슬롯관리', href: '/admin/slots' }
+      ]
     },
-    {
-      name: '총판관리',
-      href: '/dealer',
-      description: '총판 및 수익 관리'
+    { 
+      name: '총판관리', 
+      href: '/distributor',
+      subItems: [
+        { name: '총판 대시보드', href: '/distributor' },
+        { name: '총판관리', href: '/distributor-add' }
+      ]
     },
-    {
-      name: '작업관리',
-      href: '/work',
-      description: '크롤링 작업 관리'
+    { 
+      name: '정산관리', 
+      href: '/settlement/history',
+      subItems: [
+        { name: '정산내역', href: '/settlement/history' },
+        { name: '정산대기', href: '/settlement' },
+        { name: '미정산내역', href: '/settlement/unsettled' }
+      ]
     },
-    {
-      name: '공지사항',
-      href: '/notice',
-      description: '시스템 공지 및 업데이트'
+    { 
+      name: '작업관리', 
+      href: '/ranking-status',
+      subItems: [
+        { name: '순위체크현황', href: '/ranking-status' },
+        { name: '트래픽현황', href: '/traffic-status' }
+      ]
+    },
+    { 
+      name: '공지사항', 
+      href: '/notices',
+      subItems: []
     }
   ];
 
+  // 현재 활성화된 메인 탭 찾기
+  const activeMainTab = navigationItems.find(item => 
+    pathname.startsWith(item.href) || 
+    item.subItems.some(sub => pathname.startsWith(sub.href))
+  );
+
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          {/* 로고 및 메인 네비게이션 */}
-          <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <Link href="/" className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">C</span>
-                </div>
-                <span className="text-xl font-bold text-gray-900">쿠팡랭킹체커</span>
-              </Link>
-            </div>
-            
-            {/* 메인 네비게이션 링크 */}
-            <div className="hidden md:ml-6 md:flex md:space-x-8">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200',
-                    pathname === item.href
-                      ? 'border-blue-500 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  )}
-                >
-                  <div className="text-center">
-                    <div className="font-medium">{item.name}</div>
-                    <div className="text-xs text-gray-400">{item.description}</div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* 우측 버튼들 */}
-          <div className="flex items-center space-x-4">
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium">
-              로그인
-            </button>
-            <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors text-sm font-medium">
-              회원가입
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 모바일 메뉴 (간단한 형태) */}
-      <div className="md:hidden">
-        <div className="px-2 pt-2 pb-3 space-y-1">
-          {navigation.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                'block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200',
-                pathname === item.href
-                  ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-500'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              )}
-            >
-              <div>
-                <div className="font-medium">{item.name}</div>
-                <div className="text-sm text-gray-400">{item.description}</div>
+    <nav className="bg-white shadow-lg border-b border-gray-200">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="flex items-center justify-between h-16">
+          {/* 왼쪽 로고 */}
+          <div className="flex-shrink-0">
+            <Link href="/dashboard" className="flex items-center">
+              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center mr-3">
+                <span className="text-white font-bold text-xl">C</span>
               </div>
+              <span className="text-xl font-bold text-gray-900">쿠팡 랭킹 체커</span>
             </Link>
-          ))}
+          </div>
+
+          {/* 중앙 네비게이션 메뉴 */}
+          <div className="hidden lg:flex items-center space-x-1">
+            {navigationItems.map((item) => {
+              const isActive = activeMainTab === item;
+              const hasSubItems = item.subItems.length > 0;
+              
+              return (
+                <div 
+                  key={item.name} 
+                  className="relative"
+                  onMouseEnter={() => setHoveredItem(item.name)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                >
+                  <Link
+                    href={item.href}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                      isActive
+                        ? 'bg-blue-100 text-blue-700 border-b-2 border-blue-600'
+                        : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                  
+                  {/* 드롭다운 서브메뉴 */}
+                  {hasSubItems && hoveredItem === item.name && (
+                    <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
+                      {item.subItems.map((subItem) => {
+                        const isSubActive = pathname.startsWith(subItem.href);
+                        return (
+                          <Link
+                            key={subItem.name}
+                            href={subItem.href}
+                            className={`block px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+                              isSubActive
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            {subItem.name}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 우측 사용자 영역 */}
+          <div className="flex items-center space-x-4">
+            {user ? (
+              <div className="flex items-center space-x-3">
+                <span className="text-sm text-gray-600">
+                  {user.name} ({user.grade})
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="text-gray-600 hover:text-red-600 px-3 py-2 text-sm font-medium transition-colors duration-200"
+                >
+                  로그아웃
+                </button>
+              </div>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-gray-600 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors duration-200"
+                >
+                  로그인
+                </Link>
+                <Link
+                  href="/signup"
+                  className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200"
+                >
+                  회원가입
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </nav>
