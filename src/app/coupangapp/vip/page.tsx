@@ -56,12 +56,12 @@ interface BulkSlotData {
   bulkData: string;
 }
 
-export default function SlotAddPage() {
+export default function CoupangVipPage() {
   const router = useRouter();
   
   // 폼 상태
   const [form, setForm] = useState<SlotAddForm>({
-    workGroup: '공통',
+    workGroup: 'VIP',
     keyword: '',
     linkUrl: '',
     slotCount: 1,
@@ -81,7 +81,7 @@ export default function SlotAddPage() {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkForm, setBulkForm] = useState<BulkSlotData>({
-    workGroup: '공통',
+    workGroup: 'VIP',
     keywords: [''],
     linkUrl: '',
     slotCount: 1,
@@ -93,8 +93,8 @@ export default function SlotAddPage() {
   // 실시간 잔여기간 카운팅을 위한 상태
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // 실시간 트래픽 카운터 상태 (300을 24시간으로 나눠서 1씩 증가)
-  const [trafficCounter, setTrafficCounter] = useState(0);
+  // 실시간 VIP 카운터 상태 (300을 24시간으로 나눠서 12.5씩 증가)
+  const [vipCounter, setVipCounter] = useState(0);
 
   // 수정 모드 상태 관리
   const [editingCustomer, setEditingCustomer] = useState<CustomerSlot | null>(null);
@@ -152,7 +152,7 @@ export default function SlotAddPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // 실시간 트래픽 카운터 업데이트 (1초마다)
+  // 실시간 VIP 카운터 업데이트 (1초마다)
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date();
@@ -165,7 +165,7 @@ export default function SlotAddPage() {
       const incrementPerSecond = 300 / (24 * 60 * 60); // 0.00347...
       const currentCounter = Math.floor(secondsSinceStartOfDay * incrementPerSecond);
       
-      setTrafficCounter(currentCounter % 300);
+      setVipCounter(currentCounter % 300);
     }, 1000);
 
     return () => clearInterval(timer);
@@ -232,31 +232,28 @@ export default function SlotAddPage() {
   const loadCustomers = async () => {
     try {
       setLoading(true);
-      setError(null); // 이전 오류 초기화
+      setError(null);
       
-      console.log('🔄 고객 목록 로드 시작...');
-      console.log('현재 환경 변수 상태:');
-      console.log('- NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? '설정됨' : '설정되지 않음');
-      console.log('- NEXT_PUBLIC_SUPABASE_ANON_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '설정됨' : '설정되지 않음');
+      console.log('🔄 VIP 고객 목록 로드 시작...');
       
-      // 스키마 캐시 문제 해결 적용
       const data = await getCustomersWithCacheFix();
       console.log('✅ Supabase에서 받은 데이터:', data);
-      console.log('데이터 타입:', typeof data);
-      console.log('데이터 길이:', Array.isArray(data) ? data.length : '배열이 아님');
       
       if (!Array.isArray(data)) {
         throw new Error(`예상된 배열이 아닙니다. 타입: ${typeof data}, 값: ${JSON.stringify(data)}`);
       }
       
+      // VIP 고객만 필터링
+      const vipData = data.filter((item: any) => item.work_group === 'VIP');
+      
       // Supabase 데이터를 CustomerSlot 형식으로 변환
-      const convertedData: CustomerSlot[] = data.map((item: any, index: number) => {
-        console.log(`데이터 변환 중 ${index + 1}/${data.length}:`, item);
+      const convertedData: CustomerSlot[] = vipData.map((item: any, index: number) => {
+        console.log(`VIP 데이터 변환 중 ${index + 1}/${vipData.length}:`, item);
         return {
           id: item.id,
-          customer: item.customer || `_PD_${item.keyword?.substring(0, 8) || 'unknown'}`,
+          customer: item.customer || `_VIP_${item.keyword?.substring(0, 8) || 'unknown'}`,
           nickname: item.nickname || item.keyword?.substring(0, 10) || 'unknown',
-          workGroup: item.work_group || '공통',
+          workGroup: item.work_group || 'VIP',
           keyword: item.keyword || '',
           linkUrl: item.link_url || '',
           currentRank: item.current_rank || '1 [0]',
@@ -272,31 +269,13 @@ export default function SlotAddPage() {
         };
       });
       
-      console.log('✅ 변환된 데이터:', convertedData);
+      console.log('✅ VIP 변환된 데이터:', convertedData);
       setCustomers(convertedData);
-      console.log('✅ 고객 목록 상태 업데이트 완료');
     } catch (err: any) {
-      // 더 자세한 오류 정보 로깅
-      console.error('❌ 고객 목록 로드 실패 - 전체 오류 객체:', err);
-      console.error('❌ 오류 메시지:', err?.message);
-      console.error('❌ 오류 코드:', err?.code);
-      console.error('❌ 오류 스택:', err?.stack);
-      console.error('❌ 오류 타입:', typeof err);
-      console.error('❌ 오류 키:', Object.keys(err || {}));
-      
-      // 사용자에게 더 구체적인 오류 메시지 표시
-      let errorMessage = '고객 목록을 불러오는데 실패했습니다.';
-      if (err?.message) {
-        errorMessage += ` (${err.message})`;
-      }
-      if (err?.code) {
-        errorMessage += ` [코드: ${err.code}]`;
-      }
-      
-      setError(errorMessage);
+      console.error('❌ VIP 고객 목록 로드 실패:', err);
+      setError('VIP 고객 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
-      console.log('🔄 로딩 상태 해제 완료');
     }
   };
 
@@ -326,7 +305,7 @@ export default function SlotAddPage() {
   };
 
   // 작업그룹 옵션
-  const workGroups = ['공통', 'VIP', '프리미엄', '기본'];
+  const workGroups = ['VIP', '프리미엄', '공통', '기본'];
 
   // 장비그룹 옵션
   const equipmentGroups = ['지정안함', '그룹A', '그룹B', '그룹C'];
@@ -341,30 +320,6 @@ export default function SlotAddPage() {
     setBulkForm(prev => ({ ...prev, [field]: value }));
   };
 
-  // 대량 등록에서 검색어 추가
-  const addKeyword = () => {
-    setBulkForm(prev => ({
-      ...prev,
-      keywords: [...prev.keywords, '']
-    }));
-  };
-
-  // 대량 등록에서 검색어 제거
-  const removeKeyword = (index: number) => {
-    setBulkForm(prev => ({
-      ...prev,
-      keywords: prev.keywords.filter((_, i) => i !== index)
-    }));
-  };
-
-  // 대량 등록에서 검색어 변경
-  const updateKeyword = (index: number, value: string) => {
-    setBulkForm(prev => ({
-      ...prev,
-      keywords: prev.keywords.map((keyword, i) => i === index ? value : keyword)
-    }));
-  };
-
   // 슬롯 등록 처리 (Supabase 연동)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -377,12 +332,12 @@ export default function SlotAddPage() {
     try {
       // Supabase에 저장할 데이터 준비
       const customerData = {
-        name: `_PD_${form.keyword.substring(0, 8)}`,
+        name: `_VIP_${form.keyword.substring(0, 8)}`,
         keyword: form.keyword,
         link_url: form.linkUrl,
         slot_count: form.slotCount,
         memo: form.memo,
-        work_group: form.workGroup,
+        work_group: 'VIP',
         equipment_group: form.equipmentGroup,
         current_rank: '1 [0]',
         start_rank: '1 [0]',
@@ -400,7 +355,7 @@ export default function SlotAddPage() {
         id: savedCustomer.id,
         customer: customerData.name,
         nickname: form.keyword.substring(0, 10),
-        workGroup: form.workGroup,
+        workGroup: 'VIP',
         keyword: form.keyword,
         linkUrl: form.linkUrl,
         currentRank: '1 [0]',
@@ -419,7 +374,7 @@ export default function SlotAddPage() {
       
       // 폼 초기화
       setForm({
-        workGroup: '공통',
+        workGroup: 'VIP',
         keyword: '',
         linkUrl: '',
         slotCount: 1,
@@ -427,10 +382,10 @@ export default function SlotAddPage() {
         equipmentGroup: '지정안함'
       });
 
-      alert('슬롯이 성공적으로 등록되었습니다!');
+      alert('VIP 슬롯이 성공적으로 등록되었습니다!');
     } catch (error) {
-      console.error('슬롯 등록 실패:', error);
-      alert('슬롯 등록에 실패했습니다. 다시 시도해주세요.');
+      console.error('VIP 슬롯 등록 실패:', error);
+      alert('VIP 슬롯 등록에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -472,15 +427,15 @@ export default function SlotAddPage() {
     try {
       setBulkLoading(true);
       
-      // 각 파싱된 데이터에 대해 슬롯 등록
+      // 각 파싱된 데이터에 대해 VIP 슬롯 등록
       const promises = parsedData.map(async (data) => {
         const customerData = {
-          name: `_PD_${data.keyword.substring(0, 8)}`,
+          name: `_VIP_${data.keyword.substring(0, 8)}`,
           keyword: data.keyword,
           link_url: data.linkUrl,
           slot_count: data.slotCount,
           memo: bulkForm.memo,
-          work_group: bulkForm.workGroup,
+          work_group: 'VIP',
           equipment_group: bulkForm.equipmentGroup,
           current_rank: '1 [0]',
           start_rank: '1 [0]',
@@ -500,7 +455,7 @@ export default function SlotAddPage() {
         id: savedCustomer.id,
         customer: savedCustomer.name,
         nickname: parsedData[index].keyword.substring(0, 10),
-        workGroup: bulkForm.workGroup,
+        workGroup: 'VIP',
         keyword: parsedData[index].keyword,
         linkUrl: parsedData[index].linkUrl,
         currentRank: '1 [0]',
@@ -519,7 +474,7 @@ export default function SlotAddPage() {
       
       // 대량 등록 폼 초기화
       setBulkForm({
-        workGroup: '공통',
+        workGroup: 'VIP',
         keywords: [''],
         linkUrl: '',
         slotCount: 1,
@@ -531,10 +486,10 @@ export default function SlotAddPage() {
       // 모달 닫기
       setShowBulkModal(false);
       
-      alert(`${parsedData.length}개의 슬롯이 성공적으로 등록되었습니다!`);
+      alert(`${parsedData.length}개의 VIP 슬롯이 성공적으로 등록되었습니다!`);
     } catch (error) {
-      console.error('대량 슬롯 등록 실패:', error);
-      alert('대량 슬롯 등록에 실패했습니다. 다시 시도해주세요.');
+      console.error('VIP 대량 슬롯 등록 실패:', error);
+      alert('VIP 대량 슬롯 등록에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setBulkLoading(false);
     }
@@ -544,14 +499,14 @@ export default function SlotAddPage() {
   const handleDeleteCustomer = async (id: number | undefined) => {
     if (!id) return;
     
-    if (confirm('정말로 이 고객을 삭제하시겠습니까?')) {
+    if (confirm('정말로 이 VIP 고객을 삭제하시겠습니까?')) {
       try {
         await deleteCustomerWithCacheFix(id);
         setCustomers(prev => prev.filter(customer => customer.id !== id));
-        alert('고객이 성공적으로 삭제되었습니다.');
+        alert('VIP 고객이 성공적으로 삭제되었습니다.');
       } catch (error) {
-        console.error('고객 삭제 실패:', error);
-        alert('고객 삭제에 실패했습니다. 다시 시도해주세요.');
+        console.error('VIP 고객 삭제 실패:', error);
+        alert('VIP 고객 삭제에 실패했습니다. 다시 시도해주세요.');
       }
     }
   };
@@ -600,10 +555,10 @@ export default function SlotAddPage() {
 
       setEditingCustomer(null);
       setEditForm({});
-      alert('고객 정보가 성공적으로 수정되었습니다.');
+      alert('VIP 고객 정보가 성공적으로 수정되었습니다.');
     } catch (error) {
-      console.error('고객 수정 실패:', error);
-      alert('고객 수정에 실패했습니다. 다시 시도해주세요.');
+      console.error('VIP 고객 수정 실패:', error);
+      alert('VIP 고객 수정에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -688,10 +643,10 @@ export default function SlotAddPage() {
       setBulkEditForm({});
       setSelectedCustomers(new Set());
       setSelectAll(false);
-      alert(`${selectedIds.length}개 고객의 정보가 성공적으로 수정되었습니다.`);
+      alert(`${selectedIds.length}개 VIP 고객의 정보가 성공적으로 수정되었습니다.`);
     } catch (error) {
-      console.error('전체 수정 실패:', error);
-      alert('전체 수정에 실패했습니다. 다시 시도해주세요.');
+      console.error('VIP 전체 수정 실패:', error);
+      alert('VIP 전체 수정에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -702,7 +657,7 @@ export default function SlotAddPage() {
       return;
     }
 
-    if (!confirm(`선택된 ${selectedCustomers.size}개 고객을 정말로 삭제하시겠습니까?`)) {
+    if (!confirm(`선택된 ${selectedCustomers.size}개 VIP 고객을 정말로 삭제하시겠습니까?`)) {
       return;
     }
 
@@ -719,10 +674,10 @@ export default function SlotAddPage() {
 
       setSelectedCustomers(new Set());
       setSelectAll(false);
-      alert(`${selectedIds.length}개 고객이 성공적으로 삭제되었습니다.`);
+      alert(`${selectedIds.length}개 VIP 고객이 성공적으로 삭제되었습니다.`);
     } catch (error) {
-      console.error('전체 삭제 실패:', error);
-      alert('전체 삭제에 실패했습니다. 다시 시도해주세요.');
+      console.error('VIP 전체 삭제 실패:', error);
+      alert('VIP 전체 삭제에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -780,21 +735,21 @@ export default function SlotAddPage() {
       worksheet['!cols'] = columnWidths;
 
       // 워크시트를 워크북에 추가
-      XLSX.utils.book_append_sheet(workbook, worksheet, '고객목록');
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'VIP고객목록');
 
       // 파일명 생성 (현재 날짜 포함)
       const now = new Date();
       const dateStr = now.toISOString().split('T')[0];
       const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
-      const fileName = `고객목록_${dateStr}_${timeStr}.xlsx`;
+      const fileName = `VIP고객목록_${dateStr}_${timeStr}.xlsx`;
 
       // 엑셀 파일 다운로드
       XLSX.writeFile(workbook, fileName);
 
-      alert(`${customers.length}개 고객 데이터가 엑셀 파일로 다운로드되었습니다.`);
+      alert(`${customers.length}개 VIP 고객 데이터가 엑셀 파일로 다운로드되었습니다.`);
     } catch (error) {
-      console.error('엑셀 다운로드 실패:', error);
-      alert('엑셀 다운로드에 실패했습니다. 다시 시도해주세요.');
+      console.error('VIP 엑셀 다운로드 실패:', error);
+      alert('VIP 엑셀 다운로드에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -857,21 +812,21 @@ export default function SlotAddPage() {
       worksheet['!cols'] = columnWidths;
 
       // 워크시트를 워크북에 추가
-      XLSX.utils.book_append_sheet(workbook, worksheet, '선택된고객목록');
+      XLSX.utils.book_append_sheet(workbook, worksheet, '선택된VIP고객목록');
 
       // 파일명 생성 (현재 날짜 포함)
       const now = new Date();
       const dateStr = now.toISOString().split('T')[0];
       const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
-      const fileName = `선택된고객목록_${dateStr}_${timeStr}.xlsx`;
+      const fileName = `선택된VIP고객목록_${dateStr}_${timeStr}.xlsx`;
 
       // 엑셀 파일 다운로드
       XLSX.writeFile(workbook, fileName);
 
-      alert(`${selectedData.length}개 선택된 고객 데이터가 엑셀 파일로 다운로드되었습니다.`);
+      alert(`${selectedData.length}개 선택된 VIP 고객 데이터가 엑셀 파일로 다운로드되었습니다.`);
     } catch (error) {
-      console.error('선택된 고객 엑셀 다운로드 실패:', error);
-      alert('엑셀 다운로드에 실패했습니다. 다시 시도해주세요.');
+      console.error('선택된 VIP 고객 엑셀 다운로드 실패:', error);
+      alert('VIP 엑셀 다운로드에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -906,46 +861,51 @@ export default function SlotAddPage() {
           </div>
         )}
         
-        {/* 상단 슬롯 정보 헤더 - 1줄로 정렬하고 슬롯등록과 동일한 사이즈 */}
-        <div className="bg-white border-2 border-dashed border-purple-300 rounded-2xl p-6 mb-6 shadow-sm">
+        {/* 상단 VIP 슬롯 정보 헤더 */}
+        <div className="bg-gradient-to-r from-purple-100 to-pink-100 border-2 border-dashed border-purple-300 rounded-2xl p-6 mb-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-8">
               <div className="flex items-center space-x-3">
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full">
-                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-purple-200 to-pink-200 rounded-full">
+                  <svg className="w-6 h-6 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                   </svg>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-800">사용 가능한 슬롯</h1>
+                  <h1 className="text-2xl font-bold text-purple-800">VIP 전용 슬롯</h1>
+                  <p className="text-sm text-purple-600">프리미엄 서비스</p>
                 </div>
               </div>
               
               <div className="flex items-center space-x-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600">100</div>
+                  <div className="text-3xl font-bold text-purple-600">100</div>
                   <div className="text-sm text-gray-600">총 100개</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-red-600">0</div>
+                  <div className="text-3xl font-bold text-pink-600">{vipCounter}</div>
+                  <div className="text-sm text-gray-600">실시간 카운터</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-600">0</div>
                   <div className="text-sm text-gray-600">0개 사용</div>
                 </div>
               </div>
             </div>
             
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-              <span className="text-sm text-gray-500">사용 가능</span>
-              <div className="w-3 h-3 bg-red-400 rounded-full ml-3"></div>
-              <span className="text-sm text-gray-500">사용 중</span>
+              <div className="w-3 h-3 bg-purple-400 rounded-full"></div>
+              <span className="text-sm text-gray-500">VIP 전용</span>
+              <div className="w-3 h-3 bg-pink-400 rounded-full ml-3"></div>
+              <span className="text-sm text-gray-500">프리미엄</span>
             </div>
           </div>
         </div>
 
-        {/* 슬롯 등록 폼 - 1줄로 정렬, 링크주소 늘리고 사용슬롯 줄이기 */}
-        <Card className="mb-6">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">슬롯 등록</CardTitle>
+        {/* VIP 슬롯 등록 폼 */}
+        <Card className="mb-6 border-purple-200">
+          <CardHeader className="pb-4 bg-gradient-to-r from-purple-50 to-pink-50">
+            <CardTitle className="text-lg text-purple-800">VIP 슬롯 등록</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit}>
@@ -1026,10 +986,10 @@ export default function SlotAddPage() {
 
               <div className="flex justify-center space-x-3">
                 <Button type="submit" className="bg-purple-600 hover:bg-purple-700 px-6 h-9">
-                  작업등록
+                  VIP 작업등록
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setShowBulkModal(true)} className="px-6 h-9">
-                  대량 작업등록
+                <Button type="button" variant="outline" onClick={() => setShowBulkModal(true)} className="px-6 h-9 border-purple-300 text-purple-600 hover:bg-purple-50">
+                  VIP 대량 작업등록
                 </Button>
               </div>
             </form>
@@ -1039,9 +999,9 @@ export default function SlotAddPage() {
         {/* 대량 등록 모달 */}
         {showBulkModal && (
           <div className="fixed inset-0 bg-transparent flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl border border-gray-200">
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl border border-purple-200">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-800">대량 작업 등록</h2>
+                <h2 className="text-xl font-bold text-purple-800">VIP 대량 작업 등록</h2>
                 <Button
                   variant="ghost"
                   onClick={() => setShowBulkModal(false)}
@@ -1054,15 +1014,15 @@ export default function SlotAddPage() {
               </div>
 
               {/* 예시 섹션 */}
-              <div className="bg-blue-50 p-4 rounded-lg mb-4 border-l-4 border-blue-400">
-                <h3 className="text-sm font-semibold text-blue-800 mb-2">📝 사용 예시</h3>
-                <div className="text-sm text-blue-700">
+              <div className="bg-purple-50 p-4 rounded-lg mb-4 border-l-4 border-purple-400">
+                <h3 className="text-sm font-semibold text-purple-800 mb-2">📝 VIP 등록 예시</h3>
+                <div className="text-sm text-purple-700">
                   <p className="mb-2">아래와 같이 한 줄씩 입력하세요:</p>
-                                      <div className="bg-white p-3 rounded border font-mono text-xs">
-                      <span className="text-blue-600 font-semibold">검색어</span> <span className="text-green-600 font-semibold">링크주소</span> <span className="text-red-600 font-semibold">슬롯수</span><br/>
-                      <div className="whitespace-nowrap overflow-hidden text-ellipsis">검색어 링크주소 슬롯수</div>
-                      <div className="whitespace-nowrap overflow-hidden text-ellipsis">검색어	링크주소	슬롯수</div>
-                    </div>
+                  <div className="bg-white p-3 rounded border font-mono text-xs">
+                    <span className="text-purple-600 font-semibold">검색어</span> <span className="text-green-600 font-semibold">링크주소</span> <span className="text-red-600 font-semibold">슬롯수</span><br/>
+                    <div className="whitespace-nowrap overflow-hidden text-ellipsis">VIP상품 링크주소 5</div>
+                    <div className="whitespace-nowrap overflow-hidden text-ellipsis">프리미엄제품	링크주소	3</div>
+                  </div>
                   <p className="mt-2 text-xs">형식: 검색어 + 링크주소 + 슬롯수 (공백 또는 탭으로 구분)</p>
                 </div>
               </div>
@@ -1070,7 +1030,7 @@ export default function SlotAddPage() {
               <form onSubmit={handleBulkSubmit}>
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">대량 등록 데이터</Label>
+                    <Label className="text-sm font-medium text-gray-700">VIP 대량 등록 데이터</Label>
                     <Textarea
                       placeholder="검색어 링크주소 슬롯수"
                       value={bulkForm.bulkData || ''}
@@ -1102,10 +1062,10 @@ export default function SlotAddPage() {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        등록 중...
+                        VIP 등록 중...
                       </div>
                     ) : (
-                      '대량 등록'
+                      'VIP 대량 등록'
                     )}
                   </Button>
                 </div>
@@ -1114,18 +1074,18 @@ export default function SlotAddPage() {
           </div>
         )}
 
-        {/* 등록된 고객 목록 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">등록된 고객 목록</CardTitle>
+        {/* 등록된 VIP 고객 목록 */}
+        <Card className="border-purple-200">
+          <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
+            <CardTitle className="text-xl text-purple-800">등록된 VIP 고객 목록</CardTitle>
           </CardHeader>
           <CardContent>
             {/* 전체 수정 모드 폼 */}
             {bulkEditMode && (
-              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-blue-800">
-                    전체 수정 모드 ({selectedCustomers.size}개 선택됨)
+                  <h3 className="text-lg font-semibold text-purple-800">
+                    VIP 전체 수정 모드 ({selectedCustomers.size}개 선택됨)
                   </h3>
                   <div className="flex space-x-2">
                     <Button
@@ -1174,14 +1134,14 @@ export default function SlotAddPage() {
                     />
                   </div>
                 </div>
-                <p className="text-xs text-blue-600 mt-2">
-                  💡 검색어, 링크주소, 슬롯수만 수정 가능합니다. 빈 필드는 수정되지 않습니다.
+                <p className="text-xs text-purple-600 mt-2">
+                  💎 VIP 고객의 검색어, 링크주소, 슬롯수만 수정 가능합니다. 빈 필드는 수정되지 않습니다.
                 </p>
               </div>
             )}
 
             {/* 테이블 컨트롤 */}
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg">
               <div className="flex items-center space-x-4">
                 <Select>
                   <SelectTrigger className="w-32">
@@ -1189,19 +1149,19 @@ export default function SlotAddPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">전체</SelectItem>
-                    <SelectItem value="firetoo">firetoo</SelectItem>
-                    <SelectItem value="panda">panda</SelectItem>
+                    <SelectItem value="vip">VIP전용</SelectItem>
+                    <SelectItem value="premium">프리미엄</SelectItem>
                   </SelectContent>
                 </Select>
 
                 <Select>
                   <SelectTrigger className="w-32">
-                    <SelectValue placeholder="작업그룹선택" />
+                    <SelectValue placeholder="VIP그룹선택" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">전체</SelectItem>
-                    <SelectItem value="common">공통</SelectItem>
                     <SelectItem value="vip">VIP</SelectItem>
+                    <SelectItem value="premium">프리미엄</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -1236,8 +1196,8 @@ export default function SlotAddPage() {
 
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
-                  <Input placeholder="검색 (고객, 검색어, 링크주소)" className="w-64" />
-                  <Button variant="outline" size="sm">
+                  <Input placeholder="VIP 검색 (고객, 검색어, 링크주소)" className="w-64" />
+                  <Button variant="outline" size="sm" className="border-purple-300 text-purple-600 hover:bg-purple-50">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
@@ -1253,7 +1213,7 @@ export default function SlotAddPage() {
                       onClick={handleBulkEdit}
                       variant="outline"
                       size="sm"
-                      className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                      className="text-purple-600 border-purple-600 hover:bg-purple-50"
                     >
                       전체 수정
                     </Button>
@@ -1280,220 +1240,220 @@ export default function SlotAddPage() {
                   onClick={handleExcelDownload}
                   className="bg-purple-600 hover:bg-purple-700"
                 >
-                  엑셀 다운로드
+                  VIP 엑셀 다운로드
                 </Button>
               </div>
             </div>
 
-            {/* 고객 테이블 */}
+            {/* VIP 고객 테이블 */}
             {loading ? (
               <div className="text-center py-8">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <p className="mt-2 text-gray-600">고객 목록을 불러오는 중...</p>
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                <p className="mt-2 text-gray-600">VIP 고객 목록을 불러오는 중...</p>
               </div>
             ) : (
-                          <div className="w-full">
-              <table className="w-full border-collapse border border-gray-300">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="border border-gray-300 p-2 text-center w-8">
-                      <Checkbox 
-                        checked={selectAll}
-                        onCheckedChange={handleSelectAll}
-                      />
-                    </th>
-                    <th className="border border-gray-300 p-2 text-center w-12">순번</th>
-                    <th className="border border-gray-300 p-2 text-center w-20">아이디</th>
-                    <th className="border border-gray-300 p-2 text-center w-28">작업그룹/검색어</th>
-                    <th className="border border-gray-300 p-2 text-center w-40">링크주소/메모</th>
-                    <th className="border border-gray-300 p-2 text-center w-16">현재순위</th>
-                    <th className="border border-gray-300 p-2 text-center w-16">시작순위</th>
-                    <th className="border border-gray-300 p-2 text-center w-12">슬롯</th>
-                    <th className="border border-gray-300 p-2 text-center w-16">트래픽</th>
-                    <th className="border border-gray-300 p-2 text-center w-20">장비그룹</th>
-                    <th className="border border-gray-300 p-2 text-center w-24">잔여기간</th>
-                    <th className="border border-gray-300 p-2 text-center w-32">등록일/만료일</th>
-                    <th className="border border-gray-300 p-2 text-center w-12">상태</th>
-                    <th className="border border-gray-300 p-2 text-center w-16">작업</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {customers.map((customer, index) => (
-                    <tr key={customer.id} className={index === 0 ? 'bg-pink-100' : ''}>
-                      <td className="border border-gray-300 p-2 text-center">
+              <div className="w-full">
+                <table className="w-full border-collapse border border-gray-300">
+                  <thead>
+                    <tr className="bg-gradient-to-r from-purple-100 to-pink-100">
+                      <th className="border border-gray-300 p-2 text-center w-8">
                         <Checkbox 
-                          checked={selectedCustomers.has(customer.id || 0)}
-                          onCheckedChange={(checked) => handleSelectCustomer(customer.id || 0, checked as boolean)}
+                          checked={selectAll}
+                          onCheckedChange={handleSelectAll}
                         />
-                      </td>
-                      <td className="border border-gray-300 p-2 text-center text-xs">{customer.id}</td>
-                      <td className="border border-gray-300 p-2 text-center">
-                        <div className="font-bold text-xs">{customer.customer}</div>
-                        {(() => {
-                          const customerInfo = findCustomerInfo(customer.customer);
-                          return customerInfo ? (
-                            <>
-                              <div className="text-xs text-gray-600">({customerInfo.name})</div>
-                              <div className="text-xs text-gray-500">{customerInfo.distributor}</div>
-                            </>
-                          ) : (
-                            <>
-                              <div className="text-xs text-gray-600">({customer.nickname})</div>
-                              <div className="text-xs text-gray-500">{customer.workGroup}</div>
-                            </>
-                          );
-                        })()}
-                      </td>
-                      <td className="border border-gray-300 p-2 text-center">
-                        <div className="mb-1">
+                      </th>
+                      <th className="border border-gray-300 p-2 text-center w-12">순번</th>
+                      <th className="border border-gray-300 p-2 text-center w-20">아이디</th>
+                      <th className="border border-gray-300 p-2 text-center w-28">작업그룹/검색어</th>
+                      <th className="border border-gray-300 p-2 text-center w-40">링크주소/메모</th>
+                      <th className="border border-gray-300 p-2 text-center w-16">현재순위</th>
+                      <th className="border border-gray-300 p-2 text-center w-16">시작순위</th>
+                      <th className="border border-gray-300 p-2 text-center w-12">슬롯</th>
+                      <th className="border border-gray-300 p-2 text-center w-16">트래픽</th>
+                      <th className="border border-gray-300 p-2 text-center w-20">장비그룹</th>
+                      <th className="border border-gray-300 p-2 text-center w-24">잔여기간</th>
+                      <th className="border border-gray-300 p-2 text-center w-32">등록일/만료일</th>
+                      <th className="border border-gray-300 p-2 text-center w-12">상태</th>
+                      <th className="border border-gray-300 p-2 text-center w-16">작업</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {customers.map((customer, index) => (
+                      <tr key={customer.id} className={index === 0 ? 'bg-gradient-to-r from-purple-50 to-pink-50' : ''}>
+                        <td className="border border-gray-300 p-2 text-center">
+                          <Checkbox 
+                            checked={selectedCustomers.has(customer.id || 0)}
+                            onCheckedChange={(checked) => handleSelectCustomer(customer.id || 0, checked as boolean)}
+                          />
+                        </td>
+                        <td className="border border-gray-300 p-2 text-center text-xs">{customer.id}</td>
+                        <td className="border border-gray-300 p-2 text-center">
+                          <div className="font-bold text-xs text-purple-700">{customer.customer}</div>
+                          {(() => {
+                            const customerInfo = findCustomerInfo(customer.customer);
+                            return customerInfo ? (
+                              <>
+                                <div className="text-xs text-purple-600">({customerInfo.name})</div>
+                                <div className="text-xs text-purple-500">{customerInfo.distributor}</div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="text-xs text-purple-600">({customer.nickname})</div>
+                                <div className="text-xs text-purple-500">{customer.workGroup}</div>
+                              </>
+                            );
+                          })()}
+                        </td>
+                        <td className="border border-gray-300 p-2 text-center">
+                          <div className="mb-1">
+                            <Select 
+                              value={editingCustomer?.id === customer.id ? editForm.workGroup : customer.workGroup}
+                              onValueChange={(value) => editingCustomer?.id === customer.id ? handleEditInputChange('workGroup', value) : undefined}
+                              disabled={editingCustomer?.id !== customer.id}
+                            >
+                              <SelectTrigger className="w-20 h-6 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {workGroups.map(group => (
+                                  <SelectItem key={group} value={group}>{group}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <Input 
+                            value={editingCustomer?.id === customer.id ? editForm.keyword : customer.keyword} 
+                            onChange={(e) => editingCustomer?.id === customer.id ? handleEditInputChange('keyword', e.target.value) : undefined}
+                            className="w-full h-6 text-xs"
+                            readOnly={editingCustomer?.id !== customer.id}
+                          />
+                        </td>
+                        <td className="border border-gray-300 p-2 text-center">
+                          <div className="mb-1">
+                            <Input 
+                              value={editingCustomer?.id === customer.id ? editForm.linkUrl : customer.linkUrl} 
+                              onChange={(e) => editingCustomer?.id === customer.id ? handleEditInputChange('linkUrl', e.target.value) : undefined}
+                              className="w-full h-6 text-xs text-ellipsis"
+                              readOnly={editingCustomer?.id !== customer.id}
+                              title={customer.linkUrl}
+                            />
+                          </div>
+                          <Input 
+                            value={editingCustomer?.id === customer.id ? editForm.memo : (customer.memo || 'VIP 프리미엄 상품 전용')} 
+                            onChange={(e) => editingCustomer?.id === customer.id ? handleEditInputChange('memo', e.target.value) : undefined}
+                            className="w-full h-6 text-xs text-ellipsis"
+                            readOnly={editingCustomer?.id !== customer.id}
+                            title={customer.memo || 'VIP 프리미엄 상품 전용'}
+                          />
+                        </td>
+                        <td className="border border-gray-300 p-2 text-center text-xs">{customer.currentRank}</td>
+                        <td className="border border-gray-300 p-2 text-center text-xs">{customer.startRank}</td>
+                        <td className="border border-gray-300 p-2 text-center">
+                          <Input 
+                            type="number"
+                            value={editingCustomer?.id === customer.id ? editForm.slotCount : customer.slotCount} 
+                            onChange={(e) => editingCustomer?.id === customer.id ? handleEditInputChange('slotCount', parseInt(e.target.value) || 1) : undefined}
+                            className="w-12 h-6 text-xs text-center"
+                            readOnly={editingCustomer?.id !== customer.id}
+                          />
+                        </td>
+                        <td className="border border-gray-300 p-2 text-center">
+                          <div className="text-xs">{customer.traffic}</div>
+                          <div className="text-xs text-purple-600">VIP</div>
+                        </td>
+                        <td className="border border-gray-300 p-2 text-center">
                           <Select 
-                            value={editingCustomer?.id === customer.id ? editForm.workGroup : customer.workGroup}
-                            onValueChange={(value) => editingCustomer?.id === customer.id ? handleEditInputChange('workGroup', value) : undefined}
+                            value={editingCustomer?.id === customer.id ? editForm.equipmentGroup : customer.equipmentGroup}
+                            onValueChange={(value) => editingCustomer?.id === customer.id ? handleEditInputChange('equipmentGroup', value) : undefined}
                             disabled={editingCustomer?.id !== customer.id}
                           >
                             <SelectTrigger className="w-20 h-6 text-xs">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {workGroups.map(group => (
+                              {equipmentGroups.map(group => (
                                 <SelectItem key={group} value={group}>{group}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-                        </div>
-                        <Input 
-                          value={editingCustomer?.id === customer.id ? editForm.keyword : customer.keyword} 
-                          onChange={(e) => editingCustomer?.id === customer.id ? handleEditInputChange('keyword', e.target.value) : undefined}
-                          className="w-full h-6 text-xs"
-                          readOnly={editingCustomer?.id !== customer.id}
-                        />
-                      </td>
-                      <td className="border border-gray-300 p-2 text-center">
-                        <div className="mb-1">
-                          <Input 
-                            value={editingCustomer?.id === customer.id ? editForm.linkUrl : customer.linkUrl} 
-                            onChange={(e) => editingCustomer?.id === customer.id ? handleEditInputChange('linkUrl', e.target.value) : undefined}
-                            className="w-full h-6 text-xs text-ellipsis"
-                            readOnly={editingCustomer?.id !== customer.id}
-                            title={customer.linkUrl}
-                          />
-                        </div>
-                        <Input 
-                          value={editingCustomer?.id === customer.id ? editForm.memo : (customer.memo || 'GB마트 여성가방 토트백 숄더백 데일리 패션가방')} 
-                          onChange={(e) => editingCustomer?.id === customer.id ? handleEditInputChange('memo', e.target.value) : undefined}
-                          className="w-full h-6 text-xs text-ellipsis"
-                          readOnly={editingCustomer?.id !== customer.id}
-                          title={customer.memo || 'GB마트 여성가방 토트백 숄더백 데일리 패션가방'}
-                        />
-                      </td>
-                      <td className="border border-gray-300 p-2 text-center text-xs">{customer.currentRank}</td>
-                      <td className="border border-gray-300 p-2 text-center text-xs">{customer.startRank}</td>
-                      <td className="border border-gray-300 p-2 text-center">
-                        <Input 
-                          type="number"
-                          value={editingCustomer?.id === customer.id ? editForm.slotCount : customer.slotCount} 
-                          onChange={(e) => editingCustomer?.id === customer.id ? handleEditInputChange('slotCount', parseInt(e.target.value) || 1) : undefined}
-                          className="w-12 h-6 text-xs text-center"
-                          readOnly={editingCustomer?.id !== customer.id}
-                        />
-                      </td>
-                      <td className="border border-gray-300 p-2 text-center">
-                        <div className="text-xs">{customer.traffic}</div>
-                        <div className="text-xs text-gray-600">{trafficCounter}</div>
-                      </td>
-                      <td className="border border-gray-300 p-2 text-center">
-                        <Select 
-                          value={editingCustomer?.id === customer.id ? editForm.equipmentGroup : customer.equipmentGroup}
-                          onValueChange={(value) => editingCustomer?.id === customer.id ? handleEditInputChange('equipmentGroup', value) : undefined}
-                          disabled={editingCustomer?.id !== customer.id}
-                        >
-                          <SelectTrigger className="w-20 h-6 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {equipmentGroups.map(group => (
-                              <SelectItem key={group} value={group}>{group}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td className="border border-gray-300 p-2 text-center">
-                        <span className="inline-block px-1 py-0.5 bg-red-100 text-red-800 text-xs rounded">
-                          {calculateRemainingTime(customer.registrationDate)}
-                        </span>
-                      </td>
-                      <td className="border border-gray-300 p-2 text-center text-xs">
-                        {customer.registrationDate}
-                      </td>
-                      <td className="border border-gray-300 p-2 text-center">
-                        {getStatusBadge(customer.status)}
-                      </td>
-                      <td className="border border-gray-300 p-2 text-center">
-                        <div className="flex justify-center space-x-2">
-                          {editingCustomer?.id === customer.id ? (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleSaveEdit}
-                                className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
-                                title="저장"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleCancelEdit}
-                                className="h-6 w-6 p-0 text-gray-600 hover:text-gray-800"
-                                title="취소"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditCustomer(customer)}
-                                className="h-6 w-6 p-0"
-                                title="수정"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteCustomer(customer.id)}
-                                className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
-                                title="삭제"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        </td>
+                        <td className="border border-gray-300 p-2 text-center">
+                          <span className="inline-block px-1 py-0.5 bg-purple-100 text-purple-800 text-xs rounded">
+                            {calculateRemainingTime(customer.registrationDate)}
+                          </span>
+                        </td>
+                        <td className="border border-gray-300 p-2 text-center text-xs">
+                          {customer.registrationDate}
+                        </td>
+                        <td className="border border-gray-300 p-2 text-center">
+                          {getStatusBadge(customer.status)}
+                        </td>
+                        <td className="border border-gray-300 p-2 text-center">
+                          <div className="flex justify-center space-x-2">
+                            {editingCustomer?.id === customer.id ? (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={handleSaveEdit}
+                                  className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
+                                  title="저장"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={handleCancelEdit}
+                                  className="h-6 w-6 p-0 text-gray-600 hover:text-gray-800"
+                                  title="취소"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditCustomer(customer)}
+                                  className="h-6 w-6 p-0"
+                                  title="수정"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteCustomer(customer.id)}
+                                  className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
+                                  title="삭제"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
 
-            {/* 만료슬롯 보기 버튼 */}
+            {/* VIP 만료슬롯 보기 버튼 */}
             <div className="mt-4 text-center">
-              <Button variant="outline" className="text-orange-600 border-orange-600 hover:bg-orange-50">
-                만료슬롯 보기
+              <Button variant="outline" className="text-purple-600 border-purple-600 hover:bg-purple-50">
+                VIP 만료슬롯 보기
               </Button>
             </div>
           </CardContent>

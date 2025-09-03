@@ -46,8 +46,9 @@ export default function Navigation() {
       name: '메인서비스', 
       href: '/coupangapp',
       subItems: [
-        { name: '슬롯 관리', href: '/coupangapp' },
-        { name: '슬롯 추가', href: '/coupangapp/add' }
+        { name: '쿠팡', href: '/coupangapp/add' },
+        { name: '쿠팡VIP', href: '/coupangapp/vip' },
+        { name: '쿠팡APP', href: '/coupangapp/app' }
       ]
     },
     { 

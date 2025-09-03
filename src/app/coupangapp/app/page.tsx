@@ -56,7 +56,7 @@ interface BulkSlotData {
   bulkData: string;
 }
 
-export default function SlotAddPage() {
+export default function AppManagementPage() {
   const router = useRouter();
   
   // 폼 상태
@@ -92,9 +92,6 @@ export default function SlotAddPage() {
 
   // 실시간 잔여기간 카운팅을 위한 상태
   const [currentTime, setCurrentTime] = useState(new Date());
-
-  // 실시간 트래픽 카운터 상태 (300을 24시간으로 나눠서 1씩 증가)
-  const [trafficCounter, setTrafficCounter] = useState(0);
 
   // 수정 모드 상태 관리
   const [editingCustomer, setEditingCustomer] = useState<CustomerSlot | null>(null);
@@ -147,25 +144,6 @@ export default function SlotAddPage() {
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  // 실시간 트래픽 카운터 업데이트 (1초마다)
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const now = new Date();
-      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const millisecondsSinceStartOfDay = now.getTime() - startOfDay.getTime();
-      const secondsSinceStartOfDay = millisecondsSinceStartOfDay / 1000;
-      
-      // 24시간(86400초) 동안 300번의 1씩 증가가 일어나도록 계산
-      // 86400초 / 300 = 288초마다 1씩 증가
-      const incrementPerSecond = 300 / (24 * 60 * 60); // 0.00347...
-      const currentCounter = Math.floor(secondsSinceStartOfDay * incrementPerSecond);
-      
-      setTrafficCounter(currentCounter % 300);
     }, 1000);
 
     return () => clearInterval(timer);
@@ -917,7 +895,7 @@ export default function SlotAddPage() {
                   </svg>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-800">사용 가능한 슬롯</h1>
+                  <h1 className="text-2xl font-bold text-gray-800">앱 관리</h1>
                 </div>
               </div>
               
@@ -945,7 +923,7 @@ export default function SlotAddPage() {
         {/* 슬롯 등록 폼 - 1줄로 정렬, 링크주소 늘리고 사용슬롯 줄이기 */}
         <Card className="mb-6">
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg">슬롯 등록</CardTitle>
+            <CardTitle className="text-lg">앱 등록</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit}>
@@ -1026,10 +1004,10 @@ export default function SlotAddPage() {
 
               <div className="flex justify-center space-x-3">
                 <Button type="submit" className="bg-purple-600 hover:bg-purple-700 px-6 h-9">
-                  작업등록
+                  앱등록
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowBulkModal(true)} className="px-6 h-9">
-                  대량 작업등록
+                  대량 앱등록
                 </Button>
               </div>
             </form>
@@ -1041,7 +1019,7 @@ export default function SlotAddPage() {
           <div className="fixed inset-0 bg-transparent flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl border border-gray-200">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-800">대량 작업 등록</h2>
+                <h2 className="text-xl font-bold text-gray-800">대량 앱 등록</h2>
                 <Button
                   variant="ghost"
                   onClick={() => setShowBulkModal(false)}
@@ -1117,7 +1095,7 @@ export default function SlotAddPage() {
         {/* 등록된 고객 목록 */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">등록된 고객 목록</CardTitle>
+            <CardTitle className="text-xl">등록된 앱 목록</CardTitle>
           </CardHeader>
           <CardContent>
             {/* 전체 수정 모드 폼 */}
@@ -1125,7 +1103,7 @@ export default function SlotAddPage() {
               <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-lg font-semibold text-blue-800">
-                    전체 수정 모드 ({selectedCustomers.size}개 선택됨)
+                    전체 수정 모드 ({selectedCustomers.size}개 앱 선택됨)
                   </h3>
                   <div className="flex space-x-2">
                     <Button
@@ -1175,7 +1153,7 @@ export default function SlotAddPage() {
                   </div>
                 </div>
                 <p className="text-xs text-blue-600 mt-2">
-                  💡 검색어, 링크주소, 슬롯수만 수정 가능합니다. 빈 필드는 수정되지 않습니다.
+                  💡 앱 정보를 수정할 수 있습니다. 빈 필드는 수정되지 않습니다.
                 </p>
               </div>
             )}
@@ -1289,7 +1267,7 @@ export default function SlotAddPage() {
             {loading ? (
               <div className="text-center py-8">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <p className="mt-2 text-gray-600">고객 목록을 불러오는 중...</p>
+                <p className="mt-2 text-gray-600">앱 목록을 불러오는 중...</p>
               </div>
             ) : (
                           <div className="w-full">
@@ -1303,15 +1281,15 @@ export default function SlotAddPage() {
                       />
                     </th>
                     <th className="border border-gray-300 p-2 text-center w-12">순번</th>
-                    <th className="border border-gray-300 p-2 text-center w-20">아이디</th>
-                    <th className="border border-gray-300 p-2 text-center w-28">작업그룹/검색어</th>
-                    <th className="border border-gray-300 p-2 text-center w-40">링크주소/메모</th>
-                    <th className="border border-gray-300 p-2 text-center w-16">현재순위</th>
-                    <th className="border border-gray-300 p-2 text-center w-16">시작순위</th>
-                    <th className="border border-gray-300 p-2 text-center w-12">슬롯</th>
-                    <th className="border border-gray-300 p-2 text-center w-16">트래픽</th>
-                    <th className="border border-gray-300 p-2 text-center w-20">장비그룹</th>
-                    <th className="border border-gray-300 p-2 text-center w-24">잔여기간</th>
+                    <th className="border border-gray-300 p-2 text-center w-20">앱ID</th>
+                    <th className="border border-gray-300 p-2 text-center w-28">앱그룹/앱명</th>
+                    <th className="border border-gray-300 p-2 text-center w-40">앱주소/설명</th>
+                    <th className="border border-gray-300 p-2 text-center w-16">현재버전</th>
+                    <th className="border border-gray-300 p-2 text-center w-16">시작버전</th>
+                    <th className="border border-gray-300 p-2 text-center w-12">용량</th>
+                    <th className="border border-gray-300 p-2 text-center w-16">다운로드</th>
+                    <th className="border border-gray-300 p-2 text-center w-20">카테고리</th>
+                    <th className="border border-gray-300 p-2 text-center w-24">업데이트</th>
                     <th className="border border-gray-300 p-2 text-center w-32">등록일/만료일</th>
                     <th className="border border-gray-300 p-2 text-center w-12">상태</th>
                     <th className="border border-gray-300 p-2 text-center w-16">작업</th>
@@ -1399,7 +1377,7 @@ export default function SlotAddPage() {
                       </td>
                       <td className="border border-gray-300 p-2 text-center">
                         <div className="text-xs">{customer.traffic}</div>
-                        <div className="text-xs text-gray-600">{trafficCounter}</div>
+                        <div className="text-xs text-gray-600">187</div>
                       </td>
                       <td className="border border-gray-300 p-2 text-center">
                         <Select 
@@ -1493,7 +1471,7 @@ export default function SlotAddPage() {
             {/* 만료슬롯 보기 버튼 */}
             <div className="mt-4 text-center">
               <Button variant="outline" className="text-orange-600 border-orange-600 hover:bg-orange-50">
-                만료슬롯 보기
+                만료된 앱 보기
               </Button>
             </div>
           </CardContent>
