@@ -13,14 +13,18 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✅ 설정됨' : '❌ 설정되지 않음');
   console.error('프로젝트 루트에 .env.local 파일을 생성하고 환경 변수를 설정하세요.');
   console.error('설정 방법: node setup-env.js 실행 또는 수동으로 .env.local 파일 생성');
+} else {
+  console.log('✅ Supabase 환경 변수가 설정되었습니다.');
+  console.log('URL:', supabaseUrl.substring(0, 20) + '...');
+  console.log('Key:', supabaseAnonKey.substring(0, 10) + '...');
 }
 
-// createClient 함수 export
+// 성능 최적화된 Supabase 클라이언트 설정
 export function createSupabaseClient() {
   return _createClient(supabaseUrl!, supabaseAnonKey!, {
     auth: {
       autoRefreshToken: true,
-      persistSession: false, // 세션 캐시 완전 비활성화
+      persistSession: false,
       detectSessionInUrl: false,
       flowType: 'pkce'
     },
@@ -29,9 +33,7 @@ export function createSupabaseClient() {
     },
     global: {
       headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-        'Pragma': 'no-cache',
-        'Expires': '0',
+        'Cache-Control': 'public, max-age=300', // 5분 캐시 허용으로 성능 향상
         'X-Requested-With': 'XMLHttpRequest'
       }
     },
@@ -43,155 +45,344 @@ export function createSupabaseClient() {
   });
 }
 
-// 스키마 캐시 문제 완전 해결을 위한 강화된 Supabase 클라이언트 설정
+// 성능 최적화된 Supabase 클라이언트
 export const supabase = createSupabaseClient();
 
-// 스키마 캐시 강제 갱신 함수
-export async function forceSchemaRefresh() {
-  console.log('🔄 강제 스키마 갱신 실행...');
-  
+// Supabase 연결 테스트 함수 (간소화)
+export async function testSupabaseConnection() {
   try {
-    // 여러 테이블에 접근하여 스키마 캐시 강제 갱신
-    const tables = ['customers', 'users', 'user_profiles'];
-    
-    for (const table of tables) {
-      try {
-        const { data, error } = await supabase
-          .from(table)
-          .select('count')
-          .limit(1);
-        
-        if (error) {
-          console.log(`⚠️ ${table} 테이블 접근 중 오류 (정상):`, error.message);
-        } else {
-          console.log(`✅ ${table} 테이블 스키마 갱신 완료`);
-        }
-      } catch (err) {
-        console.log(`⚠️ ${table} 테이블 접근 중 예외:`, err);
-      }
-    }
-    
-    console.log('✅ 강제 스키마 갱신 완료');
-  } catch (err) {
-    console.error('❌ 강제 스키마 갱신 중 오류:', err);
-  }
-}
-
-// 연결 풀 재설정 함수
-export async function resetConnectionPool() {
-  console.log('🔄 연결 풀 재설정 실행...');
-  
-  try {
-    // 새로운 클라이언트 인스턴스 생성
-    const newSupabase = _createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: false,
-        detectSessionInUrl: false
-      },
-      global: {
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
-      }
-    });
-    
-    // 연결 테스트
-    const { data, error } = await newSupabase
+    const { data, error } = await supabase
       .from('customers')
       .select('count')
       .limit(1);
     
     if (error) {
-      console.log('⚠️ 새 연결 풀 테스트 중 오류:', error.message);
-    } else {
-      console.log('✅ 연결 풀 재설정 완료');
+      return { success: false, error: error.message, data: null };
     }
+    
+    return { success: true, error: null, data: { message: '연결 성공' } };
   } catch (err) {
-    console.log('⚠️ 연결 풀 재설정 중 예외:', err);
+    return { success: false, error: err instanceof Error ? err.message : '알 수 없는 오류', data: null };
   }
 }
 
-// 스키마 캐시 문제 해결 함수
-export async function fixSchemaCacheIssues() {
-  console.log('🚀 스키마 캐시 문제 해결 시작...');
-  
+// distributors 테이블 존재 여부 확인 함수
+export async function checkDistributorsTable() {
   try {
-    // 1. 강제 스키마 갱신
+    const { data, error } = await supabase
+      .from('distributors')
+      .select('count')
+      .limit(1);
+    
+    if (error) {
+      console.error('distributors 테이블 확인 오류:', error);
+      return { exists: false, error: error.message };
+    }
+    
+    return { exists: true, error: null };
+  } catch (err) {
+    console.error('distributors 테이블 확인 중 예외:', err);
+    return { exists: false, error: err instanceof Error ? err.message : '알 수 없는 오류' };
+  }
+}
+
+// 고객 데이터 타입 정의
+export interface Customer {
+  id?: number
+  name: string
+  username: string
+  password?: string
+  phone?: string
+  email?: string
+  created_at?: string
+}
+
+// 성능 최적화된 고객 목록 조회 함수
+export async function getCustomers() {
+  try {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.error('getCustomers 오류:', err);
+    throw err;
+  }
+}
+
+// 총판 데이터 타입 정의
+export interface Distributor {
+  id?: number
+  name: string
+  type: '본사' | '선택안함'
+  sub_count?: number
+  manager?: string
+  domain?: string
+  ip?: string
+  site_name?: string
+  menu_abbr?: string
+  default_days: number
+  coupon_days: number
+  member_count?: number
+  memo?: string
+  status?: 'active' | 'inactive'
+  created_at?: string
+}
+
+// 성능 최적화된 총판 목록 조회 함수
+export async function getDistributors() {
+  try {
+    const { data, error } = await supabase
+      .from('distributors')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Supabase 오류:', error);
+      throw error;
+    }
+    return data || [];
+  } catch (err) {
+    console.error('getDistributors 오류:', err);
+    console.error('오류 타입:', typeof err);
+    console.error('오류 메시지:', err instanceof Error ? err.message : '알 수 없는 오류');
+    throw err;
+  }
+}
+
+// 총판 추가 함수
+export async function addDistributor(distributor: Omit<Distributor, 'id' | 'created_at'>) {
+  try {
+    const { data, error } = await supabase
+      .from('distributors')
+      .insert([distributor])
+      .select();
+    
+    if (error) {
+      console.error('Supabase 추가 오류:', error);
+      throw error;
+    }
+    return data[0];
+  } catch (err) {
+    console.error('addDistributor 오류:', err);
+    console.error('오류 타입:', typeof err);
+    console.error('오류 메시지:', err instanceof Error ? err.message : '알 수 없는 오류');
+    throw err;
+  }
+}
+
+// 총판 수정 함수
+export async function updateDistributor(id: number, distributor: Partial<Distributor>) {
+  try {
+    const { data, error } = await supabase
+      .from('distributors')
+      .update(distributor)
+      .eq('id', id)
+      .select();
+    
+    if (error) {
+      console.error('Supabase 수정 오류:', error);
+      throw error;
+    }
+    return data[0];
+  } catch (err) {
+    console.error('updateDistributor 오류:', err);
+    console.error('오류 타입:', typeof err);
+    console.error('오류 메시지:', err instanceof Error ? err.message : '알 수 없는 오류');
+    throw err;
+  }
+}
+
+// 총판 조회 함수 (단일)
+export async function getDistributor(id: number) {
+  try {
+    const { data, error } = await supabase
+      .from('distributors')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('Supabase 조회 오류:', error);
+      throw error;
+    }
+    return data;
+  } catch (err) {
+    console.error('getDistributor 오류:', err);
+    console.error('오류 타입:', typeof err);
+    console.error('오류 메시지:', err instanceof Error ? err.message : '알 수 없는 오류');
+    throw err;
+  }
+}
+
+// 총판 삭제 함수
+export async function deleteDistributor(id: number) {
+  const { error } = await supabase
+    .from('distributors')
+    .delete()
+    .eq('id', id);
+  
+  if (error) throw error;
+  return true;
+}
+
+// 고객 추가 함수
+export async function addCustomer(customer: Omit<Customer, 'id' | 'created_at'>) {
+  const { data, error } = await supabase
+    .from('customers')
+    .insert([customer])
+    .select();
+  
+  if (error) throw error;
+  return data[0];
+}
+
+// 고객 삭제 함수
+export async function deleteCustomer(id: number) {
+  const { error } = await supabase
+    .from('customers')
+    .delete()
+    .eq('id', id);
+  
+  if (error) throw error;
+}
+
+// 고객 수정 함수
+export async function updateCustomer(id: number, updates: Partial<Customer>) {
+  const { data, error } = await supabase
+    .from('customers')
+    .update(updates)
+    .eq('id', id)
+    .select();
+  
+  if (error) throw error;
+  return data[0];
+}
+
+// 슬롯 데이터 타입 정의
+export interface Slot {
+  id?: number
+  customer_id: string
+  customer_name: string
+  slot_type: string
+  slot_count: number
+  payment_type?: string
+  payer_name?: string
+  payment_amount?: number
+  payment_date?: string
+  usage_days?: number
+  memo?: string
+  status: 'active' | 'inactive' | 'expired' | 'completed'
+  created_at?: string
+  updated_at?: string
+}
+
+// 성능 최적화된 슬롯 목록 조회 함수
+export async function getSlots() {
+  try {
+    const { data, error } = await supabase
+      .from('slots')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.error('getSlots 오류:', err);
+    throw err;
+  }
+}
+
+// 슬롯 추가 함수
+export async function addSlot(slot: Omit<Slot, 'id' | 'created_at' | 'updated_at'>) {
+  const { data, error } = await supabase
+    .from('slots')
+    .insert([slot])
+    .select();
+  
+  if (error) throw error;
+  return data[0];
+}
+
+// 성능 최적화된 슬롯 현황 조회 함수
+export async function getSlotStatus() {
+  try {
+    const { data: slotsData, error: slotsError } = await supabase
+      .from('slots')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (slotsError) throw slotsError;
+    
+    // 성능 최적화: Map을 사용하여 O(n²) → O(n)으로 개선
+    const slotMap = new Map<string, Slot[]>();
+    slotsData?.forEach(slot => {
+      if (!slotMap.has(slot.customer_id)) {
+        slotMap.set(slot.customer_id, []);
+      }
+      slotMap.get(slot.customer_id)!.push(slot);
+    });
+    
+    const slotStatusData = slotsData?.map(slot => {
+      const customerSlots = slotMap.get(slot.customer_id) || [];
+      const usedSlots = customerSlots.filter(s => s.status === 'active').length;
+      
+      return {
+        id: slot.id,
+        customerId: slot.customer_id,
+        customerName: slot.customer_name,
+        slotType: slot.slot_type,
+        slotCount: slot.slot_count,
+        usedSlots: usedSlots,
+        remainingSlots: Math.max(0, slot.slot_count - usedSlots),
+        totalPaymentAmount: slot.payment_amount || 0,
+        remainingDays: slot.usage_days || 0,
+        registrationDate: slot.created_at ? new Date(slot.created_at).toISOString().split('T')[0] : '',
+        expiryDate: slot.created_at && slot.usage_days ? 
+          new Date(new Date(slot.created_at).getTime() + (slot.usage_days * 24 * 60 * 60 * 1000)).toISOString().split('T')[0] : '',
+        addDate: slot.created_at ? new Date(slot.created_at).toISOString().split('T')[0] : '',
+        status: slot.status,
+        userGroup: slot.memo || '본사'
+      };
+    }) || [];
+    
+    return slotStatusData;
+  } catch (err) {
+    console.error('getSlotStatus 오류:', err);
+    throw err;
+  }
+}
+
+// 간소화된 스키마 캐시 갱신 함수
+export async function forceSchemaRefresh() {
+  try {
+    await supabase.from('customers').select('count').limit(1);
+    await supabase.from('slots').select('count').limit(1);
+  } catch (err) {
+    console.log('스키마 갱신 중 오류:', err);
+  }
+}
+
+// 간소화된 스키마 캐시 문제 해결 함수
+export async function fixSchemaCacheIssues() {
+  try {
     await forceSchemaRefresh();
-    
-    // 2. 연결 풀 재설정
-    await resetConnectionPool();
-    
-    // 3. 최종 테스트
     const { data, error } = await supabase
       .from('customers')
       .select('id, name')
       .limit(1);
     
-    if (error) {
-      console.error('❌ 최종 테스트 실패:', error.message);
-      return false;
-    }
-    
-    console.log('✅ 스키마 캐시 문제 해결 완료');
+    if (error) return false;
     return true;
   } catch (err) {
-    console.error('❌ 스키마 캐시 문제 해결 중 오류:', err);
     return false;
   }
 }
 
-// 재시도 로직이 포함된 데이터베이스 쿼리 함수
-export async function executeWithRetry<T>(
-  queryFn: () => Promise<{ data: T | null; error: any }>,
-  maxRetries: number = 3
-): Promise<{ data: T | null; error: any }> {
-  let lastError: any = null;
-  
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      console.log(`🔄 쿼리 시도 ${attempt}/${maxRetries}...`);
-      
-      const result = await queryFn();
-      
-      if (result.error) {
-        // 스키마 캐시 관련 오류인지 확인
-        if (result.error.code === 'PGRST116' || 
-            result.error.message.includes('relation') || 
-            result.error.message.includes('table') ||
-            result.error.message.includes('schema')) {
-          
-          console.log('🔄 스키마 캐시 문제 감지, 갱신 후 재시도...');
-          await forceSchemaRefresh();
-          
-          if (attempt < maxRetries) {
-            lastError = result.error;
-            // 잠시 대기 후 재시도
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-            continue;
-          }
-        }
-      }
-      
-      return result;
-    } catch (err) {
-      console.error(`❌ 시도 ${attempt} 실패:`, err);
-      lastError = err;
-      
-      if (attempt < maxRetries) {
-        // 잠시 대기 후 재시도
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-      }
-    }
-  }
-  
-  return { data: null, error: lastError };
-}
-
-// 스키마 캐시 문제 해결을 위한 래퍼 함수
+// 성능 최적화된 스키마 캐시 래퍼 함수 (재시도 횟수 감소)
 export function withSchemaCacheFix<T extends any[], R>(
   fn: (...args: T) => Promise<R>
 ): (...args: T) => Promise<R> {
@@ -205,11 +396,8 @@ export function withSchemaCacheFix<T extends any[], R>(
           error?.message?.includes('table') ||
           error?.message?.includes('schema')) {
         
-        console.log('🔄 스키마 캐시 문제 감지, 갱신 후 재시도...');
         await forceSchemaRefresh();
-        
-        // 재시도
-        return await fn(...args);
+        return await fn(...args); // 한 번만 재시도
       }
       
       throw error;
@@ -217,85 +405,3 @@ export function withSchemaCacheFix<T extends any[], R>(
   };
 }
 
-// 고객 데이터 타입 정의
-export interface Customer {
-  id?: number
-  name: string
-  keyword: string
-  link_url: string
-  slot_count: number
-  memo?: string
-  work_group?: string
-  equipment_group?: string
-  current_rank?: string
-  start_rank?: string
-  traffic?: string
-  remaining_days?: string
-  registration_date?: string
-  status?: string
-  created_at?: string
-  updated_at?: string
-}
-
-// 고객 추가 함수
-export async function addCustomer(customer: Omit<Customer, 'id' | 'created_at'>) {
-  const { data, error } = await supabase
-    .from('customers')
-    .insert([customer])
-    .select()
-  
-  if (error) throw error
-  return data[0]
-}
-
-// 고객 목록 조회 함수
-export async function getCustomers() {
-  try {
-    console.log('Supabase getCustomers 함수 시작...');
-    
-    const { data, error } = await supabase
-      .from('customers')
-      .select('*')
-      .order('created_at', { ascending: false })
-    
-    console.log('Supabase 응답 - data:', data, 'error:', error);
-    
-    if (error) {
-      console.error('Supabase 오류 발생:', error);
-      throw error;
-    }
-    
-    if (!data) {
-      console.log('데이터가 null입니다. 빈 배열 반환.');
-      return [];
-    }
-    
-    console.log('성공적으로 데이터 반환:', data);
-    return data;
-  } catch (err) {
-    console.error('getCustomers 함수에서 오류 발생:', err);
-    throw err;
-  }
-}
-
-// 고객 삭제 함수
-export async function deleteCustomer(id: number) {
-  const { error } = await supabase
-    .from('customers')
-    .delete()
-    .eq('id', id)
-  
-  if (error) throw error
-}
-
-// 고객 수정 함수
-export async function updateCustomer(id: number, updates: Partial<Customer>) {
-  const { data, error } = await supabase
-    .from('customers')
-    .update(updates)
-    .eq('id', id)
-    .select()
-  
-  if (error) throw error
-  return data[0]
-}

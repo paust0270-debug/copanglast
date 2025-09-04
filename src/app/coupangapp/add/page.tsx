@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { addCustomer, getCustomers, deleteCustomer, updateCustomer, Customer, fixSchemaCacheIssues, withSchemaCacheFix } from '@/lib/supabase';
+import { addCustomer, getCustomers, deleteCustomer, updateCustomer, Customer, fixSchemaCacheIssues, addSlot, withSchemaCacheFix } from '@/lib/supabase';
 import { forceSchemaRefresh, resetConnectionPool, clearBrowserCache } from '@/lib/schema-utils';
 import * as XLSX from 'xlsx';
 
@@ -143,6 +143,29 @@ export default function SlotAddPage() {
     initializeData();
   }, []);
 
+  // URL 파라미터에서 고객 정보 확인
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const customerId = urlParams.get('customerId');
+    const slotCount = urlParams.get('slotCount');
+    const customerName = urlParams.get('customerName');
+    const slotType = urlParams.get('slotType');
+    
+    if (customerId && slotCount && customerName) {
+      console.log('URL 파라미터에서 고객 정보 확인:', { customerId, slotCount, customerName, slotType });
+      
+      // 폼에 고객 정보 설정
+      setForm(prev => ({
+        ...prev,
+        slotCount: parseInt(slotCount) || 1,
+        memo: `${customerName} (${customerId}) - ${slotType || '쿠팡'} 슬롯 등록`
+      }));
+      
+      // 고객 정보를 메모에 추가
+      console.log(`고객 ${customerName} (${customerId})의 ${slotCount}개 슬롯 등록 준비 완료`);
+    }
+  }, []);
+
   // 실시간 시간 업데이트 (1초마다)
   useEffect(() => {
     const timer = setInterval(() => {
@@ -240,7 +263,7 @@ export default function SlotAddPage() {
       console.log('- NEXT_PUBLIC_SUPABASE_ANON_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '설정됨' : '설정되지 않음');
       
       // 스키마 캐시 문제 해결 적용
-      const data = await getCustomersWithCacheFix();
+              const data = await getCustomers();
       console.log('✅ Supabase에서 받은 데이터:', data);
       console.log('데이터 타입:', typeof data);
       console.log('데이터 길이:', Array.isArray(data) ? data.length : '배열이 아님');
@@ -325,6 +348,61 @@ export default function SlotAddPage() {
     return customerData.find(c => c.username === customerId) || null;
   };
 
+  // 슬롯 현황 로드 함수
+  const loadCurrentCustomerSlotStatus = async (customerId: string) => {
+    try {
+      console.log('🔄 고객 슬롯 현황 로드 시작:', customerId);
+      console.log('🔗 API URL:', `/api/slot-status?customerId=${customerId}`);
+      
+      const response = await fetch(`/api/slot-status?customerId=${customerId}`);
+      console.log('📡 API 응답 상태:', response.status, response.ok);
+      
+      const result = await response.json();
+      console.log('📊 API 응답 데이터:', result);
+
+      if (response.ok) {
+        console.log('✅ API 응답 성공');
+        
+        if (result.data && result.data.length > 0) {
+          // 첫 번째 슬롯 데이터에서 정보 추출
+          const slotData = result.data[0];
+          console.log('📋 슬롯 데이터:', slotData);
+          
+          const newSlotStatus = {
+            totalSlots: slotData.slotCount || 0,
+            usedSlots: slotData.usedSlots || 0,
+            remainingSlots: slotData.remainingSlots || 0
+          };
+          
+          console.log('📈 새로운 슬롯 상태:', newSlotStatus);
+          setCurrentCustomerSlots(newSlotStatus);
+          console.log('✅ 슬롯 상태 업데이트 완료');
+        } else {
+          console.log('⚠️ 슬롯 데이터가 없음');
+          setCurrentCustomerSlots({
+            totalSlots: 0,
+            usedSlots: 0,
+            remainingSlots: 0
+          });
+        }
+      } else {
+        console.error('❌ 고객 슬롯 현황 로드 실패:', result.error);
+        setCurrentCustomerSlots({
+          totalSlots: 0,
+          usedSlots: 0,
+          remainingSlots: 0
+        });
+      }
+    } catch (error) {
+      console.error('❌ 고객 슬롯 현황 로드 오류:', error);
+      setCurrentCustomerSlots({
+        totalSlots: 0,
+        usedSlots: 0,
+        remainingSlots: 0
+      });
+    }
+  };
+
   // 작업그룹 옵션
   const workGroups = ['공통', 'VIP', '프리미엄', '기본'];
 
@@ -393,7 +471,7 @@ export default function SlotAddPage() {
       };
 
       // Supabase에 저장 (스키마 캐시 문제 해결 적용)
-      const savedCustomer = await addCustomerWithCacheFix(customerData);
+              const savedCustomer = await addSlot(customerData);
       
       // 새로운 고객 슬롯 추가 (화면 업데이트)
       const newCustomer: CustomerSlot = {
@@ -709,7 +787,7 @@ export default function SlotAddPage() {
     try {
       const selectedIds = Array.from(selectedCustomers);
       const deletePromises = selectedIds.map(async (customerId) => {
-        return await deleteCustomer(customerId);
+        return await deleteCustomerWithCacheFix(customerId);
       });
 
       await Promise.all(deletePromises);
@@ -941,6 +1019,36 @@ export default function SlotAddPage() {
             </div>
           </div>
         </div>
+
+        {/* 간단한 슬롯 정보 표시 */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-xl">슬롯 현황</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="p-4 bg-blue-50 rounded-lg">
+              <p className="text-blue-800 mb-2">
+                💡 고객별 사용 가능한 슬롯 개수를 확인하려면 슬롯현황 페이지를 이용하세요.
+              </p>
+              <div className="flex space-x-4">
+                <Button 
+                  onClick={() => router.push('/slot-status')}
+                  variant="outline"
+                  className="bg-blue-100 hover:bg-blue-200"
+                >
+                  슬롯현황 보기
+                </Button>
+                <Button 
+                  onClick={() => router.push('/customer')}
+                  variant="outline"
+                  className="bg-green-100 hover:bg-green-200"
+                >
+                  고객관리
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* 슬롯 등록 폼 - 1줄로 정렬, 링크주소 늘리고 사용슬롯 줄이기 */}
         <Card className="mb-6">

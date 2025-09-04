@@ -56,15 +56,8 @@ export default function Navigation() {
       href: '/customer',
       subItems: [
         { name: '고객관리', href: '/customer' },
-        { name: '슬롯관리', href: '/admin/slots' }
-      ]
-    },
-    { 
-      name: '총판관리', 
-      href: '/distributor',
-      subItems: [
-        { name: '총판 대시보드', href: '/distributor' },
-        { name: '총판관리', href: '/distributor-add' }
+        { name: '슬롯관리', href: '/admin/slots' },
+        { name: '슬롯현황', href: '/slot-status' }
       ]
     },
     { 
@@ -74,6 +67,15 @@ export default function Navigation() {
         { name: '정산내역', href: '/settlement/history' },
         { name: '정산대기', href: '/settlement' },
         { name: '미정산내역', href: '/settlement/unsettled' }
+      ]
+    },
+    { 
+      name: '총판관리', 
+      href: '/distributor',
+      subItems: [
+        { name: '총판 대시보드', href: '/distributor' },
+        { name: '총판관리', href: '/distributor-add' },
+        { name: '총판추가', href: '/distributor-add/add' }
       ]
     },
     { 

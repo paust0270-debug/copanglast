@@ -89,7 +89,8 @@ export default function SlotAddPage() {
     }
 
     try {
-      const response = await fetch('/api/slots', {
+      // 1. 미정산내역에 슬롯 데이터 저장
+      const slotResponse = await fetch('/api/slots', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,13 +98,21 @@ export default function SlotAddPage() {
         body: JSON.stringify(formData),
       });
 
-      const result = await response.json();
+      const slotResult = await slotResponse.json();
 
-      if (result.success) {
-        alert('슬롯이 성공적으로 추가되었습니다.');
-        router.push('/settlement/unsettled');
+      if (slotResult.success) {
+        // 2. 쿠팡APP 페이지로 이동 (슬롯 개수와 함께)
+        const params = new URLSearchParams({
+          customerId: formData.customerId,
+          slotCount: formData.slotCount,
+          customerName: formData.customerName,
+          slotType: formData.slotType
+        });
+        
+        alert('슬롯이 성공적으로 추가되었습니다. 쿠팡APP 페이지로 이동합니다.');
+        router.push(`/coupangapp/add?${params.toString()}`);
       } else {
-        alert(`슬롯 추가 실패: ${result.error}`);
+        alert(`슬롯 추가 실패: ${slotResult.error}`);
       }
     } catch (error) {
       console.error('슬롯 추가 중 오류:', error);

@@ -853,7 +853,7 @@ export default function CoupangVipPage() {
     <div className="min-h-screen bg-gray-50">
       <Navigation />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* 에러 메시지 표시 */}
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -862,7 +862,7 @@ export default function CoupangVipPage() {
         )}
         
         {/* 상단 VIP 슬롯 정보 헤더 */}
-        <div className="bg-gradient-to-r from-purple-100 to-pink-100 border-2 border-dashed border-purple-300 rounded-2xl p-6 mb-6 shadow-sm">
+        <div className="bg-gradient-to-r from-purple-100 to-pink-100 border-2 border-dashed border-purple-300 rounded-2xl p-6 mb-8 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-8">
               <div className="flex items-center space-x-3">
@@ -903,7 +903,7 @@ export default function CoupangVipPage() {
         </div>
 
         {/* VIP 슬롯 등록 폼 */}
-        <Card className="mb-6 border-purple-200">
+        <Card className="mb-8 border-purple-200">
           <CardHeader className="pb-4 bg-gradient-to-r from-purple-50 to-pink-50">
             <CardTitle className="text-lg text-purple-800">VIP 슬롯 등록</CardTitle>
           </CardHeader>

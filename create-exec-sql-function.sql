@@ -22,3 +22,4 @@ GRANT EXECUTE ON FUNCTION exec_sql(TEXT) TO service_role;
 SELECT 'exec_sql function created successfully' as status;
 
 
+

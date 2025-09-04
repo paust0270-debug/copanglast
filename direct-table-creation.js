@@ -111,3 +111,4 @@ SELECT 'slots table created successfully' as status;
 createTableDirectly();
 
 
+

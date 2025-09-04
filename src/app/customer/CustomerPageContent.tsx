@@ -305,7 +305,7 @@ export function CustomerPageContent() {
   };
 
   const handleSlotStatus = (customer: Customer) => {
-    router.push(`/admin/slots?customerId=${customer.id}&username=${encodeURIComponent(customer.username)}&name=${encodeURIComponent(customer.name)}`);
+    router.push(`/slot-status?customerId=${customer.id}&username=${encodeURIComponent(customer.username)}&name=${encodeURIComponent(customer.name)}`);
   };
 
   const getStatusButtonClass = (customerStatus: string, buttonType: string) => {

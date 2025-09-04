@@ -57,3 +57,4 @@ WHERE s.id = 5
 AND NOT EXISTS (
   SELECT 1 FROM settlement_items si WHERE si.settlement_id = s.id
 );
+

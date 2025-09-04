@@ -140,3 +140,4 @@ CREATE POLICY "Allow all operations for all users" ON public.slots
 createSlotsTable();
 
 
+
