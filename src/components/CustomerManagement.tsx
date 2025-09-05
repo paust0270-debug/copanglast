@@ -119,28 +119,37 @@ export default function CustomerManagement() {
       const customer = customers.find(c => c.id === customerId);
       if (!customer) return;
 
+      // slots 테이블에 저장할 데이터 준비
+      const now = new Date();
+      const expiryDate = new Date(now.getTime() + newSlot.working_days * 24 * 60 * 60 * 1000);
+      
+      const slotData = {
+        customer_id: customerId,
+        customer_name: customer.name,
+        slot_type: newSlot.slot_type,
+        slot_count: newSlot.slot_count,
+        payment_amount: newSlot.amount,
+        usage_days: newSlot.working_days,
+        memo: newSlot.memo,
+        status: 'active' as const,
+        created_at: now.toISOString(),
+        updated_at: now.toISOString()
+      };
+
       const { data, error } = await supabase
-        .from('slot_works')
-        .insert([{
-          customer_id: customerId,
-          customer_name: customer.name,
-          slot_type: newSlot.slot_type,
-          slot_count: newSlot.slot_count,
-          payment_type: newSlot.payment_type,
-          payer_name: newSlot.payer_name || customer.name,
-          amount: newSlot.amount,
-          payment_date: newSlot.payment_date || new Date().toISOString().split('T')[0],
-          working_days: newSlot.working_days,
-          memo: newSlot.memo
-        }])
+        .from('slots')
+        .insert([slotData])
         .select()
         .single();
 
       if (error) {
-        console.error('슬롯 추가 오류:', error);
+        console.error('❌ 슬롯 추가 오류:', error);
         alert('슬롯 추가에 실패했습니다.');
         return;
       }
+
+      console.log('✅ 슬롯 추가 성공! 저장된 데이터:', data);
+      alert(`슬롯이 성공적으로 추가되었습니다!\n슬롯 ID: ${data.id}\n고객: ${data.customer_name}\n슬롯 유형: ${data.slot_type}\n슬롯 개수: ${data.slot_count}개`);
 
       // 고객 정보 업데이트
       const { error: updateError } = await supabase
@@ -169,6 +178,10 @@ export default function CustomerManagement() {
         memo: ''
       });
       setSelectedCustomer(null);
+
+      // 슬롯현황 페이지로 이동
+      const slotStatusUrl = `/slot-status?customerId=${customerId}&username=${customer.username}&name=${encodeURIComponent(customer.name)}`;
+      window.open(slotStatusUrl, '_blank');
     } catch (error) {
       console.error('슬롯 추가 중 예외 발생:', error);
       alert('슬롯 추가에 실패했습니다.');

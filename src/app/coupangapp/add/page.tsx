@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -58,6 +58,7 @@ interface BulkSlotData {
 
 export default function SlotAddPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   
   // 폼 상태
   const [form, setForm] = useState<SlotAddForm>({
@@ -157,8 +158,7 @@ export default function SlotAddPage() {
       // 폼에 고객 정보 설정
       setForm(prev => ({
         ...prev,
-        slotCount: parseInt(slotCount) || 1,
-        memo: `${customerName} (${customerId}) - ${slotType || '쿠팡'} 슬롯 등록`
+        slotCount: parseInt(slotCount) || 1
       }));
       
       // 고객 정보를 메모에 추가
@@ -263,7 +263,7 @@ export default function SlotAddPage() {
       console.log('- NEXT_PUBLIC_SUPABASE_ANON_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '설정됨' : '설정되지 않음');
       
       // 스키마 캐시 문제 해결 적용
-              const data = await getCustomers();
+      const data = await getCustomers();
       console.log('✅ Supabase에서 받은 데이터:', data);
       console.log('데이터 타입:', typeof data);
       console.log('데이터 길이:', Array.isArray(data) ? data.length : '배열이 아님');
@@ -977,6 +977,11 @@ export default function SlotAddPage() {
       <Navigation />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* 페이지 제목 */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">쿠팡</h1>
+        </div>
+
         {/* 에러 메시지 표시 */}
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -988,6 +993,30 @@ export default function SlotAddPage() {
         <div className="bg-white border-2 border-dashed border-purple-300 rounded-2xl p-6 mb-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-8">
+              {/* 고객 정보 */}
+              {(() => {
+                const customerId = searchParams.get('customerId');
+                const username = searchParams.get('username');
+                const customerName = searchParams.get('customerName');
+                
+                if (customerName) {
+                  return (
+                    <div className="flex items-center space-x-3">
+                      <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full">
+                        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-800">고객 ID: {username || customerId}</div>
+                        <div className="text-sm text-gray-600">고객명: {decodeURIComponent(customerName)}</div>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+              
               <div className="flex items-center space-x-3">
                 <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full">
                   <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -995,7 +1024,7 @@ export default function SlotAddPage() {
                   </svg>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-800">사용 가능한 슬롯</h1>
+                  <h2 className="text-xl font-bold text-gray-800">사용 가능한 슬롯</h2>
                 </div>
               </div>
               
@@ -1020,35 +1049,6 @@ export default function SlotAddPage() {
           </div>
         </div>
 
-        {/* 간단한 슬롯 정보 표시 */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-xl">슬롯 현황</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <p className="text-blue-800 mb-2">
-                💡 고객별 사용 가능한 슬롯 개수를 확인하려면 슬롯현황 페이지를 이용하세요.
-              </p>
-              <div className="flex space-x-4">
-                <Button 
-                  onClick={() => router.push('/slot-status')}
-                  variant="outline"
-                  className="bg-blue-100 hover:bg-blue-200"
-                >
-                  슬롯현황 보기
-                </Button>
-                <Button 
-                  onClick={() => router.push('/customer')}
-                  variant="outline"
-                  className="bg-green-100 hover:bg-green-200"
-                >
-                  고객관리
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* 슬롯 등록 폼 - 1줄로 정렬, 링크주소 늘리고 사용슬롯 줄이기 */}
         <Card className="mb-6">
@@ -1401,7 +1401,7 @@ export default function SlotAddPage() {
               </div>
             ) : (
                           <div className="w-full">
-              <table className="w-full border-collapse border border-gray-300">
+                <table className="w-full border-collapse border border-gray-300">
                 <thead>
                   <tr className="bg-gray-100">
                     <th className="border border-gray-300 p-2 text-center w-8">
@@ -1487,11 +1487,12 @@ export default function SlotAddPage() {
                           />
                         </div>
                         <Input 
-                          value={editingCustomer?.id === customer.id ? editForm.memo : (customer.memo || 'GB마트 여성가방 토트백 숄더백 데일리 패션가방')} 
+                          value={editingCustomer?.id === customer.id ? editForm.memo : (customer.memo || '')} 
                           onChange={(e) => editingCustomer?.id === customer.id ? handleEditInputChange('memo', e.target.value) : undefined}
                           className="w-full h-6 text-xs text-ellipsis"
                           readOnly={editingCustomer?.id !== customer.id}
-                          title={customer.memo || 'GB마트 여성가방 토트백 숄더백 데일리 패션가방'}
+                          title={customer.memo || ''}
+                          placeholder="메모를 입력하세요"
                         />
                       </td>
                       <td className="border border-gray-300 p-2 text-center text-xs">{customer.currentRank}</td>
@@ -1540,9 +1541,9 @@ export default function SlotAddPage() {
                         <div className="flex justify-center space-x-2">
                           {editingCustomer?.id === customer.id ? (
                             <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
+                          <Button
+                            variant="ghost"
+                            size="sm"
                                 onClick={handleSaveEdit}
                                 className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
                                 title="저장"
@@ -1569,24 +1570,24 @@ export default function SlotAddPage() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleEditCustomer(customer)}
-                                className="h-6 w-6 p-0"
+                            className="h-6 w-6 p-0"
                                 title="수정"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteCustomer(customer.id)}
-                                className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteCustomer(customer.id)}
+                            className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
                                 title="삭제"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </Button>
+                            </svg>
+                          </Button>
                             </>
                           )}
                         </div>

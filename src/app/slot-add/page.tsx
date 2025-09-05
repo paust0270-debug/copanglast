@@ -89,7 +89,7 @@ export default function SlotAddPage() {
     }
 
     try {
-      // 1. 미정산내역에 슬롯 데이터 저장
+      // 1. 기존 슬롯 추가 로직 (기존 기능 유지)
       const slotResponse = await fetch('/api/slots', {
         method: 'POST',
         headers: {
@@ -100,17 +100,42 @@ export default function SlotAddPage() {
 
       const slotResult = await slotResponse.json();
 
+      // 2. 폼 데이터 백업 저장 (새로운 기능)
+      try {
+        const formBackupResponse = await fetch('/api/slot-add-forms', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
+
+        const formBackupResult = await formBackupResponse.json();
+        
+        if (formBackupResult.success) {
+          console.log('✅ 폼 데이터 백업 저장 성공:', formBackupResult);
+        } else {
+          console.warn('⚠️ 폼 데이터 백업 저장 실패 (기능에는 영향 없음):', formBackupResult.error);
+        }
+      } catch (backupError) {
+        console.warn('⚠️ 폼 데이터 백업 저장 중 오류 (기능에는 영향 없음):', backupError);
+      }
+
+      // 3. 기존 로직 처리
       if (slotResult.success) {
-        // 2. 쿠팡APP 페이지로 이동 (슬롯 개수와 함께)
+        // 슬롯 현황 페이지로 이동 (고객 정보와 함께)
+        const customerId = searchParams.get('customerId');
+        const username = searchParams.get('username');
+        const name = searchParams.get('name');
+        
         const params = new URLSearchParams({
-          customerId: formData.customerId,
-          slotCount: formData.slotCount,
-          customerName: formData.customerName,
-          slotType: formData.slotType
+          customerId: customerId || formData.customerId,
+          username: username || formData.customerId,
+          name: name || formData.customerName
         });
         
-        alert('슬롯이 성공적으로 추가되었습니다. 쿠팡APP 페이지로 이동합니다.');
-        router.push(`/coupangapp/add?${params.toString()}`);
+        alert('슬롯이 성공적으로 추가되었습니다. 슬롯 현황 페이지로 이동합니다.');
+        router.push(`/slot-status?${params.toString()}`);
       } else {
         alert(`슬롯 추가 실패: ${slotResult.error}`);
       }

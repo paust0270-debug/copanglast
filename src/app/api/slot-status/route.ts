@@ -105,6 +105,46 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // 만료된 슬롯들을 자동으로 만료 상태로 업데이트
+    const expiredSlots = slotsData?.filter(slot => {
+      if (!slot.created_at || !slot.usage_days || slot.status === 'expired') return false;
+      
+      const now = new Date();
+      const createdDate = new Date(slot.created_at);
+      const totalUsageMs = slot.usage_days * 24 * 60 * 60 * 1000;
+      const elapsedMs = now.getTime() - createdDate.getTime();
+      
+      return elapsedMs >= totalUsageMs;
+    }) || [];
+
+    // 만료된 슬롯들을 데이터베이스에서 업데이트
+    if (expiredSlots.length > 0) {
+      console.log(`🔄 ${expiredSlots.length}개의 슬롯이 만료되어 상태를 업데이트합니다.`);
+      
+      const expiredSlotIds = expiredSlots.map(slot => slot.id);
+      
+      const { error: updateError } = await supabase
+        .from('slots')
+        .update({ 
+          status: 'expired',
+          updated_at: new Date().toISOString()
+        })
+        .in('id', expiredSlotIds);
+      
+      if (updateError) {
+        console.error('만료된 슬롯 상태 업데이트 오류:', updateError);
+      } else {
+        console.log(`✅ ${expiredSlots.length}개의 슬롯이 만료 상태로 업데이트되었습니다.`);
+        
+        // 업데이트된 슬롯들의 상태를 로컬 데이터에서도 변경
+        slotsData?.forEach(slot => {
+          if (expiredSlotIds.includes(slot.id)) {
+            slot.status = 'expired';
+          }
+        });
+      }
+    }
+
     // 슬롯 데이터를 슬롯 현황 형식으로 변환
     const slotStatusData = slotsData?.map(slot => {
       // 해당 고객의 사용된 슬롯 수 계산
@@ -113,13 +153,47 @@ export async function GET(request: NextRequest) {
         s.status === 'active'
       ).length;
       
-      // 잔여기간 계산 (usage_days 기준)
-      const remainingDays = slot.usage_days ? Math.max(0, slot.usage_days) : 0;
+      // 실제 사용시간 기반 잔여기간 계산 (일, 시간, 분 단위)
+      const now = new Date();
+      const createdDate = slot.created_at ? new Date(slot.created_at) : now;
+      const usageDays = slot.usage_days || 0;
+      
+      // 총 사용 시간을 밀리초로 변환
+      const totalUsageMs = usageDays * 24 * 60 * 60 * 1000;
+      
+      // 경과 시간 계산 (밀리초)
+      const elapsedMs = now.getTime() - createdDate.getTime();
+      
+      // 실제 잔여 시간 계산 (밀리초)
+      const remainingMs = Math.max(0, totalUsageMs - elapsedMs);
+      
+      // 잔여 시간을 일, 시간, 분으로 변환
+      const remainingDays = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
+      const remainingHours = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+      const remainingMinutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+      
+      // 잔여기간 문자열 생성
+      let remainingTimeString = '';
+      if (remainingDays > 0) {
+        remainingTimeString += `${remainingDays}일`;
+      }
+      if (remainingHours > 0) {
+        remainingTimeString += (remainingTimeString ? ' ' : '') + `${remainingHours}시간`;
+      }
+      if (remainingMinutes > 0) {
+        remainingTimeString += (remainingTimeString ? ' ' : '') + `${remainingMinutes}분`;
+      }
+      if (!remainingTimeString) {
+        remainingTimeString = '만료됨';
+      }
       
       // 등록일과 만료일 계산
-      const registrationDate = slot.created_at ? new Date(slot.created_at).toISOString().split('T')[0] : '';
-      const expiryDate = slot.created_at && slot.usage_days ? 
-        new Date(new Date(slot.created_at).getTime() + slot.usage_days * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : '';
+      const registrationDate = createdDate.toISOString().split('T')[0];
+      const expiryDate = usageDays > 0 ? 
+        new Date(createdDate.getTime() + usageDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : '';
+      
+      // 만료 여부 확인 (잔여 시간이 0이면 만료)
+      const isExpired = remainingMs === 0 && usageDays > 0;
       
       // 슬롯타입을 한글로 변환
       const getSlotTypeKorean = (slotType: string) => {
@@ -152,11 +226,14 @@ export async function GET(request: NextRequest) {
         usedSlots: usedSlots,
         remainingSlots: Math.max(0, slot.slot_count - usedSlots),
         totalPaymentAmount: slot.payment_amount || 0, // 총 입금액
-        remainingDays: remainingDays, // 잔여기간
+        remainingDays: remainingDays, // 잔여일수 (기존 호환성)
+        remainingHours: remainingHours, // 잔여시간
+        remainingMinutes: remainingMinutes, // 잔여분
+        remainingTimeString: remainingTimeString, // 잔여기간 문자열
         registrationDate: registrationDate, // 등록일
         expiryDate: expiryDate, // 만료일
         addDate: slot.created_at ? new Date(slot.created_at).toISOString().split('T')[0] : '',
-        status: slot.status,
+        status: isExpired ? 'expired' : slot.status,
         userGroup: slot.memo || '본사' // memo 필드를 userGroup으로 사용
       };
     }) || [];
