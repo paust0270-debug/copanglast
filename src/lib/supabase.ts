@@ -229,7 +229,7 @@ export async function deleteDistributor(id: number) {
   return true;
 }
 
-// 고객 추가 함수
+// 고객 추가 함수 (작업 등록 시 슬롯 상태도 active로 변경)
 export async function addCustomer(customer: Omit<Customer, 'id' | 'created_at'>) {
   const { data, error } = await supabase
     .from('customers')
@@ -237,6 +237,17 @@ export async function addCustomer(customer: Omit<Customer, 'id' | 'created_at'>)
     .select();
   
   if (error) throw error;
+  
+  // 고객 등록 시 해당 고객의 모든 슬롯을 active로 변경
+  // customer.name을 customer_id로 사용 (슬롯 테이블의 customer_id와 매칭)
+  try {
+    await updateSlotsStatusByCustomerId(customer.name, 'active');
+    console.log(`✅ 고객 ${customer.name}의 슬롯들을 active로 변경했습니다.`);
+  } catch (slotError) {
+    console.error('슬롯 상태 업데이트 실패:', slotError);
+    // 슬롯 상태 업데이트 실패해도 고객 등록은 성공으로 처리
+  }
+  
   return data[0];
 }
 
@@ -305,6 +316,30 @@ export async function addSlot(slot: Omit<Slot, 'id' | 'created_at' | 'updated_at
   
   if (error) throw error;
   return data[0];
+}
+
+// 슬롯 상태 업데이트 함수
+export async function updateSlotStatus(slotId: number, status: 'active' | 'inactive') {
+  const { data, error } = await supabase
+    .from('slots')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', slotId)
+    .select();
+  
+  if (error) throw error;
+  return data[0];
+}
+
+// 고객 ID로 슬롯 상태 업데이트 함수
+export async function updateSlotsStatusByCustomerId(customerId: string, status: 'active' | 'inactive') {
+  const { data, error } = await supabase
+    .from('slots')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('customer_id', customerId)
+    .select();
+  
+  if (error) throw error;
+  return data;
 }
 
 // 성능 최적화된 슬롯 현황 조회 함수

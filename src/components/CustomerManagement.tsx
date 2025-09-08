@@ -131,7 +131,7 @@ export default function CustomerManagement() {
         payment_amount: newSlot.amount,
         usage_days: newSlot.working_days,
         memo: newSlot.memo,
-        status: 'active' as const,
+        status: 'inactive' as const, // 슬롯 추가 시 기본 상태를 inactive로 설정
         created_at: now.toISOString(),
         updated_at: now.toISOString()
       };
