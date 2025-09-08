@@ -77,6 +77,17 @@ export default function SlotAddPage() {
 
   // 고객 페이지 데이터 (아이디, 고객명, 소속총판)
   const [customerData, setCustomerData] = useState<any[]>([]);
+  
+  // 고객의 총 슬롯 현황 데이터
+  const [customerSlotStatus, setCustomerSlotStatus] = useState<{
+    totalSlots: number;
+    usedSlots: number;
+    remainingSlots: number;
+  }>({
+    totalSlots: 0,
+    usedSlots: 0,
+    remainingSlots: 0
+  });
 
   // 대량 등록 모달 상태
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -144,6 +155,54 @@ export default function SlotAddPage() {
     initializeData();
   }, []);
 
+  // 고객의 슬롯 현황을 가져오는 함수 (슬롯 타입별로 계산)
+  const loadCustomerSlotStatus = async (username: string, slotType: string) => {
+    try {
+      // 일반 슬롯 현황 API에서 해당 고객의 데이터를 찾음
+      const response = await fetch('/api/slot-status');
+      const data = await response.json();
+      
+      if (data.success && data.data.length > 0) {
+        // 해당 username과 slotType의 슬롯 데이터를 찾음 (더 유연하게 매칭)
+        const customerSlots = data.data.filter((slot: any) => {
+          if (slot.customerId !== username) return false;
+          
+          // VIP 슬롯의 경우 더 유연하게 매칭
+          if (slotType.includes('VIP') || slotType.includes('vip')) {
+            return slot.slotType.includes('VIP') || slot.slotType.includes('vip');
+          }
+          
+          // 일반 슬롯의 경우 정확히 매칭
+          return slot.slotType === slotType;
+        });
+        
+        if (customerSlots.length > 0) {
+          // 해당 슬롯 타입의 총합 계산
+          const totalSlots = customerSlots.reduce((sum: number, slot: any) => sum + slot.slotCount, 0);
+          const usedSlots = customerSlots.reduce((sum: number, slot: any) => sum + slot.usedSlots, 0);
+          const remainingSlots = customerSlots.reduce((sum: number, slot: any) => sum + slot.remainingSlots, 0);
+          
+          setCustomerSlotStatus({
+            totalSlots,
+            usedSlots,
+            remainingSlots
+          });
+          console.log(`${slotType} 슬롯 현황 로드 완료:`, { totalSlots, usedSlots, remainingSlots });
+        } else {
+          console.log(`해당 고객의 ${slotType} 슬롯 데이터를 찾을 수 없습니다:`, username);
+          // 슬롯 데이터가 없으면 0으로 설정
+          setCustomerSlotStatus({
+            totalSlots: 0,
+            usedSlots: 0,
+            remainingSlots: 0
+          });
+        }
+      }
+    } catch (error) {
+      console.error('고객 슬롯 현황 로드 실패:', error);
+    }
+  };
+
   // URL 파라미터에서 고객 정보 확인
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -160,6 +219,12 @@ export default function SlotAddPage() {
         ...prev,
         slotCount: parseInt(slotCount) || 1
       }));
+      
+      // 고객의 슬롯 현황 로드 (username과 slotType 사용)
+      const username = urlParams.get('username');
+      if (username && slotType) {
+        loadCustomerSlotStatus(username, slotType);
+      }
       
       // 고객 정보를 메모에 추가
       console.log(`고객 ${customerName} (${customerId})의 ${slotCount}개 슬롯 등록 준비 완료`);
@@ -1030,12 +1095,12 @@ export default function SlotAddPage() {
               
               <div className="flex items-center space-x-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600">100</div>
-                  <div className="text-sm text-gray-600">총 100개</div>
+                  <div className="text-3xl font-bold text-green-600">{customerSlotStatus.totalSlots}</div>
+                  <div className="text-sm text-gray-600">총 {customerSlotStatus.totalSlots}개</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-red-600">0</div>
-                  <div className="text-sm text-gray-600">0개 사용</div>
+                  <div className="text-3xl font-bold text-red-600">{customerSlotStatus.usedSlots}</div>
+                  <div className="text-sm text-gray-600">{customerSlotStatus.usedSlots}개 사용</div>
                 </div>
               </div>
             </div>

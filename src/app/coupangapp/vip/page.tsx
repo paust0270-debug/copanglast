@@ -96,6 +96,76 @@ export default function CoupangVipPage() {
   // 실시간 VIP 카운터 상태 (300을 24시간으로 나눠서 12.5씩 증가)
   const [vipCounter, setVipCounter] = useState(0);
 
+  // 고객의 슬롯 현황을 가져오는 함수 (슬롯 타입별로 계산)
+  const [customerSlotStatus, setCustomerSlotStatus] = useState<{
+    totalSlots: number;
+    usedSlots: number;
+    remainingSlots: number;
+  }>({
+    totalSlots: 0,
+    usedSlots: 0,
+    remainingSlots: 0
+  });
+
+  const loadCustomerSlotStatus = async (username: string, slotType: string) => {
+    try {
+      console.log('🔍 슬롯 현황 로드 시작:', { username, slotType });
+      
+      // 일반 슬롯 현황 API에서 해당 고객의 데이터를 찾음
+      const response = await fetch('/api/slot-status');
+      const data = await response.json();
+      
+      console.log('📊 전체 슬롯 데이터:', data.data);
+      
+      if (data.success && data.data.length > 0) {
+        // 해당 username의 모든 슬롯 데이터를 찾음
+        const customerAllSlots = data.data.filter((slot: any) => slot.customerId === username);
+        console.log(`👤 ${username} 고객의 모든 슬롯:`, customerAllSlots);
+        
+        // VIP 페이지이므로 해당 username의 모든 VIP 슬롯을 가져옴
+        const customerSlots = data.data.filter((slot: any) => {
+          if (slot.customerId !== username) return false;
+          
+          // VIP 슬롯인지 확인 (VIP가 포함된 모든 슬롯)
+          const isVipSlot = slot.slotType.includes('VIP') || slot.slotType.includes('vip');
+          console.log(`🎯 VIP 슬롯 확인:`, {
+            slotType: slot.slotType,
+            isVipSlot: isVipSlot
+          });
+          
+          return isVipSlot;
+        });
+        
+        console.log(`🎯 ${slotType} 타입 슬롯 필터링 결과:`, customerSlots);
+        
+        if (customerSlots.length > 0) {
+          // 해당 슬롯 타입의 총합 계산
+          const totalSlots = customerSlots.reduce((sum: number, slot: any) => sum + slot.slotCount, 0);
+          const usedSlots = customerSlots.reduce((sum: number, slot: any) => sum + slot.usedSlots, 0);
+          const remainingSlots = customerSlots.reduce((sum: number, slot: any) => sum + slot.remainingSlots, 0);
+          
+          setCustomerSlotStatus({
+            totalSlots,
+            usedSlots,
+            remainingSlots
+          });
+          console.log(`✅ ${slotType} 슬롯 현황 로드 완료:`, { totalSlots, usedSlots, remainingSlots });
+        } else {
+          console.log(`❌ 해당 고객의 ${slotType} 슬롯 데이터를 찾을 수 없습니다:`, username);
+          console.log('🔍 사용 가능한 slotType들:', [...new Set(customerAllSlots.map((slot: any) => slot.slotType))]);
+          // 슬롯 데이터가 없으면 0으로 설정
+          setCustomerSlotStatus({
+            totalSlots: 0,
+            usedSlots: 0,
+            remainingSlots: 0
+          });
+        }
+      }
+    } catch (error) {
+      console.error('고객 슬롯 현황 로드 실패:', error);
+    }
+  };
+
   // 수정 모드 상태 관리
   const [editingCustomer, setEditingCustomer] = useState<CustomerSlot | null>(null);
   const [editForm, setEditForm] = useState<Partial<CustomerSlot>>({});
@@ -141,6 +211,28 @@ export default function CoupangVipPage() {
     };
     
     initializeData();
+  }, []);
+
+  // URL 파라미터에서 고객 정보 확인
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const customerId = urlParams.get('customerId');
+    const slotCount = urlParams.get('slotCount');
+    const customerName = urlParams.get('name');
+    const slotType = urlParams.get('slotType');
+    
+    if (customerId && slotCount && customerName) {
+      console.log('URL 파라미터에서 고객 정보 확인:', { customerId, slotCount, customerName, slotType });
+      
+      // 고객의 슬롯 현황 로드 (username과 slotType 사용)
+      const username = urlParams.get('username');
+      if (username && slotType) {
+        loadCustomerSlotStatus(username, slotType);
+      }
+      
+      // 고객 정보를 메모에 추가
+      console.log(`고객 ${customerName} (${customerId})의 ${slotCount}개 VIP 슬롯 등록 준비 완료`);
+    }
   }, []);
 
   // 실시간 시간 업데이트 (1초마다)
@@ -879,16 +971,16 @@ export default function CoupangVipPage() {
               
               <div className="flex items-center space-x-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-purple-600">100</div>
-                  <div className="text-sm text-gray-600">총 100개</div>
+                  <div className="text-3xl font-bold text-purple-600">{customerSlotStatus.totalSlots}</div>
+                  <div className="text-sm text-gray-600">총 {customerSlotStatus.totalSlots}개</div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-pink-600">{vipCounter}</div>
                   <div className="text-sm text-gray-600">실시간 카운터</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600">0</div>
-                  <div className="text-sm text-gray-600">0개 사용</div>
+                  <div className="text-3xl font-bold text-blue-600">{customerSlotStatus.usedSlots}</div>
+                  <div className="text-sm text-gray-600">{customerSlotStatus.usedSlots}개 사용</div>
                 </div>
               </div>
             </div>

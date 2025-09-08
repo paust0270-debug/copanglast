@@ -59,11 +59,13 @@ export async function GET(request: NextRequest) {
       const customerSlots = slotsData?.filter(slot => slot.customer_id === customerId) || [];
       console.log('📊 고객 슬롯 데이터:', customerSlots);
       
-      // 해당 고객의 총 슬롯 수 계산
+      // 해당 고객의 총 슬롯 수 계산 (모든 슬롯의 slot_count 합계)
       const totalSlots = customerSlots.reduce((sum, slot) => sum + (slot.slot_count || 0), 0);
       
-      // 해당 고객의 사용된 슬롯 수 계산 (active 상태인 슬롯들)
-      const usedSlots = customerSlots.filter(slot => slot.status === 'active').length;
+      // 해당 고객의 사용된 슬롯 수 계산 (active 상태인 슬롯들의 slot_count 합계)
+      const usedSlots = customerSlots
+        .filter(slot => slot.status === 'active')
+        .reduce((sum, slot) => sum + (slot.slot_count || 0), 0);
       
       // 사용 가능한 슬롯 수 계산
       const remainingSlots = Math.max(0, totalSlots - usedSlots);
@@ -72,7 +74,8 @@ export async function GET(request: NextRequest) {
         totalSlots,
         usedSlots,
         remainingSlots,
-        customerSlotsCount: customerSlots.length
+        customerSlotsCount: customerSlots.length,
+        activeSlots: customerSlots.filter(slot => slot.status === 'active').length
       });
       
       const customerData = customersData?.find(customer => customer.id === customerId);
