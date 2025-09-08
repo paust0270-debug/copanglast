@@ -14,6 +14,7 @@ interface SlotData {
   slotCount: number;
   usedSlots: number;
   remainingSlots: number;
+  pausedSlots?: number; // 일시 중지된 슬롯 수
   totalPaymentAmount: number; // 총 입금액
   remainingDays: number; // 잔여일수 (기존 호환성)
   remainingHours: number; // 잔여시간
@@ -22,7 +23,7 @@ interface SlotData {
   registrationDate: string; // 등록일
   expiryDate: string; // 만료일
   addDate: string;
-  status: 'pending' | 'active' | 'completed' | 'inactive' | 'expired' | 'suspended';
+  status: 'pending' | 'active' | 'completed' | 'inactive' | 'expired' | 'paused';
   userGroup: string;
 }
 
@@ -201,8 +202,8 @@ export default function SlotStatusPage() {
 
   // 슬롯 상태 변경 처리 (중지/재개)
   const handleSlotStatusChange = async (slot: SlotData, newStatus: string) => {
-    const action = newStatus === 'suspended' ? '중지' : '재개';
-    const actionText = newStatus === 'suspended' ? '중지하시겠습니까' : '재개하시겠습니까';
+    const action = newStatus === 'inactive' ? '중지' : '재개';
+    const actionText = newStatus === 'inactive' ? '중지하시겠습니까' : '재개하시겠습니까';
     
     try {
       console.log(`${action} 버튼 클릭:`, slot);
@@ -213,7 +214,7 @@ export default function SlotStatusPage() {
         `고객: ${slot.customerName}\n` +
         `슬롯 개수: ${slot.slotCount}개\n` +
         `잔여 슬롯: ${slot.remainingSlots}개\n\n` +
-        `${newStatus === 'suspended' ? '중지된 슬롯은 사용가능한 슬롯 수에서 차감됩니다.' : '재개된 슬롯은 사용가능한 슬롯 수에 추가됩니다.'}`
+        `${newStatus === 'inactive' ? '중지된 슬롯은 사용가능한 슬롯 수에서 차감됩니다.' : '재개된 슬롯은 사용가능한 슬롯 수에 추가됩니다.'}`
       );
       
       if (!confirmed) {
@@ -221,15 +222,15 @@ export default function SlotStatusPage() {
         return;
       }
 
-      // 슬롯 상태 변경
-      const response = await fetch('/api/slot-management', {
-        method: 'POST',
+      // 슬롯 상태 변경 (새로운 API 사용)
+      const response = await fetch('/api/slots', {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           slotId: slot.id,
-          newStatus: newStatus
+          status: newStatus
         }),
       });
 
@@ -261,7 +262,7 @@ export default function SlotStatusPage() {
 
   // 중지 버튼 클릭 처리 (기존 함수명 유지)
   const handleStopClick = (slot: SlotData) => {
-    handleSlotStatusChange(slot, 'suspended');
+    handleSlotStatusChange(slot, 'inactive');
   };
 
   const getStatusBadge = (status: string) => {
@@ -276,7 +277,7 @@ export default function SlotStatusPage() {
         return <Badge className="bg-gray-100 text-gray-800">비활성</Badge>;
       case 'expired':
         return <Badge className="bg-red-100 text-red-800">만료</Badge>;
-      case 'suspended':
+      case 'paused':
         return <Badge className="bg-orange-100 text-orange-800">중지</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
@@ -360,6 +361,12 @@ export default function SlotStatusPage() {
             <h3 className="text-lg font-semibold text-gray-900">잔여</h3>
             <p className="text-3xl font-bold text-orange-600">
               {filteredData.reduce((sum, slot) => sum + slot.remainingSlots, 0)}
+            </p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900">일시 중지</h3>
+            <p className="text-3xl font-bold text-yellow-600">
+              {filteredData.reduce((sum, slot) => sum + (slot.pausedSlots || 0), 0)}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow p-6">
@@ -515,26 +522,26 @@ export default function SlotStatusPage() {
                             연장
                           </Button>
                           <Button
-                            onClick={() => handleSlotStatusChange(slot, slot.status === 'suspended' ? 'active' : 'suspended')}
+                            onClick={() => handleSlotStatusChange(slot, slot.status === 'inactive' ? 'active' : 'inactive')}
                             variant="ghost"
                             size="sm"
                             disabled={slot.status === 'expired'}
                             className={`h-8 px-3 text-xs font-medium rounded-md transition-all duration-200 ${
                               slot.status === 'expired'
                                 ? 'text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed'
-                                : slot.status === 'suspended'
+                                : slot.status === 'inactive'
                                 ? 'text-white bg-green-600 hover:bg-green-700 border border-green-600 hover:border-green-700'
                                 : 'text-white bg-red-600 hover:bg-red-700 border border-red-600 hover:border-red-700'
                             }`}
                           >
                             <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              {slot.status === 'suspended' ? (
+                              {slot.status === 'inactive' ? (
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h1m4 0h1m6-4a9 9 0 11-18 0 9 9 0 0118 0z" />
                               ) : (
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                               )}
                             </svg>
-                            {slot.status === 'suspended' ? '재개' : slot.status === 'expired' ? '만료됨' : '중지'}
+                            {slot.status === 'inactive' ? '재개' : slot.status === 'expired' ? '만료됨' : '중지'}
                           </Button>
                         </div>
                       </td>

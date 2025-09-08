@@ -124,3 +124,60 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// 슬롯 상태 업데이트 (중지/재게)
+export async function PUT(request: NextRequest) {
+  try {
+    const { slotId, status } = await request.json();
+    
+    if (!slotId || !status) {
+      return NextResponse.json(
+        { error: '슬롯 ID와 상태가 필요합니다.' },
+        { status: 400 }
+      );
+    }
+    
+    if (!['active', 'inactive'].includes(status)) {
+      return NextResponse.json(
+        { error: '유효하지 않은 상태입니다.' },
+        { status: 400 }
+      );
+    }
+    
+    console.log('🔧 슬롯 상태 업데이트 요청:', { slotId, status });
+    
+    const { data, error } = await supabase
+      .from('slots')
+      .update({ 
+        status, 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', slotId)
+      .select();
+    
+    console.log('📊 Supabase 응답:', { data, error });
+    
+    if (error) {
+      console.error('슬롯 상태 업데이트 오류:', error);
+      return NextResponse.json(
+        { error: '슬롯 상태 업데이트에 실패했습니다.' },
+        { status: 500 }
+      );
+    }
+    
+    console.log(`✅ 슬롯 ${slotId}의 상태가 ${status}로 변경되었습니다.`);
+    
+    return NextResponse.json({
+      success: true,
+      data: data[0],
+      message: `슬롯 상태가 ${status === 'inactive' ? '일시 중지' : '활성화'}되었습니다.`
+    });
+    
+  } catch (error) {
+    console.error('슬롯 상태 업데이트 API 예외 발생:', error);
+    return NextResponse.json(
+      { error: '서버 오류가 발생했습니다.' },
+      { status: 500 }
+    );
+  }
+}

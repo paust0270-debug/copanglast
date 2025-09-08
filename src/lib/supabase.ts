@@ -289,7 +289,7 @@ export interface Slot {
   payment_date?: string
   usage_days?: number
   memo?: string
-  status: 'active' | 'inactive' | 'expired' | 'completed'
+  status: 'active' | 'inactive' | 'expired' | 'completed' | 'paused'
   created_at?: string
   updated_at?: string
 }
@@ -322,7 +322,7 @@ export async function addSlot(slot: Omit<Slot, 'id' | 'created_at' | 'updated_at
 }
 
 // 슬롯 상태 업데이트 함수
-export async function updateSlotStatus(slotId: number, status: 'active' | 'inactive') {
+export async function updateSlotStatus(slotId: number, status: 'active' | 'inactive' | 'paused') {
   const { data, error } = await supabase
     .from('slots')
     .update({ status, updated_at: new Date().toISOString() })
@@ -334,7 +334,7 @@ export async function updateSlotStatus(slotId: number, status: 'active' | 'inact
 }
 
 // 고객 ID로 슬롯 상태 업데이트 함수
-export async function updateSlotsStatusByCustomerId(customerId: string, status: 'active' | 'inactive') {
+export async function updateSlotsStatusByCustomerId(customerId: string, status: 'active' | 'inactive' | 'paused') {
   const { data, error } = await supabase
     .from('slots')
     .update({ status, updated_at: new Date().toISOString() })

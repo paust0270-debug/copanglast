@@ -61,8 +61,15 @@ export async function GET(request: NextRequest) {
       const customerSlots = slotsData?.filter(slot => slot.customer_id === username) || [];
       console.log('📊 고객 슬롯 데이터:', customerSlots);
       
-      // 해당 고객의 총 슬롯 수 계산 (모든 슬롯의 slot_count 합계)
-      const totalSlots = customerSlots.reduce((sum, slot) => sum + (slot.slot_count || 0), 0);
+      // 해당 고객의 총 슬롯 수 계산 (inactive 상태 제외한 모든 슬롯의 slot_count 합계)
+      const totalSlots = customerSlots
+        .filter(slot => slot.status !== 'inactive')
+        .reduce((sum, slot) => sum + (slot.slot_count || 0), 0);
+      
+      // 일시 중지된 슬롯 수 계산
+      const pausedSlots = customerSlots
+        .filter(slot => slot.status === 'inactive')
+        .reduce((sum, slot) => sum + (slot.slot_count || 0), 0);
       
       // 해당 고객의 사용된 슬롯 수 계산 (customers 테이블의 레코드 수 = 작업 등록 횟수)
       const usedSlots = customersData?.filter(customer => customer.name === username).length || 0;
@@ -87,9 +94,10 @@ export async function GET(request: NextRequest) {
           customerId: customerId,
           customerName: customerData?.name || '',
           slotType: '쿠팡',
-          slotCount: totalSlots, // 총 슬롯 수
+          slotCount: totalSlots, // 총 슬롯 수 (paused 제외)
           usedSlots: usedSlots, // 사용된 슬롯 수
           remainingSlots: remainingSlots, // 사용 가능한 슬롯 수
+          pausedSlots: pausedSlots, // 일시 중지된 슬롯 수
           totalPaymentAmount: customerSlots[0]?.payment_amount || 0,
           remainingDays: customerSlots[0]?.usage_days || 0,
           registrationDate: customerSlots[0]?.created_at ? new Date(customerSlots[0].created_at).toISOString().split('T')[0] : '',
@@ -222,9 +230,10 @@ export async function GET(request: NextRequest) {
         customerId: slot.customer_id,
         customerName: slot.customer_name,
         slotType: getSlotTypeKorean(slot.slot_type),
-        slotCount: slot.slot_count,
+        slotCount: slot.status === 'inactive' ? 0 : slot.slot_count, // inactive 상태면 0으로 표시
         usedSlots: usedSlots,
-        remainingSlots: Math.max(0, slot.slot_count - usedSlots),
+        remainingSlots: slot.status === 'inactive' ? 0 : Math.max(0, slot.slot_count - usedSlots),
+        pausedSlots: slot.status === 'inactive' ? slot.slot_count : 0, // inactive 상태면 슬롯 개수 표시
         totalPaymentAmount: slot.payment_amount || 0, // 총 입금액
         remainingDays: remainingDays, // 잔여일수 (기존 호환성)
         remainingHours: remainingHours, // 잔여시간
