@@ -229,7 +229,7 @@ export async function deleteDistributor(id: number) {
   return true;
 }
 
-// 고객 추가 함수 (작업 등록 시 슬롯 상태도 active로 변경)
+// 고객 추가 함수 (작업 등록 시 슬롯 1개만 사용)
 export async function addCustomer(customer: Omit<Customer, 'id' | 'created_at'>) {
   const { data, error } = await supabase
     .from('customers')
@@ -238,14 +238,17 @@ export async function addCustomer(customer: Omit<Customer, 'id' | 'created_at'>)
   
   if (error) throw error;
   
-  // 고객 등록 시 해당 고객의 모든 슬롯을 active로 변경
-  // customer.name을 customer_id로 사용 (슬롯 테이블의 customer_id와 매칭)
+  // 고객 등록 시 해당 고객의 슬롯 1개만 사용 (inactive -> active)
   try {
-    await updateSlotsStatusByCustomerId(customer.name, 'active');
-    console.log(`✅ 고객 ${customer.name}의 슬롯들을 active로 변경했습니다.`);
+    const usedSlot = await useOneSlot(customer.name);
+    if (usedSlot) {
+      console.log(`✅ 고객 ${customer.name}의 슬롯 1개를 사용했습니다.`);
+    } else {
+      console.log(`⚠️ 고객 ${customer.name}의 사용 가능한 슬롯이 없습니다.`);
+    }
   } catch (slotError) {
-    console.error('슬롯 상태 업데이트 실패:', slotError);
-    // 슬롯 상태 업데이트 실패해도 고객 등록은 성공으로 처리
+    console.error('슬롯 사용 실패:', slotError);
+    // 슬롯 사용 실패해도 고객 등록은 성공으로 처리
   }
   
   return data[0];
@@ -340,6 +343,21 @@ export async function updateSlotsStatusByCustomerId(customerId: string, status: 
   
   if (error) throw error;
   return data;
+}
+
+// 작업 등록 시 슬롯 1개만 사용하는 함수
+export async function useOneSlot(customerId: string) {
+  // 해당 고객의 inactive 상태인 슬롯 중 첫 번째 슬롯을 active로 변경
+  const { data, error } = await supabase
+    .from('slots')
+    .update({ status: 'active', updated_at: new Date().toISOString() })
+    .eq('customer_id', customerId)
+    .eq('status', 'inactive')
+    .limit(1)
+    .select();
+  
+  if (error) throw error;
+  return data[0];
 }
 
 // 성능 최적화된 슬롯 현황 조회 함수

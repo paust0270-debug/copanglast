@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     const userGroup = searchParams.get('userGroup');
     const searchQuery = searchParams.get('search');
     const customerId = searchParams.get('customerId'); // 특정 고객 ID 파라미터
+    const username = searchParams.get('username'); // 실제 고객명 (customer_id와 매칭)
 
     // 슬롯 테이블에서 데이터 조회
     let slotsQuery = supabase
@@ -53,19 +54,18 @@ export async function GET(request: NextRequest) {
     }
 
     // 특정 고객이 요청된 경우 해당 고객의 슬롯 현황만 계산
-    if (customerId) {
-      console.log('🔍 특정 고객 슬롯 현황 조회:', customerId);
+    if (customerId && username) {
+      console.log('🔍 특정 고객 슬롯 현황 조회:', { customerId, username });
       
-      const customerSlots = slotsData?.filter(slot => slot.customer_id === customerId) || [];
+      // username을 사용하여 실제 customer_id와 매칭
+      const customerSlots = slotsData?.filter(slot => slot.customer_id === username) || [];
       console.log('📊 고객 슬롯 데이터:', customerSlots);
       
       // 해당 고객의 총 슬롯 수 계산 (모든 슬롯의 slot_count 합계)
       const totalSlots = customerSlots.reduce((sum, slot) => sum + (slot.slot_count || 0), 0);
       
-      // 해당 고객의 사용된 슬롯 수 계산 (active 상태인 슬롯들의 slot_count 합계)
-      const usedSlots = customerSlots
-        .filter(slot => slot.status === 'active')
-        .reduce((sum, slot) => sum + (slot.slot_count || 0), 0);
+      // 해당 고객의 사용된 슬롯 수 계산 (customers 테이블의 레코드 수 = 작업 등록 횟수)
+      const usedSlots = customersData?.filter(customer => customer.name === username).length || 0;
       
       // 사용 가능한 슬롯 수 계산
       const remainingSlots = Math.max(0, totalSlots - usedSlots);
@@ -150,11 +150,8 @@ export async function GET(request: NextRequest) {
 
     // 슬롯 데이터를 슬롯 현황 형식으로 변환
     const slotStatusData = slotsData?.map(slot => {
-      // 해당 고객의 사용된 슬롯 수 계산
-      const usedSlots = slotsData.filter(s => 
-        s.customer_id === slot.customer_id && 
-        s.status === 'active'
-      ).length;
+      // 해당 고객의 사용된 슬롯 수 계산 (customers 테이블의 레코드 수 = 작업 등록 횟수)
+      const usedSlots = customersData?.filter(customer => customer.name === slot.customer_id).length || 0;
       
       // 실제 사용시간 기반 잔여기간 계산 (일, 시간, 분 단위)
       const now = new Date();
