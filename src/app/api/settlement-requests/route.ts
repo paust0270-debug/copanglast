@@ -44,6 +44,31 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
+    // settlements 테이블에도 데이터 저장 (정산 내역 페이지에서 조회하기 위해)
+    const settlementsData = settlementData.map((item: any) => ({
+      slot_id: item.slot_id,
+      customer_id: item.customer_id,
+      customer_name: item.customer_id, // customer_id를 customer_name으로 사용
+      slot_type: item.slot_type,
+      slot_count: item.number_of_slots,
+      payment_type: 'extension', // 기본값으로 설정
+      payer_name: item.depositor_name,
+      payment_amount: item.deposit_amount,
+      payment_date: item.slot_addition_date,
+      usage_days: item.days_used,
+      memo: item.memo,
+      status: '승인대기'
+      // category: item.category // 임시로 주석 처리
+    }));
+
+    const { error: settlementsError } = await supabase
+      .from('settlements')
+      .insert(settlementsData);
+
+    if (settlementsError) {
+      console.error('settlements 테이블 저장 오류:', settlementsError);
+    }
+
     // 슬롯 상태를 'settlement_requested'로 업데이트
     const slotIds = settlementData.map((item: any) => item.slot_id);
     const { error: updateError } = await supabase

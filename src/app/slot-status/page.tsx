@@ -36,6 +36,17 @@ export default function SlotStatusPage() {
   const [error, setError] = useState<string | null>(null);
   const [isFilteredByCustomer, setIsFilteredByCustomer] = useState(false);
   const [filteredCustomerInfo, setFilteredCustomerInfo] = useState<{id: string, username: string, name: string} | null>(null);
+  
+  // 연장 모달 상태
+  const [showExtendModal, setShowExtendModal] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<SlotData | null>(null);
+  const [extendForm, setExtendForm] = useState({
+    paymentType: 'deposit',
+    payerName: '',
+    paymentAmount: '',
+    paymentDate: '',
+    usageDays: ''
+  });
 
   // URL 파라미터에서 고객 정보 확인
   useEffect(() => {
@@ -191,13 +202,90 @@ export default function SlotStatusPage() {
   // 연장 버튼 클릭 처리
   const handleExtendClick = (slot: SlotData) => {
     console.log('연장 버튼 클릭:', slot);
-    // TODO: 연장 기능 구현
+    setSelectedSlot(slot);
+    setExtendForm({
+      paymentType: 'deposit',
+      payerName: '',
+      paymentAmount: '',
+      paymentDate: new Date().toISOString().split('T')[0],
+      usageDays: ''
+    });
+    setShowExtendModal(true);
   };
 
-  // 수정 버튼 클릭 처리
-  const handleEditClick = (slot: SlotData) => {
-    console.log('수정 버튼 클릭:', slot);
-    // TODO: 수정 페이지로 이동 또는 모달 표시
+  // 연장 처리 함수
+  const handleExtendSubmit = async () => {
+    if (!selectedSlot) return;
+    
+    // 필수 필드 검증
+    if (!extendForm.usageDays || parseInt(extendForm.usageDays) <= 0) {
+      alert('사용일수를 올바르게 입력해주세요.');
+      return;
+    }
+    
+    try {
+      console.log('슬롯 연장 요청:', {
+        slotId: selectedSlot.id,
+        customerName: selectedSlot.customerName,
+        currentExpiry: selectedSlot.expiryDate,
+        extendDays: extendForm.usageDays
+      });
+
+      const response = await fetch('/api/slots/extend', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          slotId: selectedSlot.id,
+          paymentType: extendForm.paymentType,
+          payerName: extendForm.payerName,
+          paymentAmount: parseInt(extendForm.paymentAmount) || 0,
+          paymentDate: extendForm.paymentDate,
+          usageDays: parseInt(extendForm.usageDays)
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const extendedDays = parseInt(extendForm.usageDays);
+        alert(
+          `슬롯이 성공적으로 연장되었습니다!\n\n` +
+          `고객: ${selectedSlot.customerName}\n` +
+          `슬롯 타입: ${selectedSlot.slotType}\n` +
+          `연장 일수: ${extendedDays}일\n` +
+          `이전 만료일: ${new Date(result.data.previousExpiryDate).toLocaleDateString('ko-KR')}\n` +
+          `새 만료일: ${new Date(result.data.newExpiryDate).toLocaleDateString('ko-KR')}\n\n` +
+          `잔여기간이 ${extendedDays}일 연장되었습니다.`
+        );
+        
+        setShowExtendModal(false);
+        
+        // 데이터 새로고침 (연장된 잔여기간 반영)
+        await fetchSlotData();
+        
+        console.log('연장 완료 후 데이터 새로고침 완료');
+      } else {
+        alert(`연장 실패: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('연장 처리 오류:', error);
+      alert('연장 처리 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 연장 모달 닫기
+  const handleExtendCancel = () => {
+    setShowExtendModal(false);
+    setSelectedSlot(null);
+    setExtendForm({
+      paymentType: 'deposit',
+      payerName: '',
+      paymentAmount: '',
+      paymentDate: '',
+      usageDays: ''
+    });
   };
 
   // 슬롯 상태 변경 처리 (중지/재개)
@@ -553,6 +641,147 @@ export default function SlotStatusPage() {
           </div>
         </div>
       </div>
+      
+      {/* 연장 모달 */}
+      {showExtendModal && selectedSlot && (
+        <div className="fixed inset-0 bg-transparent flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-2xl border border-gray-200">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">슬롯 연장</h3>
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-2 mt-2">
+                  <p className="text-sm text-blue-800 font-medium">
+                    현재 잔여기간: <span className="text-blue-900">{selectedSlot.remainingDays}일</span>
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    만료일: {new Date(selectedSlot.expiryDate).toLocaleDateString('ko-KR')}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleExtendCancel}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {/* 슬롯 정보 */}
+              <div className="bg-gray-50 p-3 rounded-md">
+                <div className="text-sm text-gray-600">
+                  <div>고객: {selectedSlot.customerName}</div>
+                  <div>슬롯 타입: {selectedSlot.slotType}</div>
+                  <div>슬롯 수: {selectedSlot.slotCount}개</div>
+                  <div>현재 잔여기간: {selectedSlot.remainingTimeString}</div>
+                </div>
+              </div>
+              
+              {/* 입금구분 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">입금구분</label>
+                <select
+                  value={extendForm.paymentType}
+                  onChange={(e) => setExtendForm({...extendForm, paymentType: e.target.value})}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="deposit">입금</option>
+                  <option value="coupon">쿠폰</option>
+                </select>
+              </div>
+              
+              {/* 입금자명 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">입금자명</label>
+                <input
+                  type="text"
+                  value={extendForm.payerName}
+                  onChange={(e) => setExtendForm({...extendForm, payerName: e.target.value})}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="입금자명을 입력하세요"
+                />
+              </div>
+              
+              {/* 입금액 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">입금액</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={extendForm.paymentAmount}
+                    onChange={(e) => setExtendForm({...extendForm, paymentAmount: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="0"
+                  />
+                  <span className="absolute right-3 top-2 text-gray-500 text-sm">원</span>
+                </div>
+              </div>
+              
+              {/* 입금일자 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">입금일자</label>
+                <input
+                  type="date"
+                  value={extendForm.paymentDate}
+                  onChange={(e) => setExtendForm({...extendForm, paymentDate: e.target.value})}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              {/* 사용일수 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">사용일수 (연장할 일수)</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={extendForm.usageDays}
+                    onChange={(e) => setExtendForm({...extendForm, usageDays: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="연장할 일수를 입력하세요"
+                    min="1"
+                    required
+                  />
+                  <span className="absolute right-3 top-2 text-gray-500 text-sm">일</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  입력한 일수만큼 현재 잔여기간에 추가됩니다
+                </p>
+                {extendForm.usageDays && parseInt(extendForm.usageDays) > 0 && (
+                  <div className="bg-green-50 border border-green-200 rounded-md p-2 mt-2">
+                    <p className="text-sm text-green-800 font-medium">
+                      연장 후 예상 잔여기간: <span className="text-green-900">
+                        {selectedSlot.remainingDays + parseInt(extendForm.usageDays)}일
+                      </span>
+                    </p>
+                    <p className="text-xs text-green-600 mt-1">
+                      새 만료일: {new Date(new Date(selectedSlot.expiryDate).getTime() + parseInt(extendForm.usageDays) * 24 * 60 * 60 * 1000).toLocaleDateString('ko-KR')}
+                    </p>
+                  </div>
+                )}
+              </div>
+              
+            </div>
+            
+            {/* 버튼 */}
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleExtendCancel}
+                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleExtendSubmit}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition-colors"
+              >
+                연장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

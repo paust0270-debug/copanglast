@@ -37,18 +37,26 @@ export async function GET(request: NextRequest) {
       }, { status: 500 });
     }
 
+    console.log('🔍 SETTLEMENTS API 디버깅:');
     console.log('정산 내역 조회 완료:', settlements?.length || 0, '개');
+    
+    if (settlements && settlements.length > 0) {
+      console.log('첫 번째 정산 내역의 모든 필드:', Object.keys(settlements[0]));
+      console.log('첫 번째 정산 내역의 전체 데이터:', JSON.stringify(settlements[0], null, 2));
+    }
 
-    // 데이터 포맷팅 (필요한 컬럼만)
+    // 데이터 포맷팅 (실제 테이블 구조에 맞게)
     const formattedSettlements = settlements?.map((settlement: any) => ({
       id: settlement.id,
-      sequential_number: settlement.sequential_number,
-      distributor_name: settlement.distributor_name,
-      total_slots: settlement.total_slots,
-      total_deposit_amount: settlement.total_deposit_amount,
-      depositor_name: settlement.depositor_name,
-      deposit_date: settlement.deposit_date,
-      request_date: settlement.request_date,
+      customer_id: settlement.customer_id,
+      customer_name: settlement.customer_name,
+      slot_type: settlement.slot_type,
+      slot_count: settlement.slot_count,
+      payment_type: settlement.payment_type,
+      payer_name: settlement.payer_name,
+      payment_amount: settlement.payment_amount,
+      payment_date: settlement.payment_date,
+      usage_days: settlement.usage_days,
       memo: settlement.memo,
       status: settlement.status,
       created_at: settlement.created_at,

@@ -7,10 +7,10 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { customerId: string } }
+  { params }: { params: Promise<{ customerId: string }> }
 ) {
   try {
-    const { customerId } = params;
+    const { customerId } = await params;
 
     // 미정산내역 테이블에서 해당 고객의 슬롯 정보 조회
     const { data: slots, error } = await supabase

@@ -6,13 +6,15 @@ import Navigation from '@/components/Navigation';
 
 interface Settlement {
   id: number;
-  sequential_number: number;
-  distributor_name: string;
-  total_slots: number;
-  total_deposit_amount: number;
-  depositor_name: string;
-  deposit_date: string;
-  request_date: string;
+  customer_id: string;
+  customer_name: string;
+  slot_type: string;
+  slot_count: number;
+  payment_type: string;
+  payer_name: string;
+  payment_amount: number;
+  payment_date: string;
+  usage_days: number;
   memo: string;
   status: string;
   created_at: string;
@@ -172,7 +174,7 @@ export default function SettlementHistoryPage() {
 
   // 상세 내역 보기 함수
   const handleViewDetails = (settlement: Settlement) => {
-    alert(`정산 상세 내역\n\n순번: ${settlement.sequential_number}\n대상총판: ${settlement.distributor_name}\n슬롯수: ${settlement.total_slots}개\n입금액: ${formatAmount(settlement.total_deposit_amount)}\n입금자명: ${settlement.depositor_name}\n입금일: ${formatDate(settlement.deposit_date)}\n요청일: ${formatDate(settlement.request_date)}\n메모: ${settlement.memo || '-'}\n상태: ${settlement.status}`);
+    alert(`정산 상세 내역\n\nID: ${settlement.id}\n고객명: ${settlement.customer_name || settlement.customer_id}\n슬롯타입: ${settlement.slot_type}\n슬롯수: ${settlement.slot_count}개\n입금액: ${formatAmount(settlement.payment_amount)}\n입금자명: ${settlement.payer_name}\n입금일: ${formatDate(settlement.payment_date)}\n사용일수: ${settlement.usage_days}일\n메모: ${settlement.memo || '-'}\n상태: ${settlement.status}`);
   };
 
   // 수정 함수
@@ -209,10 +211,10 @@ export default function SettlementHistoryPage() {
     return `${amount.toLocaleString()}원`;
   };
 
-  // 총판 목록 가져오기
-  const getDistributorList = () => {
-    const distributors = new Set(settlements.map(item => item.distributor_name));
-    return Array.from(distributors).sort();
+  // 고객 목록 가져오기
+  const getCustomerList = () => {
+    const customers = new Set(settlements.map(item => item.customer_name || item.customer_id));
+    return Array.from(customers).sort();
   };
 
   // 정산 요청 페이지로 이동
@@ -223,7 +225,7 @@ export default function SettlementHistoryPage() {
   // 필터링된 정산 내역
   const filteredSettlements = selectedDistributor === 'all' 
     ? settlements 
-    : settlements.filter(item => item.distributor_name === selectedDistributor);
+    : settlements.filter(item => (item.customer_name || item.customer_id) === selectedDistributor);
 
   // 매출 통계 계산 함수
   const calculateSalesStats = (settlements: Settlement[]) => {
@@ -265,8 +267,8 @@ export default function SettlementHistoryPage() {
     let twoWeeksAgoSales = 0;
     
     settlements.forEach(settlement => {
-      const depositDate = new Date(settlement.deposit_date);
-      const amount = settlement.total_deposit_amount || 0;
+      const depositDate = new Date(settlement.payment_date);
+      const amount = settlement.payment_amount || 0;
       
       // 총 매출
       totalSales += amount;
@@ -410,20 +412,20 @@ export default function SettlementHistoryPage() {
             </div>
           </div>
           
-          {/* 총판 선택 및 정산 요청 섹션 */}
+          {/* 고객 선택 및 정산 요청 섹션 */}
           <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div className="flex items-center gap-4">
-                <label className="text-sm font-medium text-gray-700">총판 선택:</label>
+                <label className="text-sm font-medium text-gray-700">고객 선택:</label>
                 <select
                   value={selectedDistributor}
                   onChange={(e) => setSelectedDistributor(e.target.value)}
                   className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="all">전체 총판</option>
-                  {getDistributorList().map((distributor) => (
-                    <option key={distributor} value={distributor}>
-                      {distributor}
+                  <option value="all">전체 고객</option>
+                  {getCustomerList().map((customer) => (
+                    <option key={customer} value={customer}>
+                      {customer}
                     </option>
                   ))}
                 </select>
@@ -442,13 +444,14 @@ export default function SettlementHistoryPage() {
             <table className="min-w-full bg-white border border-gray-200 rounded-lg">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">순번</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">대상총판</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ID</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">고객명</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">슬롯타입</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">슬롯수</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">입금액</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">입금자명</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">입금일</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">요청일</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">사용일수</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">메모</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">상태</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">작업</th>
@@ -458,29 +461,36 @@ export default function SettlementHistoryPage() {
                 {filteredSettlements.map((item, index) => (
                   <tr key={item.id} className="hover:bg-gray-50 transition-colors duration-150">
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
-                      <span className="font-medium">{item.sequential_number || index + 1}</span>
+                      <span className="font-medium">{item.id}</span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
-                      <span className="font-medium">{item.distributor_name}</span>
+                      <span className="font-medium">{item.customer_name || item.customer_id}</span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
                       <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                        {item.total_slots?.toLocaleString()}개
+                        {item.slot_type}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
+                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                        {item.slot_count?.toLocaleString()}개
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
                       <span className="font-bold text-green-600">
-                        {formatAmount(item.total_deposit_amount || 0)}
+                        {formatAmount(item.payment_amount || 0)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
-                      {item.depositor_name || '-'}
+                      {item.payer_name || '-'}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
-                      {formatDate(item.deposit_date)}
+                      {formatDate(item.payment_date)}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
-                      {formatDate(item.request_date)}
+                      <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
+                        {item.usage_days}일
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
                       <span className="max-w-xs truncate block" title={item.memo || ''}>

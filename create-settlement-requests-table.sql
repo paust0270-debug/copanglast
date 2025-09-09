@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS settlement_requests (
   days_used INTEGER DEFAULT 0,
   memo TEXT,
   status VARCHAR(50) DEFAULT '승인대기',
+  category VARCHAR(50) DEFAULT 'slot', -- 구분: extension, deposit, slot
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
