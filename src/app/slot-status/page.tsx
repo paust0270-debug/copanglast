@@ -672,7 +672,8 @@ export default function SlotStatusPage() {
               {/* 슬롯 정보 */}
               <div className="bg-gray-50 p-3 rounded-md">
                 <div className="text-sm text-gray-600">
-                  <div>고객: {selectedSlot.customerName}</div>
+                  <div>아이디: {selectedSlot.customerId}</div>
+                  <div>고객명: {selectedSlot.customerName}</div>
                   <div>슬롯 타입: {selectedSlot.slotType}</div>
                   <div>슬롯 수: {selectedSlot.slotCount}개</div>
                   <div>현재 잔여기간: {selectedSlot.remainingTimeString}</div>

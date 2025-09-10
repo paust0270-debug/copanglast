@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       customer_name: item.customer_id, // customer_id를 customer_name으로 사용
       slot_type: item.slot_type,
       slot_count: item.number_of_slots,
-      payment_type: 'extension', // 기본값으로 설정
+      payment_type: 'deposit', // 기본값으로 deposit 설정
       payer_name: item.depositor_name,
       payment_amount: item.deposit_amount,
       payment_date: item.slot_addition_date,

@@ -13,3 +13,4 @@ SET category = CASE
   ELSE 'extension'
 END
 WHERE category IS NULL;
+

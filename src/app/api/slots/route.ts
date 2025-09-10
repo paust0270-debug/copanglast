@@ -110,6 +110,38 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ 슬롯 추가 완료:', slot);
 
+    // 정산 테이블에도 데이터 저장 (미정산 페이지에서 조회하기 위해)
+    try {
+      const settlementData = {
+        slot_id: slot.id,
+        customer_id: customerId,
+        customer_name: customerName,
+        slot_type: slotType,
+        slot_count: parseInt(slotCount),
+        payment_type: paymentType || 'deposit', // 기본값으로 deposit 설정
+        payer_name: payerName || '',
+        payment_amount: paymentAmount ? parseInt(paymentAmount) : 0,
+        payment_date: paymentDate || new Date().toISOString().split('T')[0],
+        usage_days: usageDays ? parseInt(usageDays) : 30,
+        memo: memo || `슬롯 추가 - ${slotType} ${slotCount}개`,
+        status: 'pending' // 미정산 상태로 생성
+      };
+
+      const { error: settlementError } = await supabase
+        .from('settlements')
+        .insert([settlementData]);
+
+      if (settlementError) {
+        console.log('정산 내역 저장 실패 (무시):', settlementError);
+        // 정산 내역 저장 실패해도 슬롯 추가는 성공으로 처리
+      } else {
+        console.log('정산 내역 저장 완료 - 미정산 페이지에서 확인 가능');
+      }
+    } catch (error) {
+      console.log('정산 내역 저장 중 오류 (무시):', error);
+      // 정산 내역 저장 실패해도 슬롯 추가는 성공으로 처리
+    }
+
     return NextResponse.json({
       success: true,
       data: slot,

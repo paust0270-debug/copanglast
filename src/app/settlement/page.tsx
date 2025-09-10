@@ -61,7 +61,7 @@ export default function SettlementPage() {
         params.append('distributor', distributorFilter);
       }
 
-      const response = await fetch(`/api/slots?${params.toString()}`);
+      const response = await fetch(`/api/settlements/unsettled?${params.toString()}`);
       const result = await response.json();
 
       if (result.success) {
@@ -71,9 +71,9 @@ export default function SettlementPage() {
             item.status !== 'completed' &&
             item.status !== 'inactive' // 정산 완료된 슬롯도 제외
           ) // 미정산 슬롯만 필터링
-          .map((item: any) => ({
+          .map((item: any, index: number) => ({
             id: item.id.toString(),
-            sequentialNumber: item.id, // 슬롯 ID를 순번으로 사용
+            sequentialNumber: index + 1, // 순번을 1부터 시작하는 숫자로 설정
             distributorName: '총판A', // 기본값
             customerId: item.customer_id,
             slotAdditionDate: item.created_at.split('T')[0],

@@ -9,3 +9,4 @@ CREATE INDEX IF NOT EXISTS idx_settlement_requests_category ON settlement_reques
 UPDATE settlement_requests 
 SET category = 'slot' 
 WHERE category IS NULL;
+
