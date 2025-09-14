@@ -76,7 +76,7 @@ export default function SlotStatusPage() {
       
       console.log('슬롯 데이터 조회 시작...');
       
-      // API 엔드포인트 호출
+      // API 엔드포인트 호출 (원래대로)
       const response = await fetch('/api/slot-status');
       
       if (!response.ok) {
@@ -92,17 +92,6 @@ export default function SlotStatusPage() {
       console.log('조회된 슬롯 데이터:', result.data);
       setSlotData(result.data);
       
-      // 고객별 필터링이 적용된 경우 즉시 필터링된 데이터만 설정
-      if (isFilteredByCustomer && filteredCustomerInfo) {
-        const filtered = result.data.filter((slot: SlotData) => 
-          slot.customerId === filteredCustomerInfo.username || 
-          slot.customerName === filteredCustomerInfo.name
-        );
-        setFilteredData(filtered);
-        console.log('고객별 필터링 즉시 적용:', filteredCustomerInfo.username, '결과:', filtered.length, '개');
-      } else {
-        setFilteredData(result.data);
-      }
     } catch (error) {
       console.error('슬롯 데이터 조회 오류:', error);
       setError('슬롯 데이터를 불러오는 중 오류가 발생했습니다.');
@@ -122,7 +111,7 @@ export default function SlotStatusPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // 필터링
+  // 필터링 (깜빡임 방지를 위해 즉시 적용)
   useEffect(() => {
     let filtered = slotData;
 
@@ -372,13 +361,16 @@ export default function SlotStatusPage() {
     }
   };
 
-  if (loading) {
+  // 로딩 중이거나 고객별 필터링이 적용되는 중이면 로딩 화면 표시
+  if (loading || (isFilteredByCustomer && filteredCustomerInfo && slotData.length > 0 && filteredData.length === 0)) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navigation />
         <div className="container mx-auto p-6">
           <div className="flex flex-col items-center justify-center h-64">
-            <p className="text-gray-600 text-lg">데이터를 불러오는 중...</p>
+            <p className="text-gray-600 text-lg">
+              {isFilteredByCustomer ? `${filteredCustomerInfo?.name || '고객'}님의 데이터를 불러오는 중...` : '데이터를 불러오는 중...'}
+            </p>
           </div>
         </div>
       </div>

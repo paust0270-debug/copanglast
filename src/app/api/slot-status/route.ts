@@ -256,6 +256,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
+
     // 통계 계산
     const stats = {
       totalSlots: filteredData.reduce((sum, slot) => sum + slot.slotCount, 0),
