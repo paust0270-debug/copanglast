@@ -186,9 +186,7 @@ export default function SettlementHistoryPage() {
 
   // 상세 내역 보기 함수
   const handleViewDetails = (settlement: Settlement) => {
-    const category = settlement.category || 
-                    (settlement.payment_type === 'extension' ? '연장' : 
-                     settlement.payment_type === 'deposit' ? '입금' : '일반');
+    const category = '입금'; // 최종 페이지이므로 모두 "입금"으로 표시
     const slotTypeDisplay = settlement.slot_type === 'mixed' ? '혼합' : settlement.slot_type;
     const isAggregated = settlement.payment_type === 'batch' || settlement.slot_type === 'mixed';
     
@@ -484,16 +482,10 @@ export default function SettlementHistoryPage() {
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
                       <span className="font-medium">{item.sequential_number || item.id}</span>
                     </td>
-                    {/* 구분 */}
+                    {/* 구분 - 최종 페이지이므로 모두 "입금"으로 표시 */}
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        item.category === '연장' || item.payment_type === 'extension' ? 'bg-green-100 text-green-800' :
-                        item.category === '입금' || item.payment_type === 'deposit' ? 'bg-blue-100 text-blue-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {item.category || 
-                         (item.payment_type === 'extension' ? '연장' : 
-                          item.payment_type === 'deposit' ? '입금' : '일반')}
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        입금
                       </span>
                     </td>
                     {/* 총판명 */}

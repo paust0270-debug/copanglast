@@ -364,9 +364,9 @@ export default function SettlementPage() {
                     <td className="px-4 py-3 text-sm text-gray-900 border-b">{item.sequential_number}</td>
                     <td className="px-4 py-3 text-sm text-gray-900 border-b">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        item.category === '연장' ? 'bg-green-100 text-green-800' :
-                        item.category === '입금' ? 'bg-blue-100 text-blue-800' :
-                        'bg-gray-100 text-gray-800'
+                        item.category === '연장' ? 'bg-orange-100 text-orange-800' :
+                        item.category === '입금' ? 'bg-green-100 text-green-800' :
+                        'bg-blue-100 text-blue-800'
                       }`}>
                         {item.category || '일반'}
                       </span>

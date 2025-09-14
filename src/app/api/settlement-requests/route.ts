@@ -63,8 +63,11 @@ export async function GET(request: NextRequest) {
 
     console.log('정산요청 조회 시작 - 필터:', { status, distributor });
 
-    // settlements 테이블에서 completed 상태의 데이터 조회 (정산대기)
-    // 제약조건 문제로 인해 임시로 completed 사용
+    // settlements 테이블에서 데이터 조회
+    // status 파라미터에 따라 다른 상태 조회
+    const targetStatus = status === 'history' ? 'history' : 'completed';
+    console.log('조회할 상태:', targetStatus);
+    
     let query = supabase
       .from('settlements')
       .select(`
@@ -83,7 +86,7 @@ export async function GET(request: NextRequest) {
         created_at,
         updated_at
       `)
-      .eq('status', 'completed')
+      .eq('status', targetStatus)
       .order('created_at', { ascending: false });
 
     if (distributor && distributor !== '전체') {

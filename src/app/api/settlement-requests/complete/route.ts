@@ -8,7 +8,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { slotIds, settlementData } = body;
+    const { slotIds, settlementData, isEditMode, settlementHistoryId } = body;
 
     if (!slotIds || !Array.isArray(slotIds) || !settlementData) {
       return NextResponse.json({
@@ -26,7 +26,8 @@ export async function POST(request: NextRequest) {
     console.log('정산 완료 처리 시작:', { 
       originalSlotIds: slotIds, 
       safeSlotIds, 
-      settlementData 
+      settlementData,
+      isEditMode
     });
 
     if (safeSlotIds.length === 0) {
@@ -114,8 +115,20 @@ export async function POST(request: NextRequest) {
     
     console.log('카테고리 결정:', { categories, finalCategory });
     
+    // 다음 순번 계산 (기존 데이터 개수 + 1)
+    const { count: existingCount, error: countError } = await supabase
+      .from('settlement_history')
+      .select('*', { count: 'exact', head: true });
+    
+    if (countError) {
+      console.error('순번 계산을 위한 카운트 조회 오류:', countError);
+    }
+    
+    const nextSequentialNumber = (existingCount || 0) + 1;
+    console.log('다음 순번:', nextSequentialNumber);
+    
     const settlementHistoryData = {
-      sequential_number: 1,
+      sequential_number: nextSequentialNumber,
       category: finalCategory,
       distributor_name: settlementData.distributor_name || representativeItem.distributor_name || '총판A',
       customer_id: settlementData.customer_id || representativeItem.customer_id,
@@ -132,42 +145,90 @@ export async function POST(request: NextRequest) {
       created_at: currentDateTime,
       completed_at: currentDateTime,
       settlement_batch_id: batchId,
-      original_settlement_item_id: null
+      original_settlement_item_id: null,
+      original_settlement_ids: safeSlotIds.join(',') // 원본 settlements ID들을 콤마로 구분하여 저장
     };
 
     console.log('정산 내역 저장 데이터:', settlementHistoryData);
 
-    // settlement_history 테이블에 저장
-    const { data: insertedData, error: insertError } = await supabase
-      .from('settlement_history')
-      .insert([settlementHistoryData])
-      .select();
+    let insertedData;
+    
+    if (isEditMode && settlementHistoryId) {
+      // 수정 모드: 기존 settlement_history 업데이트
+      console.log('수정 모드: settlement_history 업데이트, ID:', settlementHistoryId);
+      
+      // 안전하게 필수 필드만 업데이트
+      const updateFields: any = {};
+      
+      if (settlementData.payer_name !== undefined) {
+        updateFields.payer_name = settlementData.payer_name;
+      }
+      
+      if (settlementData.totalAmount !== undefined) {
+        updateFields.payment_amount = parseInt(settlementData.totalAmount) || 0;
+      }
+      
+      if (settlementData.memo !== undefined) {
+        updateFields.memo = settlementData.memo;
+      }
 
-    if (insertError) {
-      console.error('정산 내역 저장 오류:', insertError);
-      return NextResponse.json({
-        success: false,
-        error: '정산 내역 저장 중 오류가 발생했습니다.'
-      }, { status: 500 });
+      console.log('업데이트할 필드들:', updateFields);
+
+      const { data: updatedData, error: updateError } = await supabase
+        .from('settlement_history')
+        .update(updateFields)
+        .eq('id', settlementHistoryId)
+        .select();
+
+      if (updateError) {
+        console.error('정산 내역 업데이트 오류:', updateError);
+        return NextResponse.json({
+          success: false,
+          error: '정산 내역 업데이트 중 오류가 발생했습니다.'
+        }, { status: 500 });
+      }
+      
+      insertedData = updatedData;
+      console.log('정산 내역 업데이트 완료:', insertedData.length, '개 항목');
+      
+    } else {
+      // 일반 모드: 새로운 settlement_history 삽입
+      const { data: newData, error: insertError } = await supabase
+        .from('settlement_history')
+        .insert([settlementHistoryData])
+        .select();
+
+      if (insertError) {
+        console.error('정산 내역 저장 오류:', insertError);
+        return NextResponse.json({
+          success: false,
+          error: '정산 내역 저장 중 오류가 발생했습니다.'
+        }, { status: 500 });
+      }
+      
+      insertedData = newData;
+      console.log('정산 내역 저장 완료:', insertedData.length, '개 항목');
     }
 
-    console.log('정산 내역 저장 완료:', insertedData.length, '개 항목');
-
-    // 3. settlements 테이블에서 해당 항목들 삭제 (원래 구조 - 데이터 정리)
-    const { error: deleteError } = await supabase
+    // 3. settlements 테이블에서 해당 항목들의 상태를 'history'로 업데이트 (삭제 대신 상태 변경)
+    // 정산수정을 위해 원본 데이터는 보존하고 상태만 변경
+    const { error: updateError } = await supabase
       .from('settlements')
-      .delete()
+      .update({ 
+        status: 'history',
+        updated_at: new Date().toISOString()
+      })
       .in('id', safeSlotIds);
 
-    if (deleteError) {
-      console.error('정산 데이터 삭제 오류:', deleteError);
+    if (updateError) {
+      console.error('정산 데이터 상태 업데이트 오류:', updateError);
       return NextResponse.json({
         success: false,
-        error: '정산 데이터 삭제 중 오류가 발생했습니다.'
+        error: '정산 데이터 상태 업데이트 중 오류가 발생했습니다.'
       }, { status: 500 });
     }
 
-    console.log('정산 데이터 삭제 완료:', safeSlotIds.length, '개 항목');
+    console.log('정산 데이터 상태 업데이트 완료 (history):', safeSlotIds.length, '개 항목');
 
     return NextResponse.json({
       success: true,
