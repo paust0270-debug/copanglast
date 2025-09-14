@@ -6,7 +6,6 @@ import Navigation from '@/components/Navigation';
 
 interface Slot {
   id: number | string;
-  slot_id: number | null;
   customer_id: string;
   customer_name: string;
   slot_type: string;
@@ -68,7 +67,7 @@ export default function UnsettledPage() {
         // 정산 완료된 슬롯들을 제외하고 필터링
         const filteredSlots = (result.data || []).filter((slot: Slot) => 
           slot.status !== 'completed' && 
-          slot.status !== 'settlement_requested' &&
+          slot.status !== 'requested' &&
           slot.status !== 'inactive' // 정산 완료된 슬롯도 제외
         );
         console.log('필터링된 슬롯 데이터:', filteredSlots.length, '개');
@@ -213,8 +212,8 @@ export default function UnsettledPage() {
 
     // 전체 정산요청 버튼 클릭 핸들러
   const handleBulkSettlementRequest = async () => {
-    // 정산요청 가능한 슬롯들만 필터링 (status가 'settlement_requested'가 아닌 것들)
-    const availableSlots = slots.filter(slot => slot.status !== 'settlement_requested');
+    // 정산요청 가능한 슬롯들만 필터링 (status가 'requested'가 아닌 것들)
+    const availableSlots = slots.filter(slot => slot.status !== 'requested');
     
     if (availableSlots.length === 0) {
       alert('정산요청 가능한 슬롯이 없습니다.');
@@ -228,37 +227,15 @@ export default function UnsettledPage() {
     try {
       setBulkRequesting(true);
 
-      // 정산요청 데이터 준비
+      // 정산요청 데이터 준비 (settlements 테이블의 ID만 전송)
       console.log('🔍 전체 정산요청 데이터 준비:', availableSlots.length, '개');
       console.log('첫 번째 슬롯 데이터:', availableSlots[0]);
       
-      const settlementData = availableSlots.map((slot, index) => {
-        // slot_id 처리: 연장/입금 내역의 경우 실제 슬롯 ID 사용, 없으면 0 (NOT NULL 제약조건 대응)
-        let slotId = slot.id;
-        if (typeof slot.id === 'string' && slot.id.startsWith('settlement_')) {
-          // 연장/입금 내역의 경우 실제 슬롯 ID가 있으면 사용, 없으면 0
-          slotId = slot.slot_id || 0;
-        }
-        
-        return {
-          slot_id: slotId,
-          sequential_number: index + 1,
-          distributor_name: "총판A",
-          customer_id: slot.customer_id,
-          slot_addition_date: slot.created_at.split('T')[0], // YYYY-MM-DD 형식
-          slot_type: getSlotTypeKorean(slot.slot_type),
-          number_of_slots: slot.slot_count,
-          depositor_name: slot.payer_name || '',
-          deposit_amount: slot.payment_amount || 0,
-          days_used: slot.usage_days || 0,
-          memo: slot.memo || '',
-          status: '승인대기'
-          // category: slot.type || 'slot' // 임시로 주석 처리
-        };
-      });
+      const settlementData = availableSlots.map((slot) => ({
+        id: slot.id // settlements 테이블의 ID만 전송
+      }));
 
       console.log('🔍 생성된 정산요청 데이터:', settlementData);
-      console.log('첫 번째 정산요청 항목:', settlementData[0]);
 
       // DB에 정산요청 저장
       const response = await fetch('/api/settlement-requests', {
@@ -368,7 +345,7 @@ export default function UnsettledPage() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">구분</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">총판명</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">아이디</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">생성일</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">슬롯추가일</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">슬롯유형</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">슬롯수</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">입금자명</th>

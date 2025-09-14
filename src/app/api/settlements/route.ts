@@ -9,25 +9,12 @@ export async function GET(request: NextRequest) {
   try {
     console.log('정산 내역 데이터 조회 시작');
 
-    // settlements 테이블에서 모든 정산 데이터 조회 (최신순)
-    // is_latest 필드가 없는 경우를 대비해 조건부로 처리
-    let query = supabase
+    // settlements 테이블에서 completed 상태의 데이터만 조회 (최신순)
+    const { data: settlements, error } = await supabase
       .from('settlements')
       .select('*')
+      .eq('status', 'completed')
       .order('created_at', { ascending: false });
-
-    // is_latest 필드가 있는지 확인하기 위해 먼저 테이블 스키마 확인
-    const { data: schemaCheck, error: schemaError } = await supabase
-      .from('settlements')
-      .select('is_latest')
-      .limit(1);
-
-    // is_latest 필드가 있으면 최신 버전만 조회, 없으면 모든 데이터 조회
-    if (schemaCheck && schemaCheck.length > 0 && 'is_latest' in schemaCheck[0]) {
-      query = query.eq('is_latest', true);
-    }
-
-    const { data: settlements, error } = await query;
 
     if (error) {
       console.error('정산 내역 조회 에러:', error);

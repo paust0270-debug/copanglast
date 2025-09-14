@@ -14,3 +14,6 @@ SET category = CASE
 END
 WHERE category IS NULL;
 
+
+
+

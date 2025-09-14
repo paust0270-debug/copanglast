@@ -6,6 +6,9 @@ import Navigation from '@/components/Navigation';
 
 interface Settlement {
   id: number;
+  sequential_number: number; // 순번
+  category: string; // 구분
+  distributor_name: string; // 총판명
   customer_id: string;
   customer_name: string;
   slot_type: string;
@@ -13,7 +16,7 @@ interface Settlement {
   payment_type: string;
   payer_name: string;
   payment_amount: number;
-  payment_date: string;
+  slot_addition_date: string; // payment_date → slot_addition_date로 통합
   usage_days: number;
   memo: string;
   status: string;
@@ -52,7 +55,7 @@ export default function SettlementHistoryPage() {
       setLoading(true);
       console.log('정산 내역 데이터 가져오는 중...');
       
-      const response = await fetch('/api/settlements');
+      const response = await fetch('/api/settlement-history');
       console.log('정산 내역 API 응답 상태:', response.status);
       
       if (!response.ok) {
@@ -73,9 +76,18 @@ export default function SettlementHistoryPage() {
 
       if (result.success) {
         console.log('정산 내역 데이터 로드 완료:', result.data?.length || 0, '개');
-        const settlementsData = result.data || [];
+        const settlementsData = (result.data || []).map((item: any) => ({
+          ...item,
+          category: item.payment_type === 'extension' ? '연장' : 
+                   item.payment_type === 'deposit' ? '입금' : '일반'
+        }));
         setSettlements(settlementsData);
         calculateSalesStats(settlementsData);
+        
+        // 테이블이 아직 생성되지 않은 경우 메시지 표시
+        if (result.message) {
+          console.log('정산 내역 메시지:', result.message);
+        }
       } else {
         console.error('정산 내역 API 에러:', result.error);
         setError(result.error || '정산 내역 데이터를 불러오는데 실패했습니다.');
@@ -174,7 +186,13 @@ export default function SettlementHistoryPage() {
 
   // 상세 내역 보기 함수
   const handleViewDetails = (settlement: Settlement) => {
-    alert(`정산 상세 내역\n\nID: ${settlement.id}\n고객명: ${settlement.customer_name || settlement.customer_id}\n슬롯타입: ${settlement.slot_type}\n슬롯수: ${settlement.slot_count}개\n입금액: ${formatAmount(settlement.payment_amount)}\n입금자명: ${settlement.payer_name}\n입금일: ${formatDate(settlement.payment_date)}\n사용일수: ${settlement.usage_days}일\n메모: ${settlement.memo || '-'}\n상태: ${settlement.status}`);
+    const category = settlement.category || 
+                    (settlement.payment_type === 'extension' ? '연장' : 
+                     settlement.payment_type === 'deposit' ? '입금' : '일반');
+    const slotTypeDisplay = settlement.slot_type === 'mixed' ? '혼합' : settlement.slot_type;
+    const isAggregated = settlement.payment_type === 'batch' || settlement.slot_type === 'mixed';
+    
+    alert(`정산 상세 내역\n\n순번: ${settlement.sequential_number || settlement.id}\n구분: ${category}\n총판명: ${settlement.distributor_name || '-'}\n슬롯유형: ${slotTypeDisplay}\n슬롯수: ${settlement.slot_count}개\n입금자명: ${settlement.payer_name || '-'}\n입금액: ${formatAmount(settlement.payment_amount)}\n슬롯추가일: ${formatDate(settlement.slot_addition_date)}\n아이디: ${settlement.customer_id}\n사용일수: ${settlement.usage_days}일\n메모: ${settlement.memo || '-'}\n상태: ${settlement.status}${isAggregated ? '\n\n※ 이 항목은 여러 건을 합산한 일괄 정산 내역입니다.' : ''}`);
   };
 
   // 수정 함수
@@ -211,10 +229,10 @@ export default function SettlementHistoryPage() {
     return `${amount.toLocaleString()}원`;
   };
 
-  // 고객 목록 가져오기
-  const getCustomerList = () => {
-    const customers = new Set(settlements.map(item => item.customer_name || item.customer_id));
-    return Array.from(customers).sort();
+  // 총판 목록 가져오기 (기존 고객 목록을 총판 목록으로 변경)
+  const getDistributorList = () => {
+    const distributors = new Set(settlements.map(item => item.distributor_name).filter(Boolean));
+    return Array.from(distributors).sort();
   };
 
   // 정산 요청 페이지로 이동
@@ -225,7 +243,7 @@ export default function SettlementHistoryPage() {
   // 필터링된 정산 내역
   const filteredSettlements = selectedDistributor === 'all' 
     ? settlements 
-    : settlements.filter(item => (item.customer_name || item.customer_id) === selectedDistributor);
+    : settlements.filter(item => item.distributor_name === selectedDistributor);
 
   // 매출 통계 계산 함수
   const calculateSalesStats = (settlements: Settlement[]) => {
@@ -267,7 +285,7 @@ export default function SettlementHistoryPage() {
     let twoWeeksAgoSales = 0;
     
     settlements.forEach(settlement => {
-      const depositDate = new Date(settlement.payment_date);
+      const depositDate = new Date(settlement.slot_addition_date);
       const amount = settlement.payment_amount || 0;
       
       // 총 매출
@@ -412,20 +430,20 @@ export default function SettlementHistoryPage() {
             </div>
           </div>
           
-          {/* 고객 선택 및 정산 요청 섹션 */}
+          {/* 총판 선택 및 정산 요청 섹션 */}
           <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div className="flex items-center gap-4">
-                <label className="text-sm font-medium text-gray-700">고객 선택:</label>
+                <label className="text-sm font-medium text-gray-700">총판 선택:</label>
                 <select
                   value={selectedDistributor}
                   onChange={(e) => setSelectedDistributor(e.target.value)}
                   className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="all">전체 고객</option>
-                  {getCustomerList().map((customer) => (
-                    <option key={customer} value={customer}>
-                      {customer}
+                  <option value="all">전체 총판</option>
+                  {getDistributorList().map((distributor) => (
+                    <option key={distributor} value={distributor}>
+                      {distributor}
                     </option>
                   ))}
                 </select>
@@ -444,13 +462,15 @@ export default function SettlementHistoryPage() {
             <table className="min-w-full bg-white border border-gray-200 rounded-lg">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">ID</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">고객명</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">슬롯타입</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">순번</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">구분</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">총판명</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">아이디</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">슬롯추가일</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">슬롯유형</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">슬롯수</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">입금액</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">입금자명</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">입금일</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">입금액</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">사용일수</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">메모</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">상태</th>
@@ -460,43 +480,73 @@ export default function SettlementHistoryPage() {
               <tbody className="divide-y divide-gray-200">
                 {filteredSettlements.map((item, index) => (
                   <tr key={item.id} className="hover:bg-gray-50 transition-colors duration-150">
+                    {/* 순번 */}
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
-                      <span className="font-medium">{item.id}</span>
+                      <span className="font-medium">{item.sequential_number || item.id}</span>
                     </td>
+                    {/* 구분 */}
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
-                      <span className="font-medium">{item.customer_name || item.customer_id}</span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                        {item.slot_type}
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        item.category === '연장' || item.payment_type === 'extension' ? 'bg-green-100 text-green-800' :
+                        item.category === '입금' || item.payment_type === 'deposit' ? 'bg-blue-100 text-blue-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {item.category || 
+                         (item.payment_type === 'extension' ? '연장' : 
+                          item.payment_type === 'deposit' ? '입금' : '일반')}
                       </span>
                     </td>
+                    {/* 총판명 */}
+                    <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
+                      <span className="font-medium">{item.distributor_name || '-'}</span>
+                    </td>
+                    {/* 아이디 */}
+                    <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
+                      <span className="font-medium">{item.customer_id}</span>
+                    </td>
+                    {/* 슬롯추가일 */}
+                    <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
+                      {formatDate(item.slot_addition_date)}
+                    </td>
+                    {/* 슬롯유형 */}
+                    <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        item.slot_type === 'mixed' 
+                          ? 'bg-purple-100 text-purple-800' 
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {item.slot_type === 'mixed' ? '혼합' : item.slot_type}
+                      </span>
+                    </td>
+                    {/* 슬롯수 */}
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
                       <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
                         {item.slot_count?.toLocaleString()}개
                       </span>
                     </td>
+                    {/* 입금자명 */}
+                    <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
+                      {item.payer_name || '-'}
+                    </td>
+                    {/* 입금액 */}
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
                       <span className="font-bold text-green-600">
                         {formatAmount(item.payment_amount || 0)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
-                      {item.payer_name || '-'}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
-                      {formatDate(item.payment_date)}
-                    </td>
+                    {/* 사용일수 */}
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
                       <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
                         {item.usage_days}일
                       </span>
                     </td>
+                    {/* 메모 */}
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
                       <span className="max-w-xs truncate block" title={item.memo || ''}>
                         {item.memo || '-'}
                       </span>
                     </td>
+                    {/* 상태 */}
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
                       <select
                         value={item.status || '승인대기'}
@@ -518,6 +568,7 @@ export default function SettlementHistoryPage() {
                         </div>
                       )}
                     </td>
+                    {/* 작업 */}
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
                       <div className="flex space-x-1">
                         <button

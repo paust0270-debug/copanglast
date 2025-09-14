@@ -17,136 +17,174 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('정산 완료 처리 시작:', { slotIds, settlementData });
+    // slotIds 안전성 검증 및 변환
+    const safeSlotIds = slotIds.map(id => {
+      const numericId = parseInt(id);
+      return isNaN(numericId) ? 0 : numericId;
+    }).filter(id => id > 0);
 
-    // 1. 슬롯 상태는 변경하지 않음 (환불이나 취소 가능성을 위해 원래 상태 유지)
-    console.log('슬롯 상태는 변경하지 않음 (환불/취소 가능성을 위해 원래 상태 유지)');
+    console.log('정산 완료 처리 시작:', { 
+      originalSlotIds: slotIds, 
+      safeSlotIds, 
+      settlementData 
+    });
 
-    // 2. settlement_requests에서 해당 데이터 삭제
-    const { error: deleteError } = await supabase
-      .from('settlement_requests')
-      .delete()
-      .in('slot_id', slotIds);
-
-    if (deleteError) {
-      console.error('정산요청 삭제 오류:', deleteError);
-      console.log('정산요청 삭제 실패했지만 계속 진행합니다.');
-    }
-
-    // 3. settlements 테이블에 최종 정산 데이터 저장 (실제 테이블 구조에 맞게)
-    // 실제 슬롯 데이터를 가져와서 정산 데이터 생성
-    const { data: slotsData, error: slotsError } = await supabase
-      .from('slots')
-      .select('*')
-      .in('id', slotIds);
-
-    if (slotsError) {
-      console.error('슬롯 데이터 조회 에러:', slotsError);
+    if (safeSlotIds.length === 0) {
       return NextResponse.json({
         success: false,
-        error: '슬롯 데이터를 조회하는 중 오류가 발생했습니다.'
-      }, { status: 500 });
-    }
-
-    // 첫 번째 슬롯의 정보를 기준으로 정산 데이터 생성
-    const firstSlot = slotsData?.[0];
-    if (!firstSlot) {
-      return NextResponse.json({
-        success: false,
-        error: '슬롯 데이터를 찾을 수 없습니다.'
+        error: '유효한 정산 ID가 없습니다.'
       }, { status: 400 });
     }
 
-    const settlementRecord: any = {
-      customer_id: firstSlot.customer_id,
-      customer_name: firstSlot.customer_id, // customer_name이 없으므로 customer_id 사용
-      slot_type: 'coupang', // 기본값
-      slot_count: settlementData.total_slots || 0,
-      payment_type: 'deposit',
-      payer_name: settlementData.depositor_name || '미입력',
-      payment_amount: settlementData.total_deposit_amount || 0,
-      payment_date: settlementData.deposit_date,
-      usage_days: 30, // 기본값
-      memo: settlementData.memo || '',
-      status: 'completed',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-
-    console.log('저장할 정산 데이터:', settlementRecord);
-
-    const { data: settlementResult, error: settlementError } = await supabase
+    // 1. settlements 테이블에서 데이터 조회 (원래 구조)
+    const { data: settlementsData, error: fetchError } = await supabase
       .from('settlements')
-      .insert(settlementRecord)
-      .select()
-      .single();
+      .select('*')
+      .in('id', safeSlotIds);
 
-    if (settlementError) {
-      console.error('정산 데이터 저장 에러:', settlementError);
+    if (fetchError) {
+      console.error('정산 데이터 조회 오류:', fetchError);
       return NextResponse.json({
         success: false,
-        error: '정산 데이터를 저장하는 중 오류가 발생했습니다.'
+        error: '정산 데이터를 조회하는 중 오류가 발생했습니다.'
       }, { status: 500 });
     }
 
-    // 4. 정산 상세 내역 저장 (settlement_items 테이블에 선택된 슬롯들 저장)
-    try {
-      // 실제 슬롯 데이터를 가져와서 상세 내역 생성
-      const { data: slotsData, error: slotsError } = await supabase
-        .from('slots')
-        .select('*')
-        .in('id', slotIds);
-
-      if (slotsError) {
-        console.error('슬롯 데이터 조회 에러:', slotsError);
-      } else {
-        const settlementItems = (slotsData || []).map((slot: any) => ({
-          settlement_id: settlementResult.id,
-          slot_id: slot.id,
-          customer_id: slot.customer_id,
-          customer_name: slot.customer_id, // customer_name이 없으므로 customer_id 사용
-          slot_type: slot.slot_type,
-          slot_count: slot.slot_count,
-          payment_amount: slot.payment_amount || 0,
-          usage_days: slot.usage_days || 0,
-          memo: slot.memo || ''
-        }));
-
-        const { error: itemsError } = await supabase
-          .from('settlement_items')
-          .insert(settlementItems);
-
-        if (itemsError) {
-          console.error('정산 상세 내역 저장 에러:', itemsError);
-        } else {
-          console.log('정산 상세 내역 저장 완료:', settlementItems.length, '개 항목');
-        }
-      }
-    } catch (error) {
-      console.log('settlement_items 테이블 저장 중 오류:', error);
+    if (!settlementsData || settlementsData.length === 0) {
+      return NextResponse.json({
+        success: false,
+        error: '정산할 데이터를 찾을 수 없습니다.'
+      }, { status: 404 });
     }
 
-    console.log('정산 완료 처리 성공:', {
-      processedSlots: slotIds.length,
-      deletedRequests: slotIds.length,
-      newSettlement: settlementResult
+    // 각 항목의 payment_type 확인
+    console.log('정산 데이터 payment_type 확인:');
+    settlementsData.forEach((item, index) => {
+      console.log(`항목 ${index + 1}:`, {
+        id: item.id,
+        payment_type: item.payment_type,
+        customer_id: item.customer_id
+      });
     });
+
+    console.log('조회된 정산 데이터:', settlementsData.length, '개');
+
+    // 2. settlement_history 테이블에 합산된 하나의 데이터로 삽입 (정산완료 기록)
+    const batchId = `batch_${Date.now()}`;
+    const currentDateTime = new Date().toISOString();
+    
+    // 선택된 항목들을 하나의 합산 데이터로 생성 (원래 구조)
+    const totalSlotCount = settlementsData.reduce((sum, item) => {
+      const slotCount = parseInt(item.slot_count);
+      return sum + (isNaN(slotCount) ? 1 : slotCount);
+    }, 0);
+    
+    const totalPaymentAmount = (() => {
+      const depositAmount = parseInt(settlementData.total_deposit_amount);
+      if (!isNaN(depositAmount)) return depositAmount;
+      
+      return settlementsData.reduce((sum, item) => {
+        const paymentAmount = parseInt(item.payment_amount);
+        return sum + (isNaN(paymentAmount) ? 0 : paymentAmount);
+      }, 0);
+    })();
+    
+    // 대표 데이터 선택 (첫 번째 항목 기준)
+    const representativeItem = settlementsData[0];
+    
+    // 카테고리 결정 (혼합된 경우 우선순위: 입금 > 연장 > 일반)
+    const categories = [...new Set(settlementsData.map(item => 
+      item.payment_type === 'extension' ? '연장' : 
+      item.payment_type === 'deposit' ? '입금' : '일반'
+    ))];
+    
+    let finalCategory;
+    if (categories.length === 1) {
+      finalCategory = categories[0];
+    } else {
+      // 혼합된 경우 우선순위에 따라 결정
+      if (categories.includes('입금')) {
+        finalCategory = '입금';
+      } else if (categories.includes('연장')) {
+        finalCategory = '연장';
+      } else {
+        finalCategory = '일반';
+      }
+    }
+    
+    console.log('카테고리 결정:', { categories, finalCategory });
+    
+    const settlementHistoryData = {
+      sequential_number: 1,
+      category: finalCategory,
+      distributor_name: settlementData.distributor_name || representativeItem.distributor_name || '총판A',
+      customer_id: settlementData.customer_id || representativeItem.customer_id,
+      customer_name: settlementData.customer_name || representativeItem.customer_name || settlementData.customer_id || representativeItem.customer_id,
+      slot_addition_date: settlementData.slot_addition_date || representativeItem.slot_addition_date || new Date().toISOString().split('T')[0],
+      slot_type: settlementData.slot_type || representativeItem.slot_type || 'mixed',
+      slot_count: totalSlotCount,
+      payer_name: settlementData.payer_name || representativeItem.payer_name || '입금자',
+      payment_amount: totalPaymentAmount,
+      usage_days: settlementData.usage_days || representativeItem.usage_days || 0,
+      memo: settlementData.memo || representativeItem.memo || '',
+      status: 'completed',
+      payment_type: 'batch', // 합산된 데이터임을 표시
+      created_at: currentDateTime,
+      completed_at: currentDateTime,
+      settlement_batch_id: batchId,
+      original_settlement_item_id: null
+    };
+
+    console.log('정산 내역 저장 데이터:', settlementHistoryData);
+
+    // settlement_history 테이블에 저장
+    const { data: insertedData, error: insertError } = await supabase
+      .from('settlement_history')
+      .insert([settlementHistoryData])
+      .select();
+
+    if (insertError) {
+      console.error('정산 내역 저장 오류:', insertError);
+      return NextResponse.json({
+        success: false,
+        error: '정산 내역 저장 중 오류가 발생했습니다.'
+      }, { status: 500 });
+    }
+
+    console.log('정산 내역 저장 완료:', insertedData.length, '개 항목');
+
+    // 3. settlements 테이블에서 해당 항목들 삭제 (원래 구조 - 데이터 정리)
+    const { error: deleteError } = await supabase
+      .from('settlements')
+      .delete()
+      .in('id', safeSlotIds);
+
+    if (deleteError) {
+      console.error('정산 데이터 삭제 오류:', deleteError);
+      return NextResponse.json({
+        success: false,
+        error: '정산 데이터 삭제 중 오류가 발생했습니다.'
+      }, { status: 500 });
+    }
+
+    console.log('정산 데이터 삭제 완료:', safeSlotIds.length, '개 항목');
 
     return NextResponse.json({
       success: true,
-      message: '정산이 완료되었습니다.',
       data: {
-        processedSlots: slotIds.length,
-        deletedRequests: slotIds.length,
-        newSettlement: settlementResult
-      }
+        batchId: batchId,
+        totalItemsCount: insertedData.length,
+        deletedItemsCount: safeSlotIds.length,
+        insertedData: insertedData
+      },
+      message: '정산이 성공적으로 완료되었습니다.'
     });
 
   } catch (error) {
-    console.error('정산 완료 처리 API 오류:', error);
+    console.error('정산 완료 처리 중 오류:', error);
     return NextResponse.json({
       success: false,
-      error: '서버 오류가 발생했습니다.'
+      error: '정산 완료 처리 중 오류가 발생했습니다.'
     }, { status: 500 });
   }
 }

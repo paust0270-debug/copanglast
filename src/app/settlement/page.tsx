@@ -6,17 +6,18 @@ import Navigation from '@/components/Navigation';
 
 interface SettlementItem {
   id: string;
-  sequentialNumber: number;
-  distributorName: string;
-  customerId: string;
-  slotAdditionDate: string;
-  slotType: string;
-  numberOfSlots: number;
-  depositorName: string;
-  depositAmount: number;
-  daysUsed: number;
+  sequential_number: number;
+  category: string; // 구분 필드 추가
+  distributor_name: string;
+  customer_id: string;
+  slot_addition_date: string;
+  slot_type: string;
+  slot_count: number; // number_of_slots → slot_count로 통합
+  payer_name: string; // depositor_name → payer_name으로 통합
+  payment_amount: number; // deposit_amount → payment_amount로 통합
+  usage_days: number; // days_used → usage_days로 통합
   memo: string;
-  status: '승인대기' | '승인' | '취소';
+  status: 'requested' | 'approved' | 'cancelled';
 }
 
 export default function SettlementPage() {
@@ -35,7 +36,7 @@ export default function SettlementPage() {
   const [finalAmount, setFinalAmount] = useState<number>(0);
   const [depositDate, setDepositDate] = useState<string>(new Date().toISOString().split('T')[0]); // 오늘 날짜를 기본값으로 설정
   const [memo, setMemo] = useState<string>('');
-  const [depositorName, setDepositorName] = useState<string>('');
+  const [payer_name, setPayerName] = useState<string>(''); // depositor_name → payer_name으로 통합
 
   useEffect(() => {
     // 정산요청 데이터 로드
@@ -61,44 +62,44 @@ export default function SettlementPage() {
         params.append('distributor', distributorFilter);
       }
 
-      const response = await fetch(`/api/settlements/unsettled?${params.toString()}`);
+      const response = await fetch(`/api/settlement-requests?${params.toString()}`);
       const result = await response.json();
 
       if (result.success) {
+        console.log('정산요청 데이터 로드 성공:', result.data?.length || 0, '개');
+        
         const convertedItems: SettlementItem[] = result.data
-          .filter((item: any) => 
-            item.status !== 'settlement_requested' && 
-            item.status !== 'completed' &&
-            item.status !== 'inactive' // 정산 완료된 슬롯도 제외
-          ) // 미정산 슬롯만 필터링
           .map((item: any, index: number) => ({
             id: item.id.toString(),
-            sequentialNumber: index + 1, // 순번을 1부터 시작하는 숫자로 설정
-            distributorName: '총판A', // 기본값
-            customerId: item.customer_id,
-            slotAdditionDate: item.created_at.split('T')[0],
-            slotType: item.slot_type,
-            numberOfSlots: item.slot_count,
-            depositorName: item.payer_name || '',
-            depositAmount: item.payment_amount || 0,
-            daysUsed: item.usage_days || 0,
+            sequential_number: index + 1, // 순번을 1부터 시작하는 숫자로 설정
+            category: item.category || '일반', // API에서 처리된 category 사용
+            distributor_name: item.distributor_name || '총판A', // 기본값
+            customer_id: item.customer_id,
+            slot_addition_date: item.slot_addition_date ? item.slot_addition_date.split('T')[0] : new Date().toISOString().split('T')[0],
+            slot_type: item.slot_type,
+            slot_count: item.slot_count || 1, // 통합된 필드명 사용
+            payer_name: item.payer_name || '', // 통합된 필드명 사용
+            payment_amount: item.payment_amount || 0, // 통합된 필드명 사용
+            usage_days: item.usage_days || 0, // 통합된 필드명 사용
             memo: item.memo || '',
-            status: item.status as '승인대기' | '승인' | '취소'
+            status: item.status === 'completed' ? 'requested' : item.status as 'requested' | 'approved' | 'cancelled'
           }));
         
         setSettlementItems(convertedItems);
       } else {
-        console.error('슬롯 데이터 로드 실패:', result.error);
+        console.error('정산요청 데이터 로드 실패:', result.error);
+        alert(`정산요청 데이터 로드 실패: ${result.error}`);
       }
     } catch (err) {
-      console.error('슬롯 데이터 로드 오류:', err);
+      console.error('정산요청 데이터 로드 오류:', err);
+      alert(`정산요청 데이터 로드 오류: ${err instanceof Error ? err.message : '알 수 없는 오류'}`);
     } finally {
       setLoading(false);
     }
   };
 
   // 슬롯 타입을 한글로 변환하는 함수
-  const getSlotTypeKorean = (slotType: string) => {
+  const getSlotTypeKorean = (slot_type: string) => {
     const typeMap: { [key: string]: string } = {
       'coupang': '쿠팡',
       'coupang-vip': '쿠팡 VIP',
@@ -108,20 +109,20 @@ export default function SettlementPage() {
       'today-house': '오늘의집',
       'aliexpress': '알리익스프레스'
     };
-    return typeMap[slotType] || slotType;
+    return typeMap[slot_type] || slot_type;
   };
 
   // 선택된 슬롯 수 계산 (실제 슬롯수의 총합)
   useEffect(() => {
     const selectedItemsData = settlementItems.filter(item => selectedItems.includes(item.id));
-    const totalSlots = selectedItemsData.reduce((sum, item) => sum + item.numberOfSlots, 0);
+    const totalSlots = selectedItemsData.reduce((sum, item) => sum + item.slot_count, 0);
     setSelectedSlotCount(totalSlots);
   }, [selectedItems, settlementItems]);
 
   // 선택된 항목들의 입금액 합산 계산
   useEffect(() => {
     const selectedItemsData = settlementItems.filter(item => selectedItems.includes(item.id));
-    const totalDepositAmount = selectedItemsData.reduce((sum, item) => sum + item.depositAmount, 0);
+    const totalDepositAmount = selectedItemsData.reduce((sum, item) => sum + item.payment_amount, 0);
     setTotalAmount(totalDepositAmount);
   }, [selectedItems, settlementItems]);
 
@@ -157,14 +158,11 @@ export default function SettlementPage() {
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case '승인대기':
+      case 'requested':
         return 'bg-yellow-100 text-yellow-800';
-      case '승인':
-      case '구동중':
-      case 'active':
+      case 'approved':
         return 'bg-green-100 text-green-800';
-      case '취소':
-      case 'inactive':
+      case 'cancelled':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -194,7 +192,7 @@ export default function SettlementPage() {
       alert('입금일을 선택해주세요.');
       return;
     }
-    if (!depositorName.trim()) {
+    if (!payer_name.trim()) {
       alert('입금자명을 입력해주세요.');
       return;
     }
@@ -203,13 +201,22 @@ export default function SettlementPage() {
       // 선택된 항목들의 데이터 준비
       const selectedItemsData = settlementItems.filter(item => selectedItems.includes(item.id));
       
+      console.log('선택된 항목들:', selectedItemsData);
+      console.log('정산 폼 데이터:', {
+        totalSlots: selectedSlotCount,
+        finalAmount,
+        payerName: payer_name,
+        depositDate,
+        memo
+      });
+
       // 정산 데이터 생성 (새로운 구조)
       const settlementData = {
-        sequential_number: selectedItemsData.length > 0 ? selectedItemsData[0].sequentialNumber : 1,
-        distributor_name: selectedItemsData.length > 0 ? selectedItemsData[0].distributorName : '총판A',
+        sequential_number: selectedItemsData.length > 0 ? selectedItemsData[0].sequential_number : 1,
+        distributor_name: selectedItemsData.length > 0 ? selectedItemsData[0].distributor_name : '총판A',
         total_slots: selectedSlotCount,
         total_deposit_amount: finalAmount,
-        depositor_name: depositorName,
+        depositor_name: payer_name, // API에서 이 필드명을 사용
         deposit_date: depositDate,
         request_date: depositDate, // 요청일도 입금일과 동일하게 설정
         memo: memo,
@@ -218,14 +225,23 @@ export default function SettlementPage() {
         updated_at: new Date().toISOString()
       };
 
-      // 정산 완료 처리 API 호출
+      console.log('전송할 정산 데이터:', settlementData);
+
+      // 정산 완료 처리 API 호출 (원래 구조)
       const completeResponse = await fetch('/api/settlement-requests/complete', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          slotIds: selectedItemsData.map(item => parseInt(item.id)),
+          slotIds: selectedItemsData.map(item => {
+            // item.id가 문자열인 경우 첫 번째 ID만 사용
+            const idStr = String(item.id);
+            const firstId = idStr.split(',')[0].trim();
+            const numericId = parseInt(firstId);
+            console.log('slotId 변환:', { original: item.id, firstId, numericId });
+            return isNaN(numericId) ? parseInt(item.id) || 0 : numericId;
+          }),
           settlementData: settlementData
         }),
       });
@@ -288,9 +304,9 @@ export default function SettlementPage() {
                 className="border border-gray-300 rounded px-3 py-2"
               >
                 <option value="">전체</option>
-                <option value="승인대기">승인대기</option>
-                <option value="승인">승인</option>
-                <option value="취소">취소</option>
+                <option value="requested">정산요청</option>
+                <option value="approved">승인</option>
+                <option value="cancelled">취소</option>
               </select>
             </div>
             <div>
@@ -321,6 +337,7 @@ export default function SettlementPage() {
                     />
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">순번</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">구분</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">총판명</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">아이디</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">슬롯추가일</th>
@@ -344,19 +361,30 @@ export default function SettlementPage() {
                         className="rounded border-gray-300"
                       />
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 border-b">{item.sequentialNumber}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900 border-b">{item.distributorName}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900 border-b">{item.customerId}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900 border-b">{formatDate(item.slotAdditionDate)}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900 border-b">{item.slotType}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900 border-b">{item.numberOfSlots}개</td>
-                    <td className="px-4 py-3 text-sm text-gray-900 border-b">{item.depositorName}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900 border-b">{formatAmount(item.depositAmount)}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900 border-b">{item.daysUsed}일</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 border-b">{item.sequential_number}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 border-b">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        item.category === '연장' ? 'bg-green-100 text-green-800' :
+                        item.category === '입금' ? 'bg-blue-100 text-blue-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {item.category || '일반'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 border-b">{item.distributor_name}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 border-b">{item.customer_id}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 border-b">{formatDate(item.slot_addition_date)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 border-b">{item.slot_type}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 border-b">{item.slot_count}개</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 border-b">{item.payer_name}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 border-b">{formatAmount(item.payment_amount)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 border-b">{item.usage_days}일</td>
                     <td className="px-4 py-3 text-sm text-gray-900 border-b">{item.memo}</td>
                     <td className="px-4 py-3 text-sm text-gray-900 border-b">
                       <span className={`px-2 py-1 rounded text-xs ${getStatusBadgeColor(item.status)}`}>
-                        {item.status}
+                        {item.status === 'requested' ? '정산요청' : 
+                         item.status === 'approved' ? '승인' : 
+                         item.status === 'cancelled' ? '취소' : item.status}
                       </span>
                     </td>
                   </tr>
@@ -445,8 +473,8 @@ export default function SettlementPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">입금자명</label>
                 <input
                   type="text"
-                  value={depositorName}
-                  onChange={(e) => setDepositorName(e.target.value)}
+                  value={payer_name}
+                  onChange={(e) => setPayerName(e.target.value)}
                   className="w-full border border-gray-300 rounded px-3 py-2"
                   placeholder="입금자명을 입력하세요"
                 />

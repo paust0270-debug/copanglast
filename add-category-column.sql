@@ -10,3 +10,6 @@ UPDATE settlement_requests
 SET category = 'slot' 
 WHERE category IS NULL;
 
+
+
+

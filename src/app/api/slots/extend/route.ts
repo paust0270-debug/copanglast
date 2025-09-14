@@ -19,10 +19,10 @@ export async function POST(request: NextRequest) {
     const numericSlotId = parseInt(slotId);
     console.log('슬롯 ID:', numericSlotId);
 
-    // 슬롯 정보 조회
+    // 슬롯 정보 조회 (slot_count 포함)
     const { data: slotData, error: slotError } = await supabase
       .from('slots')
-      .select('id, customer_id, customer_name, slot_type, created_at, usage_days')
+      .select('id, customer_id, customer_name, slot_type, slot_count, created_at, usage_days')
       .eq('id', numericSlotId)
       .single();
 
@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('슬롯 데이터:', slotData);
+    console.log('슬롯 개수 확인:', slotData.slot_count);
 
     // 현재 만료일 계산 (created_at + usage_days)
     const createdDate = new Date(slotData.created_at);
@@ -68,21 +69,25 @@ export async function POST(request: NextRequest) {
 
     // 연장 내역을 정산 테이블에 저장 (미정산 내역으로 추가)
     try {
+      const settlementData = {
+        customer_id: slotData.customer_id,
+        customer_name: slotData.customer_name || slotData.customer_id,
+        slot_type: slotData.slot_type || 'coupang',
+        slot_count: slotData.slot_count || 1, // 실제 슬롯 개수
+        payment_type: 'extension', // 슬롯 연장은 항상 extension
+        payer_name: payerName || '',
+        payment_amount: parseInt(paymentAmount) || 0,
+        payment_date: paymentDate || new Date().toISOString().split('T')[0],
+        usage_days: parseInt(usageDays),
+        memo: '',
+        status: 'pending' // 미정산 상태로 생성
+      };
+      
+      console.log('정산 데이터 저장:', settlementData);
+      
       const { error: settlementError } = await supabase
         .from('settlements')
-        .insert({
-          customer_id: slotData.customer_id,
-          customer_name: slotData.customer_name || slotData.customer_id,
-          slot_type: slotData.slot_type || 'coupang',
-          slot_count: 1, // 연장은 개별 슬롯 단위
-          payment_type: 'extension', // 슬롯 연장은 항상 extension
-          payer_name: payerName || '',
-          payment_amount: parseInt(paymentAmount) || 0,
-          payment_date: paymentDate || new Date().toISOString().split('T')[0],
-          usage_days: parseInt(usageDays),
-          memo: `슬롯 연장 - ${usageDays}일 연장 (${paymentType === 'deposit' ? '입금' : '쿠폰'})`,
-          status: 'pending' // 미정산 상태로 생성
-        });
+        .insert(settlementData);
 
       if (settlementError) {
         console.log('정산 내역 저장 실패 (무시):', settlementError);

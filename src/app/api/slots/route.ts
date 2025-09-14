@@ -113,7 +113,6 @@ export async function POST(request: NextRequest) {
     // 정산 테이블에도 데이터 저장 (미정산 페이지에서 조회하기 위해)
     try {
       const settlementData = {
-        slot_id: slot.id,
         customer_id: customerId,
         customer_name: customerName,
         slot_type: slotType,
@@ -123,7 +122,7 @@ export async function POST(request: NextRequest) {
         payment_amount: paymentAmount ? parseInt(paymentAmount) : 0,
         payment_date: paymentDate || new Date().toISOString().split('T')[0],
         usage_days: usageDays ? parseInt(usageDays) : 30,
-        memo: memo || `슬롯 추가 - ${slotType} ${slotCount}개`,
+        memo: memo || '',
         status: 'pending' // 미정산 상태로 생성
       };
 
