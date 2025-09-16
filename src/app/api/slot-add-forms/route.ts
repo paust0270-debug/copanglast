@@ -33,7 +33,6 @@ export async function POST(request: NextRequest) {
     // 슬롯 추가 폼 데이터 생성
     const formData = {
       customer_id: customerId,
-      customer_name: customerName,
       slot_type: slotType,
       slot_count: parseInt(slotCount),
       payment_type: paymentType || null,

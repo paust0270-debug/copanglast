@@ -20,6 +20,7 @@ interface Customer {
   kakaoId?: string;
   memo?: string;
   distributor: string;
+  distributor_name: string; // 총판명 필드 추가
   status: string;
   slot_used: number;
   additional_count: number;
@@ -601,6 +602,7 @@ export function CustomerPageContent() {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">순번</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">소속총판</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">총판명</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">아이디</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">비밀번호</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">고객명</th>
@@ -617,7 +619,7 @@ export function CustomerPageContent() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {customers.length === 0 ? (
                   <tr>
-                    <td colSpan={13} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={15} className="px-6 py-4 text-center text-gray-500">
                       등록된 고객이 없습니다.
                     </td>
                   </tr>
@@ -636,6 +638,7 @@ export function CustomerPageContent() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{index + 1}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{customer.distributor || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{customer.distributor_name || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{customer.username}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{customer.password || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{customer.name}</td>
@@ -830,6 +833,16 @@ export function CustomerPageContent() {
                     id="edit-distributor"
                     value={editForm.distributor || ''}
                     onChange={(e) => handleInputChange('distributor', e.target.value)}
+                    className="mt-1"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-distributor-name">총판명 *</Label>
+                  <Input
+                    id="edit-distributor-name"
+                    value={editForm.distributor_name || ''}
+                    onChange={(e) => handleInputChange('distributor_name', e.target.value)}
                     className="mt-1"
                     required
                   />

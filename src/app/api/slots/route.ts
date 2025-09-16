@@ -112,15 +112,26 @@ export async function POST(request: NextRequest) {
 
     // 정산 테이블에도 데이터 저장 (미정산 페이지에서 조회하기 위해)
     try {
+      // 등록된 총판명 조회 (distributors 테이블에서)
+      const { data: distributorsData, error: distributorsError } = await supabase
+        .from('distributors')
+        .select('name')
+        .order('created_at', { ascending: true })
+        .limit(1);
+
+      const distributorName = distributorsData && distributorsData.length > 0 
+        ? distributorsData[0].name 
+        : '일반'; // 기본값
+
       const settlementData = {
         customer_id: customerId,
         customer_name: customerName,
+        distributor_name: distributorName, // 등록된 총판명 사용
         slot_type: slotType,
         slot_count: parseInt(slotCount),
         payment_type: paymentType || 'deposit', // 기본값으로 deposit 설정
         payer_name: payerName || '',
         payment_amount: paymentAmount ? parseInt(paymentAmount) : 0,
-        payment_date: paymentDate || new Date().toISOString().split('T')[0],
         usage_days: usageDays ? parseInt(usageDays) : 30,
         memo: memo || '',
         status: 'pending' // 미정산 상태로 생성

@@ -69,15 +69,26 @@ export async function POST(request: NextRequest) {
 
     // 연장 내역을 정산 테이블에 저장 (미정산 내역으로 추가)
     try {
+      // 등록된 총판명 조회 (distributors 테이블에서)
+      const { data: distributorsData, error: distributorsError } = await supabase
+        .from('distributors')
+        .select('name')
+        .order('created_at', { ascending: true })
+        .limit(1);
+
+      const distributorName = distributorsData && distributorsData.length > 0 
+        ? distributorsData[0].name 
+        : '일반'; // 기본값
+
       const settlementData = {
         customer_id: slotData.customer_id,
         customer_name: slotData.customer_name || slotData.customer_id,
+        distributor_name: distributorName, // 등록된 총판명 사용
         slot_type: slotData.slot_type || 'coupang',
         slot_count: slotData.slot_count || 1, // 실제 슬롯 개수
         payment_type: 'extension', // 슬롯 연장은 항상 extension
         payer_name: payerName || '',
         payment_amount: parseInt(paymentAmount) || 0,
-        payment_date: paymentDate || new Date().toISOString().split('T')[0],
         usage_days: parseInt(usageDays),
         memo: '',
         status: 'pending' // 미정산 상태로 생성

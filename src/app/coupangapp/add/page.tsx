@@ -342,7 +342,7 @@ export default function SlotAddPage() {
         console.log(`데이터 변환 중 ${index + 1}/${data.length}:`, item);
         return {
           id: item.id,
-          customer: item.customer || `_PD_${item.keyword?.substring(0, 8) || 'unknown'}`,
+          customer: item.name || `_PD_${item.keyword?.substring(0, 8) || 'unknown'}`, // name 필드 사용
           nickname: item.nickname || item.keyword?.substring(0, 10) || 'unknown',
           workGroup: item.work_group || '공통',
           keyword: item.keyword || '',

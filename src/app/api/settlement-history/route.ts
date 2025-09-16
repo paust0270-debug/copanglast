@@ -83,7 +83,6 @@ export async function GET(request: NextRequest) {
       .from('settlement_history')
       .select(`
         id,
-        settlement_id,
         sequential_number,
         category,
         distributor_name,

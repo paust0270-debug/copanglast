@@ -15,10 +15,10 @@ export async function GET(
     const settlementHistoryId = params.id;
     console.log('정산수정용 데이터 조회 시작, settlement_history ID:', settlementHistoryId);
 
-    // 1. settlement_history에서 해당 ID의 원본 settlements ID들 조회
+    // 1. settlement_history에서 해당 ID의 정보 조회
     const { data: historyData, error: historyError } = await supabase
       .from('settlement_history')
-      .select('original_settlement_ids, payer_name, memo, payment_amount')
+      .select('id, payer_name, memo, payment_amount, customer_id, slot_count, slot_type, distributor_name, customer_name, payment_type, usage_days, status, created_at')
       .eq('id', settlementHistoryId)
       .single();
 
@@ -39,62 +39,10 @@ export async function GET(
       }, { status: 404 });
     }
 
-    // 원본 settlements ID들 파싱
-    const originalSettlementIds = historyData.original_settlement_ids 
-      ? historyData.original_settlement_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id))
-      : [];
-    
-    console.log('원본 settlements ID들:', originalSettlementIds);
+    console.log('조회된 settlement_history 데이터:', historyData);
 
-    // original_settlement_ids가 없는 경우 (기존 데이터) fallback 처리
-    if (originalSettlementIds.length === 0) {
-      console.log('원본 settlements ID가 없어서 fallback 처리: status=history인 모든 데이터 조회');
-      
-      // fallback: status='history'인 모든 settlements 조회 (기존 방식)
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from('settlements')
-        .select(`
-          id,
-          customer_id,
-          customer_name,
-          distributor_name,
-          slot_type,
-          slot_count,
-          payment_type,
-          payer_name,
-          payment_amount,
-          usage_days,
-          memo,
-          status,
-          created_at,
-          updated_at
-        `)
-        .eq('status', 'history')
-        .order('created_at', { ascending: true });
-
-      if (fallbackError) {
-        console.error('fallback settlements 조회 오류:', fallbackError);
-        return NextResponse.json({
-          success: false,
-          error: 'settlements 조회 중 오류가 발생했습니다.'
-        }, { status: 500 });
-      }
-
-      console.log('fallback으로 조회된 settlements 데이터:', fallbackData?.length || 0, '개');
-
-      return NextResponse.json({
-        success: true,
-        data: fallbackData || [],
-        settlementInfo: {
-          payer_name: historyData.payer_name,
-          deposit_date: new Date().toISOString().split('T')[0], // 현재 날짜 사용
-          memo: historyData.memo,
-          include_tax_invoice: false
-        }
-      });
-    }
-
-    // 2. 원본 settlements ID들로 직접 조회 (매핑 없이 정확한 데이터)
+    // 2. 해당 정산에 포함된 개별 settlements 항목들 조회
+    // 깃허브 20250914 백업 파일 로직: 정산 완료 시점을 기준으로 최근 settlements만 조회
     const { data: settlementsData, error: settlementsError } = await supabase
       .from('settlements')
       .select(`
@@ -113,7 +61,10 @@ export async function GET(
         created_at,
         updated_at
       `)
-      .in('id', originalSettlementIds)
+      .eq('customer_id', historyData.customer_id)
+      .eq('slot_type', historyData.slot_type)
+      .eq('status', 'history') // 정산 완료된 항목들만 조회
+      .lte('created_at', historyData.created_at) // 정산 완료 시점 이전의 항목들만
       .order('created_at', { ascending: true });
 
     if (settlementsError) {
@@ -126,15 +77,52 @@ export async function GET(
 
     console.log('조회된 settlements 데이터:', settlementsData?.length || 0, '개');
 
+    // 3. 슬롯수와 결제액이 일치하는 settlements만 필터링
+    // 깃허브 20250914 백업 파일 로직: 정확한 settlements만 반환
+    let filteredSettlements = settlementsData || [];
+    
+    console.log(`필터링 전 settlements 개수: ${filteredSettlements.length}개`);
+    console.log(`settlement_history - 슬롯수: ${historyData.slot_count}, 결제액: ${historyData.payment_amount}`);
+    
+    // 최근 settlements부터 역순으로 확인하여 일치하는 조합 찾기
+    let foundMatch = false;
+    for (let i = filteredSettlements.length; i >= 1; i--) {
+      const recentSettlements = filteredSettlements.slice(-i);
+      const recentTotalSlots = recentSettlements.reduce((sum, settlement) => sum + settlement.slot_count, 0);
+      const recentTotalAmount = recentSettlements.reduce((sum, settlement) => sum + settlement.payment_amount, 0);
+      
+      console.log(`최근 ${i}개 settlements - 슬롯수: ${recentTotalSlots}, 결제액: ${recentTotalAmount}`);
+      
+      if (recentTotalSlots === historyData.slot_count && recentTotalAmount === historyData.payment_amount) {
+        filteredSettlements = recentSettlements;
+        foundMatch = true;
+        console.log(`✅ 일치하는 settlements 발견: ${recentSettlements.length}개`);
+        break;
+      }
+    }
+    
+    if (!foundMatch) {
+      console.log('⚠️ 일치하는 settlements 조합을 찾지 못했습니다. 최근 2개만 반환합니다.');
+      filteredSettlements = filteredSettlements.slice(-2);
+    }
+
+    console.log(`최종 반환할 settlements: ${filteredSettlements.length}개`);
+
+    // 3. settlement_history 정보를 기반으로 정산 정보 구성
+    const settlementInfo = {
+      payer_name: historyData.payer_name,
+      deposit_date: historyData.created_at ? historyData.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+      memo: historyData.memo || '',
+      include_tax_invoice: false,
+      totalAmount: historyData.payment_amount,
+      baseAmount: historyData.payment_amount,
+      taxAmount: Math.floor(historyData.payment_amount * 0.1) // 10% 세액
+    };
+
     return NextResponse.json({
       success: true,
-      data: settlementsData || [],
-      settlementInfo: {
-        payer_name: historyData.payer_name,
-        deposit_date: new Date().toISOString().split('T')[0], // 현재 날짜 사용
-        memo: historyData.memo,
-        include_tax_invoice: false
-      }
+      data: filteredSettlements,
+      settlementInfo: settlementInfo
     });
 
   } catch (error) {

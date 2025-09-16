@@ -145,8 +145,7 @@ export async function POST(request: NextRequest) {
       created_at: currentDateTime,
       completed_at: currentDateTime,
       settlement_batch_id: batchId,
-      original_settlement_item_id: null,
-      original_settlement_ids: safeSlotIds.join(',') // 원본 settlements ID들을 콤마로 구분하여 저장
+      original_settlement_item_id: null
     };
 
     console.log('정산 내역 저장 데이터:', settlementHistoryData);

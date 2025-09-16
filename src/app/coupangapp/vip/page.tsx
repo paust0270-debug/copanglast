@@ -343,7 +343,7 @@ export default function CoupangVipPage() {
         console.log(`VIP 데이터 변환 중 ${index + 1}/${vipData.length}:`, item);
         return {
           id: item.id,
-          customer: item.customer || `_VIP_${item.keyword?.substring(0, 8) || 'unknown'}`,
+          customer: item.name || `_VIP_${item.keyword?.substring(0, 8) || 'unknown'}`, // name 필드 사용
           nickname: item.nickname || item.keyword?.substring(0, 10) || 'unknown',
           workGroup: item.work_group || 'VIP',
           keyword: item.keyword || '',
