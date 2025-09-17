@@ -1,0 +1,15 @@
+{
+  "timestamp": "2025-09-17T10:37:15.733Z",
+  "totalTables": 9,
+  "tableCounts": {
+    "user_profiles": 6,
+    "slots": 70,
+    "settlements": 145,
+    "distributors": 4,
+    "customers": 0,
+    "notices": 5,
+    "slot_add_forms": 0,
+    "settlement_requests": 0,
+    "settlement_history": 5
+  }
+}
