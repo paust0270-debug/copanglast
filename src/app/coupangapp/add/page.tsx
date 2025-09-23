@@ -155,51 +155,53 @@ export default function SlotAddPage() {
     initializeData();
   }, []);
 
-  // 고객의 슬롯 현황을 가져오는 함수 (슬롯 타입별로 계산)
+  // 고객의 슬롯 현황을 가져오는 함수 (slots 테이블에서 조인하여 계산)
   const loadCustomerSlotStatus = async (username: string, slotType: string) => {
     try {
-      // 일반 슬롯 현황 API에서 해당 고객의 데이터를 찾음
-      const response = await fetch('/api/slot-status');
+      console.log('🔄 고객 슬롯 현황 로드 시작:', { username, slotType });
+      
+      // 슬롯 현황 API를 사용하여 해당 고객의 슬롯 현황 조회
+      const urlParams = new URLSearchParams(window.location.search);
+      const customerId = urlParams.get('customerId');
+      const customerName = urlParams.get('customerName');
+      
+      // customerName이 비어있으면 username을 사용
+      const nameParam = customerName || username;
+      
+      const response = await fetch(`/api/slot-status?customerId=${customerId}&username=${username}&name=${encodeURIComponent(nameParam)}`);
       const data = await response.json();
       
+      console.log('📊 슬롯 현황 API 응답:', data);
+      
       if (data.success && data.data.length > 0) {
-        // 해당 username과 slotType의 슬롯 데이터를 찾음 (더 유연하게 매칭)
-        const customerSlots = data.data.filter((slot: any) => {
-          if (slot.customerId !== username) return false;
-          
-          // VIP 슬롯의 경우 더 유연하게 매칭
-          if (slotType.includes('VIP') || slotType.includes('vip')) {
-            return slot.slotType.includes('VIP') || slot.slotType.includes('vip');
-          }
-          
-          // 일반 슬롯의 경우 정확히 매칭
-          return slot.slotType === slotType;
-        });
+        // 첫 번째 슬롯 데이터에서 정보 추출
+        const slotData = data.data[0];
+        const totalSlots = slotData.slotCount || 0;
+        const usedSlots = slotData.usedSlots || 0;
+        const remainingSlots = slotData.remainingSlots || 0;
         
-        if (customerSlots.length > 0) {
-          // 해당 슬롯 타입의 총합 계산
-          const totalSlots = customerSlots.reduce((sum: number, slot: any) => sum + slot.slotCount, 0);
-          const usedSlots = customerSlots.reduce((sum: number, slot: any) => sum + slot.usedSlots, 0);
-          const remainingSlots = customerSlots.reduce((sum: number, slot: any) => sum + slot.remainingSlots, 0);
-          
-          setCustomerSlotStatus({
-            totalSlots,
-            usedSlots,
-            remainingSlots
-          });
-          console.log(`${slotType} 슬롯 현황 로드 완료:`, { totalSlots, usedSlots, remainingSlots });
-        } else {
-          console.log(`해당 고객의 ${slotType} 슬롯 데이터를 찾을 수 없습니다:`, username);
-          // 슬롯 데이터가 없으면 0으로 설정
-          setCustomerSlotStatus({
-            totalSlots: 0,
-            usedSlots: 0,
-            remainingSlots: 0
-          });
-        }
+        setCustomerSlotStatus({
+          totalSlots,
+          usedSlots,
+          remainingSlots
+        });
+        console.log(`✅ ${slotType} 슬롯 현황 로드 완료:`, { totalSlots, usedSlots, remainingSlots });
+      } else {
+        console.log(`❌ 해당 고객의 ${slotType} 슬롯 데이터를 찾을 수 없습니다:`, username);
+        // 슬롯 데이터가 없으면 0으로 설정
+        setCustomerSlotStatus({
+          totalSlots: 0,
+          usedSlots: 0,
+          remainingSlots: 0
+        });
       }
     } catch (error) {
-      console.error('고객 슬롯 현황 로드 실패:', error);
+      console.error('❌ 고객 슬롯 현황 로드 실패:', error);
+      setCustomerSlotStatus({
+        totalSlots: 0,
+        usedSlots: 0,
+        remainingSlots: 0
+      });
     }
   };
 
@@ -211,7 +213,7 @@ export default function SlotAddPage() {
     const customerName = urlParams.get('customerName');
     const slotType = urlParams.get('slotType');
     
-    if (customerId && slotCount && customerName) {
+    if (customerId && slotCount) {
       console.log('URL 파라미터에서 고객 정보 확인:', { customerId, slotCount, customerName, slotType });
       
       // 폼에 고객 정보 설정
@@ -227,7 +229,7 @@ export default function SlotAddPage() {
       }
       
       // 고객 정보를 메모에 추가
-      console.log(`고객 ${customerName} (${customerId})의 ${slotCount}개 슬롯 등록 준비 완료`);
+      console.log(`고객 ${customerName || 'Unknown'} (${customerId})의 ${slotCount}개 슬롯 등록 준비 완료`);
     }
   }, []);
 
@@ -316,44 +318,47 @@ export default function SlotAddPage() {
     return `${formatDate(now)} ~ ${formatDate(expiryDate)}`;
   };
 
-  // 고객 목록 로드 함수 (스키마 캐시 문제 해결 적용)
+  // 슬롯 등록 목록 로드 함수 (slot_status 테이블에서 조회)
   const loadCustomers = async () => {
     try {
       setLoading(true);
       setError(null); // 이전 오류 초기화
       
-      console.log('🔄 고객 목록 로드 시작...');
-      console.log('현재 환경 변수 상태:');
-      console.log('- NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? '설정됨' : '설정되지 않음');
-      console.log('- NEXT_PUBLIC_SUPABASE_ANON_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '설정됨' : '설정되지 않음');
+      console.log('🔄 슬롯 등록 목록 로드 시작...');
       
-      // 스키마 캐시 문제 해결 적용
-      const data = await getCustomers();
-      console.log('✅ Supabase에서 받은 데이터:', data);
-      console.log('데이터 타입:', typeof data);
-      console.log('데이터 길이:', Array.isArray(data) ? data.length : '배열이 아님');
+      // slot_status 테이블에서 데이터 직접 조회 (type 파라미터 추가)
+      const response = await fetch('/api/slot-status?type=slot_status');
+      const result = await response.json();
       
-      if (!Array.isArray(data)) {
-        throw new Error(`예상된 배열이 아닙니다. 타입: ${typeof data}, 값: ${JSON.stringify(data)}`);
+      if (!result.success) {
+        throw new Error(result.error || '슬롯 등록 목록을 불러오는데 실패했습니다.');
       }
       
-      // Supabase 데이터를 CustomerSlot 형식으로 변환
-      const convertedData: CustomerSlot[] = data.map((item: any, index: number) => {
-        console.log(`데이터 변환 중 ${index + 1}/${data.length}:`, item);
+      console.log('✅ slot_status에서 받은 데이터:', result.data);
+      
+      if (!Array.isArray(result.data)) {
+        throw new Error(`예상된 배열이 아닙니다. 타입: ${typeof result.data}`);
+      }
+      
+      // slot_status 데이터를 CustomerSlot 형식으로 변환
+      const convertedData: CustomerSlot[] = result.data.map((item: any, index: number) => {
+        console.log(`데이터 변환 중 ${index + 1}/${result.data.length}:`, item);
         return {
           id: item.id,
-          customer: item.name || `_PD_${item.keyword?.substring(0, 8) || 'unknown'}`, // name 필드 사용
-          nickname: item.nickname || item.keyword?.substring(0, 10) || 'unknown',
-          workGroup: item.work_group || '공통',
+          customer: item.customerName || item.customer_name || `_PD_${item.keyword?.substring(0, 8) || 'unknown'}`,
+          nickname: item.keyword?.substring(0, 10) || 'unknown',
+          workGroup: item.workGroup || item.work_group || '공통',
           keyword: item.keyword || '',
-          linkUrl: item.link_url || '',
-          currentRank: item.current_rank || '1 [0]',
-          startRank: item.start_rank || '1 [0]',
-          slotCount: item.slot_count || 1,
+          linkUrl: item.linkUrl || item.link_url || '',
+          currentRank: item.currentRank || item.current_rank || '1 [0]',
+          startRank: item.startRank || item.start_rank || '1 [0]',
+          slotCount: item.slotCount || item.slot_count || 1,
           traffic: item.traffic || '0 (0/0)',
-          equipmentGroup: item.equipment_group || '지정안함',
-          remainingDays: item.remaining_days || '30일',
-          registrationDate: item.registration_date || generateRegistrationDateRange(),
+          equipmentGroup: item.equipmentGroup || item.equipment_group || '지정안함',
+          remainingDays: item.remainingDays || (item.usage_days ? `${item.usage_days}일` : '30일'),
+          registrationDate: item.registrationDate || (item.created_at ? 
+            `${new Date(item.created_at).toISOString().split('T')[0]} ~ ${new Date(new Date(item.created_at).getTime() + (item.usage_days || 30) * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}` : 
+            generateRegistrationDateRange()),
           status: item.status || '작동중',
           memo: item.memo || '',
           created_at: item.created_at
@@ -362,10 +367,10 @@ export default function SlotAddPage() {
       
       console.log('✅ 변환된 데이터:', convertedData);
       setCustomers(convertedData);
-      console.log('✅ 고객 목록 상태 업데이트 완료');
+      console.log('✅ 슬롯 등록 목록 상태 업데이트 완료');
     } catch (err: any) {
       // 더 자세한 오류 정보 로깅
-      console.error('❌ 고객 목록 로드 실패 - 전체 오류 객체:', err);
+      console.error('❌ 슬롯 등록 목록 로드 실패 - 전체 오류 객체:', err);
       console.error('❌ 오류 메시지:', err?.message);
       console.error('❌ 오류 코드:', err?.code);
       console.error('❌ 오류 스택:', err?.stack);
@@ -373,7 +378,7 @@ export default function SlotAddPage() {
       console.error('❌ 오류 키:', Object.keys(err || {}));
       
       // 사용자에게 더 구체적인 오류 메시지 표시
-      let errorMessage = '고객 목록을 불러오는데 실패했습니다.';
+      let errorMessage = '슬롯 등록 목록을 불러오는데 실패했습니다.';
       if (err?.message) {
         errorMessage += ` (${err.message})`;
       }
@@ -508,7 +513,7 @@ export default function SlotAddPage() {
     }));
   };
 
-  // 슬롯 등록 처리 (Supabase 연동)
+  // 슬롯 등록 처리 (slot_status 테이블에 저장)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -518,30 +523,59 @@ export default function SlotAddPage() {
     }
 
     try {
-      // Supabase에 저장할 데이터 준비
-      const customerData = {
-        name: `_PD_${form.keyword.substring(0, 8)}`,
+      // URL 파라미터에서 고객 정보 가져오기
+      const urlParams = new URLSearchParams(window.location.search);
+      const customerId = urlParams.get('customerId');
+      const username = urlParams.get('username');
+      const customerName = urlParams.get('customerName');
+      const slotType = urlParams.get('slotType');
+
+      if (!customerId || !username) {
+        alert('고객 정보가 없습니다. 다시 접속해주세요.');
+        return;
+      }
+
+      // customerName이 비어있으면 username을 사용
+      const finalCustomerName = customerName || username;
+
+      // slot_status 테이블에 저장할 데이터 준비
+      const slotStatusData = {
+        customer_id: username,
+        customer_name: finalCustomerName,
+        distributor: '일반', // 기본값
+        work_group: form.workGroup,
         keyword: form.keyword,
         link_url: form.linkUrl,
-        slot_count: form.slotCount,
         memo: form.memo,
-        work_group: form.workGroup,
-        equipment_group: form.equipmentGroup,
         current_rank: '1 [0]',
         start_rank: '1 [0]',
+        slot_count: form.slotCount,
         traffic: '0 (0/0)',
-        remaining_days: '30일',
-        registration_date: generateRegistrationDateRange(),
-        status: '작동중'
+        equipment_group: form.equipmentGroup,
+        usage_days: 30,
+        status: '작동중',
+        slot_type: slotType || '쿠팡' // 슬롯 타입 (쿠팡, 네이버 등)
       };
 
-      // Supabase에 저장 (스키마 캐시 문제 해결 적용)
-              const savedCustomer = await addSlot(customerData);
+      // slot_status 테이블에 저장
+      const response = await fetch('/api/slot-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(slotStatusData),
+      });
+
+      const result = await response.json();
       
-      // 새로운 고객 슬롯 추가 (화면 업데이트)
+      if (!result.success) {
+        throw new Error(result.error || '슬롯 등록에 실패했습니다.');
+      }
+
+      // 새로운 슬롯 등록 추가 (화면 업데이트)
       const newCustomer: CustomerSlot = {
-        id: savedCustomer.id,
-        customer: customerData.name,
+        id: result.data.id,
+        customer: finalCustomerName,
         nickname: form.keyword.substring(0, 10),
         workGroup: form.workGroup,
         keyword: form.keyword,
@@ -552,13 +586,22 @@ export default function SlotAddPage() {
         traffic: '0 (0/0)',
         equipmentGroup: form.equipmentGroup,
         remainingDays: '30일',
-        registrationDate: customerData.registration_date,
+        registrationDate: result.data.created_at ? 
+          `${new Date(result.data.created_at).toISOString().split('T')[0]} ~ ${new Date(new Date(result.data.created_at).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}` : 
+          generateRegistrationDateRange(),
         status: '작동중',
         memo: form.memo,
-        created_at: savedCustomer.created_at
+        created_at: result.data.created_at
       };
 
       setCustomers(prev => [newCustomer, ...prev]);
+      
+      // 슬롯 현황 업데이트 (사용된 슬롯 수 증가)
+      setCustomerSlotStatus(prev => ({
+        ...prev,
+        usedSlots: prev.usedSlots + form.slotCount,
+        remainingSlots: Math.max(0, prev.remainingSlots - form.slotCount)
+      }));
       
       // 폼 초기화
       setForm({
@@ -1064,7 +1107,7 @@ export default function SlotAddPage() {
                 const username = searchParams.get('username');
                 const customerName = searchParams.get('customerName');
                 
-                if (customerName) {
+                if (username) {
                   return (
                     <div className="flex items-center space-x-3">
                       <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full">
@@ -1073,8 +1116,8 @@ export default function SlotAddPage() {
                         </svg>
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-gray-800">고객 ID: {username || customerId}</div>
-                        <div className="text-sm text-gray-600">고객명: {decodeURIComponent(customerName)}</div>
+                        <div className="text-sm font-medium text-gray-800">고객 ID: {username}</div>
+                        <div className="text-sm text-gray-600">고객명: {customerName ? decodeURIComponent(customerName) : username}</div>
                       </div>
                     </div>
                   );
@@ -1095,12 +1138,16 @@ export default function SlotAddPage() {
               
               <div className="flex items-center space-x-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600">{customerSlotStatus.totalSlots}</div>
-                  <div className="text-sm text-gray-600">총 {customerSlotStatus.totalSlots}개</div>
+                  <div className="text-3xl font-bold text-green-600">{customerSlotStatus.remainingSlots}</div>
+                  <div className="text-sm text-gray-600">사용 가능 {customerSlotStatus.remainingSlots}개</div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-red-600">{customerSlotStatus.usedSlots}</div>
-                  <div className="text-sm text-gray-600">{customerSlotStatus.usedSlots}개 사용</div>
+                  <div className="text-sm text-gray-600">사용 중 {customerSlotStatus.usedSlots}개</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-600">{customerSlotStatus.totalSlots}</div>
+                  <div className="text-sm text-gray-600">총 {customerSlotStatus.totalSlots}개</div>
                 </div>
               </div>
             </div>
@@ -1198,10 +1245,20 @@ export default function SlotAddPage() {
               </div>
 
               <div className="flex justify-center space-x-3">
-                <Button type="submit" className="bg-purple-600 hover:bg-purple-700 px-6 h-9">
-                  작업등록
+                <Button 
+                  type="submit" 
+                  className="bg-purple-600 hover:bg-purple-700 px-6 h-9"
+                  disabled={customerSlotStatus.remainingSlots < form.slotCount}
+                >
+                  {customerSlotStatus.remainingSlots < form.slotCount ? '사용 가능한 슬롯 부족' : '작업등록'}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setShowBulkModal(true)} className="px-6 h-9">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setShowBulkModal(true)} 
+                  className="px-6 h-9"
+                  disabled={customerSlotStatus.remainingSlots === 0}
+                >
                   대량 작업등록
                 </Button>
               </div>
@@ -1287,10 +1344,10 @@ export default function SlotAddPage() {
           </div>
         )}
 
-        {/* 등록된 고객 목록 */}
+        {/* 슬롯 등록 목록 */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">등록된 고객 목록</CardTitle>
+            <CardTitle className="text-xl">슬롯 등록 목록</CardTitle>
           </CardHeader>
           <CardContent>
             {/* 전체 수정 모드 폼 */}

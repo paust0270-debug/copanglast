@@ -17,38 +17,69 @@ export async function GET(request: NextRequest) {
     const searchQuery = searchParams.get('search');
     const customerId = searchParams.get('customerId'); // 특정 고객 ID 파라미터
     const username = searchParams.get('username'); // 실제 고객명 (customer_id와 매칭)
+    const type = searchParams.get('type'); // 'slots' 또는 'slot_status' 구분
 
-    // 슬롯 테이블에서 데이터 조회
+    // type 파라미터에 따라 다른 테이블 조회
+    if (type === 'slot_status') {
+      // slot_status 테이블 조회 (쿠팡 앱 추가 페이지용)
+      let slotStatusQuery = supabase
+        .from('slot_status')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      const { data: slotStatusData, error: slotStatusError } = await slotStatusQuery;
+
+      if (slotStatusError) {
+        console.error('slot_status 데이터 조회 오류:', slotStatusError);
+        return NextResponse.json(
+          { error: '슬롯 등록 데이터를 불러오는 중 오류가 발생했습니다.' },
+          { status: 500 }
+        );
+      }
+
+      // slot_status 데이터를 슬롯 등록 목록 형식으로 변환
+      const formattedSlotStatusData = slotStatusData?.map(slot => ({
+        id: slot.id,
+        customer_id: slot.customer_id,
+        customer_name: slot.customer_name,
+        distributor: slot.distributor,
+        work_group: slot.work_group,
+        keyword: slot.keyword,
+        link_url: slot.link_url,
+        memo: slot.memo,
+        current_rank: slot.current_rank,
+        start_rank: slot.start_rank,
+        slot_count: slot.slot_count,
+        traffic: slot.traffic,
+        equipment_group: slot.equipment_group,
+        usage_days: slot.usage_days,
+        status: slot.status,
+        created_at: slot.created_at
+      })) || [];
+
+      return NextResponse.json({
+        success: true,
+        data: formattedSlotStatusData
+      });
+    }
+
+    // 기본: slots 테이블 조회 (슬롯 현황 페이지용)
     let slotsQuery = supabase
       .from('slots')
       .select('*')
       .order('created_at', { ascending: false });
 
-    // 총판별 필터링
-    if (userGroup && userGroup !== '0') {
-      slotsQuery = slotsQuery.eq('memo', userGroup);
+    // 특정 고객 필터링 (username으로 필터링)
+    if (username) {
+      slotsQuery = slotsQuery.eq('customer_id', username);
     }
 
     const { data: slotsData, error: slotsError } = await slotsQuery;
 
     if (slotsError) {
-      console.error('슬롯 데이터 조회 오류:', slotsError);
+      console.error('slots 데이터 조회 오류:', slotsError);
       return NextResponse.json(
         { error: '슬롯 데이터를 불러오는 중 오류가 발생했습니다.' },
-        { status: 500 }
-      );
-    }
-
-    // 고객 테이블에서 데이터 조회
-    const { data: customersData, error: customersError } = await supabase
-      .from('customers')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (customersError) {
-      console.error('고객 데이터 조회 오류:', customersError);
-      return NextResponse.json(
-        { error: '고객 데이터를 불러오는 중 오류가 발생했습니다.' },
         { status: 500 }
       );
     }
@@ -57,22 +88,25 @@ export async function GET(request: NextRequest) {
     if (customerId && username) {
       console.log('🔍 특정 고객 슬롯 현황 조회:', { customerId, username });
       
-      // username을 사용하여 실제 customer_id와 매칭
-      const customerSlots = slotsData?.filter(slot => slot.customer_id === username) || [];
+      // 해당 고객의 슬롯 데이터 (이미 username으로 필터링됨)
+      const customerSlots = slotsData || [];
       console.log('📊 고객 슬롯 데이터:', customerSlots);
       
-      // 해당 고객의 총 슬롯 수 계산 (inactive 상태 제외한 모든 슬롯의 slot_count 합계)
-      const totalSlots = customerSlots
-        .filter(slot => slot.status !== 'inactive')
-        .reduce((sum, slot) => sum + (slot.slot_count || 0), 0);
+      // 해당 고객의 총 슬롯 수 계산
+      const totalSlots = customerSlots.reduce((sum, slot) => sum + (slot.slot_count || 0), 0);
       
-      // 일시 중지된 슬롯 수 계산
-      const pausedSlots = customerSlots
-        .filter(slot => slot.status === 'inactive')
-        .reduce((sum, slot) => sum + (slot.slot_count || 0), 0);
-      
-      // 해당 고객의 사용된 슬롯 수 계산 (customers 테이블의 레코드 수 = 작업 등록 횟수)
-      const usedSlots = customersData?.filter(customer => customer.name === username).length || 0;
+      // 사용된 슬롯 수는 slot_status 테이블에서 해당 고객의 등록된 작업 수
+      let usedSlots = 0;
+      try {
+        const { data: slotStatusData } = await supabase
+          .from('slot_status')
+          .select('slot_count')
+          .eq('customer_id', username);
+        
+        usedSlots = slotStatusData?.reduce((sum, slot) => sum + (slot.slot_count || 0), 0) || 0;
+      } catch (error) {
+        console.error('slot_status 조회 오류:', error);
+      }
       
       // 사용 가능한 슬롯 수 계산
       const remainingSlots = Math.max(0, totalSlots - usedSlots);
@@ -81,31 +115,46 @@ export async function GET(request: NextRequest) {
         totalSlots,
         usedSlots,
         remainingSlots,
-        customerSlotsCount: customerSlots.length,
-        activeSlots: customerSlots.filter(slot => slot.status === 'active').length
+        customerSlotsCount: customerSlots.length
       });
       
-      const customerData = customersData?.find(customer => customer.id === customerId);
+      // 고객 정보 조회
+      let customerName = '';
+      let distributor = '본사';
+      
+      try {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('name, distributor')
+          .eq('username', username)
+          .single();
+        
+        if (userData) {
+          customerName = userData.name || '';
+          distributor = userData.distributor || '본사';
+        }
+      } catch (error) {
+        console.error('고객 정보 조회 오류:', error);
+      }
       
       return NextResponse.json({
         success: true,
         data: [{
           id: customerId,
           customerId: customerId,
-          customerName: customerData?.name || '',
-          slotType: '쿠팡',
-          slotCount: totalSlots, // 총 슬롯 수 (paused 제외)
-          usedSlots: usedSlots, // 사용된 슬롯 수
-          remainingSlots: remainingSlots, // 사용 가능한 슬롯 수
-          pausedSlots: pausedSlots, // 일시 중지된 슬롯 수
-          totalPaymentAmount: customerSlots[0]?.payment_amount || 0,
+          customerName: customerName,
+          slotType: customerSlots[0]?.slot_type || '쿠팡',
+          slotCount: totalSlots,
+          usedSlots: usedSlots,
+          remainingSlots: remainingSlots,
+          pausedSlots: 0,
+          totalPaymentAmount: customerSlots.reduce((sum, slot) => sum + (slot.payment_amount || 0), 0),
           remainingDays: customerSlots[0]?.usage_days || 0,
           registrationDate: customerSlots[0]?.created_at ? new Date(customerSlots[0].created_at).toISOString().split('T')[0] : '',
-          expiryDate: customerSlots[0]?.created_at && customerSlots[0]?.usage_days ? 
-            new Date(new Date(customerSlots[0].created_at).getTime() + customerSlots[0].usage_days * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : '',
+          expiryDate: customerSlots[0]?.expiry_date ? new Date(customerSlots[0].expiry_date).toISOString().split('T')[0] : '',
           addDate: customerSlots[0]?.created_at ? new Date(customerSlots[0].created_at).toISOString().split('T')[0] : '',
-          status: customerSlots[0]?.status || 'inactive',
-          userGroup: customerSlots[0]?.memo || '본사'
+          status: customerSlots[0]?.status || '작동중',
+          userGroup: distributor
         }],
         stats: {
           totalSlots,
@@ -118,7 +167,7 @@ export async function GET(request: NextRequest) {
 
     // 만료된 슬롯들을 자동으로 만료 상태로 업데이트
     const expiredSlots = slotsData?.filter(slot => {
-      if (!slot.created_at || !slot.usage_days || slot.status === 'expired') return false;
+      if (!slot.created_at || !slot.usage_days || slot.status === '만료') return false;
       
       const now = new Date();
       const createdDate = new Date(slot.created_at);
@@ -137,7 +186,7 @@ export async function GET(request: NextRequest) {
       const { error: updateError } = await supabase
         .from('slots')
         .update({ 
-          status: 'expired',
+          status: '만료',
           updated_at: new Date().toISOString()
         })
         .in('id', expiredSlotIds);
@@ -150,17 +199,14 @@ export async function GET(request: NextRequest) {
         // 업데이트된 슬롯들의 상태를 로컬 데이터에서도 변경
         slotsData?.forEach(slot => {
           if (expiredSlotIds.includes(slot.id)) {
-            slot.status = 'expired';
+            slot.status = '만료';
           }
         });
       }
     }
 
-    // 슬롯 데이터를 슬롯 현황 형식으로 변환
-    const slotStatusData = slotsData?.map(slot => {
-      // 해당 고객의 사용된 슬롯 수 계산 (customers 테이블의 레코드 수 = 작업 등록 횟수)
-      const usedSlots = customersData?.filter(customer => customer.name === slot.customer_id).length || 0;
-      
+    // slots 데이터를 슬롯 현황 형식으로 변환
+    const formattedSlotStatusData = slotsData?.map(slot => {
       // 실제 사용시간 기반 잔여기간 계산 (일, 시간, 분 단위)
       const now = new Date();
       const createdDate = slot.created_at ? new Date(slot.created_at) : now;
@@ -203,52 +249,30 @@ export async function GET(request: NextRequest) {
       // 만료 여부 확인 (잔여 시간이 0이면 만료)
       const isExpired = remainingMs === 0 && usageDays > 0;
       
-      // 슬롯타입을 한글로 변환
-      const getSlotTypeKorean = (slotType: string) => {
-        switch (slotType) {
-          case 'coupang':
-            return '쿠팡';
-          case 'coupang-vip':
-            return '쿠팡VIP';
-          case 'coupang-app':
-            return '쿠팡 앱';
-          case 'naver-shopping':
-            return '네이버 쇼핑';
-          case 'place':
-            return '네이버 플레이스';
-          case 'today-house':
-            return '오늘의집';
-          case 'aliexpress':
-            return '알리익스프레스';
-          default:
-            return slotType;
-        }
-      };
-      
       return {
         id: slot.id,
         customerId: slot.customer_id,
-        customerName: slot.customer_name,
-        slotType: getSlotTypeKorean(slot.slot_type),
-        slotCount: slot.status === 'inactive' ? 0 : slot.slot_count, // inactive 상태면 0으로 표시
-        usedSlots: usedSlots,
-        remainingSlots: slot.status === 'inactive' ? 0 : Math.max(0, slot.slot_count - usedSlots),
-        pausedSlots: slot.status === 'inactive' ? slot.slot_count : 0, // inactive 상태면 슬롯 개수 표시
-        totalPaymentAmount: slot.payment_amount || 0, // 총 입금액
-        remainingDays: remainingDays, // 잔여일수 (기존 호환성)
-        remainingHours: remainingHours, // 잔여시간
-        remainingMinutes: remainingMinutes, // 잔여분
-        remainingTimeString: remainingTimeString, // 잔여기간 문자열
-        registrationDate: registrationDate, // 등록일
-        expiryDate: expiryDate, // 만료일
+        customerName: '', // 별도로 조회 필요
+        slotType: slot.slot_type || '쿠팡',
+        slotCount: slot.slot_count || 1,
+        usedSlots: 0, // slot_status 테이블에서 계산
+        remainingSlots: slot.slot_count || 1,
+        pausedSlots: 0,
+        totalPaymentAmount: slot.payment_amount || 0,
+        remainingDays: remainingDays,
+        remainingHours: remainingHours,
+        remainingMinutes: remainingMinutes,
+        remainingTimeString: remainingTimeString,
+        registrationDate: registrationDate,
+        expiryDate: expiryDate,
         addDate: slot.created_at ? new Date(slot.created_at).toISOString().split('T')[0] : '',
         status: isExpired ? 'expired' : slot.status,
-        userGroup: slot.memo || '본사' // memo 필드를 userGroup으로 사용
+        userGroup: '본사' // 별도로 조회 필요
       };
     }) || [];
 
     // 검색 필터링
-    let filteredData = slotStatusData;
+    let filteredData = formattedSlotStatusData;
     if (searchQuery) {
       filteredData = filteredData.filter(slot =>
         slot.customerId.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -276,6 +300,73 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('슬롯 현황 조회 API 예외 발생:', error);
+    return NextResponse.json(
+      { error: '서버 오류가 발생했습니다.' },
+      { status: 500 }
+    );
+  }
+}
+
+// 슬롯 등록 (slot_status 테이블에 저장)
+export async function POST(request: NextRequest) {
+  try {
+    console.log('🔄 슬롯 등록 처리 중...');
+    
+    const body = await request.json();
+    console.log('받은 데이터:', body);
+
+    // 필수 필드 검증
+    const requiredFields = ['customer_id', 'customer_name', 'keyword', 'link_url', 'slot_count'];
+    for (const field of requiredFields) {
+      if (!body[field]) {
+        return NextResponse.json(
+          { error: `필수 필드가 누락되었습니다: ${field}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // slot_status 테이블에 데이터 삽입
+    const { data, error } = await supabase
+      .from('slot_status')
+      .insert([{
+        customer_id: body.customer_id,
+        customer_name: body.customer_name,
+        distributor: body.distributor || '일반',
+        work_group: body.work_group || '공통',
+        keyword: body.keyword,
+        link_url: body.link_url,
+        memo: body.memo || '',
+        current_rank: body.current_rank || '1 [0]',
+        start_rank: body.start_rank || '1 [0]',
+        slot_count: body.slot_count,
+        traffic: body.traffic || '0 (0/0)',
+        equipment_group: body.equipment_group || '지정안함',
+        usage_days: body.usage_days || 30,
+        status: body.status || '작동중',
+        slot_type: body.slot_type || '쿠팡' // 슬롯 타입 (쿠팡, 네이버 등)
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('슬롯 등록 오류:', error);
+      console.error('오류 상세:', JSON.stringify(error, null, 2));
+      return NextResponse.json(
+        { error: `슬롯 등록 중 오류가 발생했습니다: ${error.message}` },
+        { status: 500 }
+      );
+    }
+
+    console.log('✅ 슬롯 등록 완료:', data);
+    return NextResponse.json({
+      success: true,
+      data: data,
+      message: '슬롯이 성공적으로 등록되었습니다.'
+    });
+
+  } catch (error) {
+    console.error('슬롯 등록 API 예외 발생:', error);
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }

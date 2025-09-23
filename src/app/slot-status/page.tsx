@@ -140,6 +140,13 @@ export default function SlotStatusPage() {
 
   // 슬롯타입 버튼 클릭 핸들러
   const handleSlotTypeClick = (slot: SlotData) => {
+    console.log('🔍 슬롯타입 버튼 클릭:', {
+      slotType: slot.slotType,
+      remainingSlots: slot.remainingSlots,
+      customerId: slot.customerId,
+      customerName: slot.customerName
+    });
+    
     if (slot.remainingSlots > 0) {
       // URL에서 전달받은 파라미터들 사용
       const actualCustomerId = searchParams.get('customerId');
@@ -170,15 +177,19 @@ export default function SlotStatusPage() {
           break;
       }
       
-      console.log('슬롯타입 클릭 - 이동할 URL:', targetUrl);
-      console.log('전달되는 파라미터:', {
+      console.log('🚀 슬롯타입 클릭 - 이동할 URL:', targetUrl);
+      console.log('📋 전달되는 파라미터:', {
         customerId: actualCustomerId || slot.customerId,
+        username: username || slot.customerId,
         slotCount: slot.remainingSlots,
         customerName: slot.customerName,
         slotType: slot.slotType
       });
       
       router.push(targetUrl);
+    } else {
+      console.log('❌ 사용 가능한 슬롯이 없어서 이동할 수 없습니다.');
+      alert('사용 가능한 슬롯이 없습니다.');
     }
   };
 

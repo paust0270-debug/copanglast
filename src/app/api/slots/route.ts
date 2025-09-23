@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const customerId = searchParams.get('customerId');
+    const slotType = searchParams.get('slotType');
 
     let query = supabase
       .from('slots')
@@ -22,6 +23,10 @@ export async function GET(request: NextRequest) {
 
     if (customerId) {
       query = query.eq('customer_id', customerId);
+    }
+
+    if (slotType) {
+      query = query.eq('slot_type', slotType);
     }
 
     const { data: slots, error } = await query;
@@ -33,6 +38,19 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    console.log('🔍 슬롯 조회 결과:', {
+      customerId,
+      slotType,
+      totalSlots: slots?.length || 0,
+      slots: slots?.map(slot => ({
+        id: slot.id,
+        customer_id: slot.customer_id,
+        slot_type: slot.slot_type,
+        slot_count: slot.slot_count,
+        status: slot.status
+      }))
+    });
 
     return NextResponse.json({
       success: true,
