@@ -28,6 +28,7 @@ interface SlotAddForm {
 // 등록된 고객 데이터 인터페이스 (Supabase와 호환)
 interface CustomerSlot {
   id?: number;
+  db_id?: number; // 실제 데이터베이스 ID (삭제용)
   customer: string;
   nickname: string;
   workGroup: string;
@@ -261,7 +262,7 @@ export default function SlotAddPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // 잔여기간 계산 함수 (24시간 기준 실시간 카운팅)
+  // 잔여기간 계산 함수 (실시간 카운팅)
   const calculateRemainingTime = (registrationDate: string) => {
     try {
       // 등록일에서 만료일 추출 (예: "2025-08-31 03:23:45 ~ 2025-09-28 17:21:30")
@@ -343,9 +344,57 @@ export default function SlotAddPage() {
       // slot_status 데이터를 CustomerSlot 형식으로 변환
       const convertedData: CustomerSlot[] = result.data.map((item: any, index: number) => {
         console.log(`데이터 변환 중 ${index + 1}/${result.data.length}:`, item);
+        
+        // 개별 슬롯의 실제 잔여기간 계산
+        const now = new Date();
+        const createdDate = item.created_at ? new Date(item.created_at) : now;
+        const usageDays = item.usage_days || 30;
+        
+        // 총 사용 시간을 밀리초로 변환
+        const totalUsageMs = usageDays * 24 * 60 * 60 * 1000;
+        
+        // 경과 시간 계산 (밀리초)
+        const elapsedMs = now.getTime() - createdDate.getTime();
+        
+        // 실제 잔여 시간 계산 (밀리초)
+        const remainingMs = Math.max(0, totalUsageMs - elapsedMs);
+        
+        // 잔여 시간을 일, 시간, 분으로 변환
+        const remainingDays = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
+        const remainingHours = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+        const remainingMinutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+        const remainingSeconds = Math.floor((remainingMs % (60 * 1000)) / 1000);
+        
+        // 잔여기간 문자열 생성
+        let remainingTimeString = '';
+        if (remainingDays > 0) {
+          remainingTimeString = `${remainingDays}일 ${remainingHours}시간 ${remainingMinutes}분 ${remainingSeconds}초`;
+        } else if (remainingHours > 0) {
+          remainingTimeString = `${remainingHours}시간 ${remainingMinutes}분 ${remainingSeconds}초`;
+        } else if (remainingMinutes > 0) {
+          remainingTimeString = `${remainingMinutes}분 ${remainingSeconds}초`;
+        } else {
+          remainingTimeString = `${remainingSeconds}초`;
+        }
+        
+        // 등록일과 만료일 계산
+        const expiryDate = new Date(createdDate.getTime() + totalUsageMs);
+        const formatDate = (date: Date) => {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          const seconds = String(date.getSeconds()).padStart(2, '0');
+          return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        };
+        
+        const registrationDateRange = `${formatDate(createdDate)} ~ ${formatDate(expiryDate)}`;
+        
         return {
           id: item.id,
-          customer: item.customerName || item.customer_name || `_PD_${item.keyword?.substring(0, 8) || 'unknown'}`,
+          db_id: item.db_id, // 실제 데이터베이스 ID
+          customer: item.customer_name || item.customerName || `_PD_${item.keyword?.substring(0, 8) || 'unknown'}`,
           nickname: item.keyword?.substring(0, 10) || 'unknown',
           workGroup: item.workGroup || item.work_group || '공통',
           keyword: item.keyword || '',
@@ -355,10 +404,8 @@ export default function SlotAddPage() {
           slotCount: item.slotCount || item.slot_count || 1,
           traffic: item.traffic || '0 (0/0)',
           equipmentGroup: item.equipmentGroup || item.equipment_group || '지정안함',
-          remainingDays: item.remainingDays || (item.usage_days ? `${item.usage_days}일` : '30일'),
-          registrationDate: item.registrationDate || (item.created_at ? 
-            `${new Date(item.created_at).toISOString().split('T')[0]} ~ ${new Date(new Date(item.created_at).getTime() + (item.usage_days || 30) * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}` : 
-            generateRegistrationDateRange()),
+          remainingDays: remainingTimeString,
+          registrationDate: registrationDateRange,
           status: item.status || '작동중',
           memo: item.memo || '',
           created_at: item.created_at
@@ -445,11 +492,11 @@ export default function SlotAddPage() {
           };
           
           console.log('📈 새로운 슬롯 상태:', newSlotStatus);
-          setCurrentCustomerSlots(newSlotStatus);
+          setCustomerSlotStatus(newSlotStatus);
           console.log('✅ 슬롯 상태 업데이트 완료');
         } else {
           console.log('⚠️ 슬롯 데이터가 없음');
-          setCurrentCustomerSlots({
+          setCustomerSlotStatus({
             totalSlots: 0,
             usedSlots: 0,
             remainingSlots: 0
@@ -457,7 +504,7 @@ export default function SlotAddPage() {
         }
       } else {
         console.error('❌ 고객 슬롯 현황 로드 실패:', result.error);
-        setCurrentCustomerSlots({
+        setCustomerSlotStatus({
           totalSlots: 0,
           usedSlots: 0,
           remainingSlots: 0
@@ -465,7 +512,7 @@ export default function SlotAddPage() {
       }
     } catch (error) {
       console.error('❌ 고객 슬롯 현황 로드 오류:', error);
-      setCurrentCustomerSlots({
+      setCustomerSlotStatus({
         totalSlots: 0,
         usedSlots: 0,
         remainingSlots: 0
@@ -575,7 +622,7 @@ export default function SlotAddPage() {
       // 새로운 슬롯 등록 추가 (화면 업데이트)
       const newCustomer: CustomerSlot = {
         id: result.data.id,
-        customer: finalCustomerName,
+        customer: result.data.customer_name || finalCustomerName,
         nickname: form.keyword.substring(0, 10),
         workGroup: form.workGroup,
         keyword: form.keyword,
@@ -660,23 +707,54 @@ export default function SlotAddPage() {
       
       // 각 파싱된 데이터에 대해 슬롯 등록
       const promises = parsedData.map(async (data) => {
-        const customerData = {
-          name: `_PD_${data.keyword.substring(0, 8)}`,
+        // URL 파라미터에서 고객 정보 가져오기
+        const urlParams = new URLSearchParams(window.location.search);
+        const customerId = urlParams.get('customerId');
+        const username = urlParams.get('username');
+        const customerName = urlParams.get('customerName');
+        const slotType = urlParams.get('slotType');
+
+        if (!customerId || !username) {
+          throw new Error('고객 정보가 없습니다. 다시 접속해주세요.');
+        }
+
+        // customerName이 비어있으면 username을 사용
+        const finalCustomerName = customerName || username;
+
+        const slotStatusData = {
+          customer_id: username,
+          customer_name: finalCustomerName,
+          distributor: '일반', // 기본값
+          work_group: bulkForm.workGroup,
           keyword: data.keyword,
           link_url: data.linkUrl,
-          slot_count: data.slotCount,
           memo: bulkForm.memo,
-          work_group: bulkForm.workGroup,
-          equipment_group: bulkForm.equipmentGroup,
           current_rank: '1 [0]',
           start_rank: '1 [0]',
+          slot_count: data.slotCount,
           traffic: '0 (0/0)',
-          remaining_days: '30일',
-          registration_date: generateRegistrationDateRange(),
-          status: '작동중'
+          equipment_group: bulkForm.equipmentGroup,
+          usage_days: 30,
+          status: '작동중',
+          slot_type: slotType || '쿠팡' // 슬롯 타입 (쿠팡, 네이버 등)
         };
 
-        return await addCustomerWithCacheFix(customerData);
+        // slot_status 테이블에 저장
+        const response = await fetch('/api/slot-status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(slotStatusData),
+        });
+
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || '슬롯 등록에 실패했습니다.');
+        }
+
+        return result.data;
       });
 
       const savedCustomers = await Promise.all(promises);
@@ -684,7 +762,7 @@ export default function SlotAddPage() {
       // 새로운 고객 슬롯들을 화면에 추가
       const newCustomers: CustomerSlot[] = savedCustomers.map((savedCustomer, index) => ({
         id: savedCustomer.id,
-        customer: savedCustomer.name,
+        customer: savedCustomer.customer_name || savedCustomer.name,
         nickname: parsedData[index].keyword.substring(0, 10),
         workGroup: bulkForm.workGroup,
         keyword: parsedData[index].keyword,
@@ -739,10 +817,10 @@ export default function SlotAddPage() {
     
     if (confirm(`정말로 이 슬롯을 삭제하시겠습니까?\n슬롯 개수: ${customerToDelete.slotCount}개\n검색어: ${customerToDelete.keyword}`)) {
       try {
-        console.log(`🗑️ 슬롯 삭제 시작 - ID: ${id}, 슬롯 개수: ${customerToDelete.slotCount}`);
+        console.log(`🗑️ 슬롯 삭제 시작 - 순번: ${id}, DB ID: ${customerToDelete.db_id}, 슬롯 개수: ${customerToDelete.slotCount}`);
         
-        // slot_status 테이블에서 삭제
-        const response = await fetch(`/api/slot-status/${id}`, {
+        // slot_status 테이블에서 삭제 (실제 데이터베이스 ID 사용)
+        const response = await fetch(`/api/slot-status?id=${customerToDelete.db_id}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -755,7 +833,7 @@ export default function SlotAddPage() {
           throw new Error(result.error || '슬롯 삭제에 실패했습니다.');
         }
 
-        console.log(`✅ 슬롯 삭제 성공 - ID: ${id}`);
+        console.log(`✅ 슬롯 삭제 성공 - 순번: ${id}, DB ID: ${customerToDelete.db_id}`);
         
         // 화면에서 삭제된 슬롯 제거
         setCustomers(prev => prev.filter(customer => customer.id !== id));
@@ -811,7 +889,7 @@ export default function SlotAddPage() {
     if (!editingCustomer?.id) return;
 
     try {
-      const updatedData = {
+      const updatedData: any = {
         keyword: editForm.keyword,
         link_url: editForm.linkUrl,
         memo: editForm.memo,
@@ -926,31 +1004,79 @@ export default function SlotAddPage() {
     }
   };
 
-  // 전체 삭제
+  // 전체 삭제 (개별행 삭제 기능을 참고하여 구현)
   const handleBulkDelete = async () => {
     if (selectedCustomers.size === 0) {
-      alert('삭제할 고객을 선택해주세요.');
+      alert('삭제할 슬롯을 선택해주세요.');
       return;
     }
 
-    if (!confirm(`선택된 ${selectedCustomers.size}개 고객을 정말로 삭제하시겠습니까?`)) {
+    // 삭제할 슬롯들의 정보 수집
+    const slotsToDelete = customers.filter(customer => selectedCustomers.has(customer.id || 0));
+    const totalSlotsToDelete = slotsToDelete.reduce((sum, slot) => sum + slot.slotCount, 0);
+
+    if (!confirm(`선택된 ${selectedCustomers.size}개 슬롯을 정말로 삭제하시겠습니까?\n총 삭제될 슬롯 개수: ${totalSlotsToDelete}개`)) {
       return;
     }
 
     try {
+      console.log(`🗑️ 전체 삭제 시작 - 선택된 슬롯: ${selectedCustomers.size}개, 총 슬롯 개수: ${totalSlotsToDelete}개`);
+      
       const selectedIds = Array.from(selectedCustomers);
-      const deletePromises = selectedIds.map(async (customerId) => {
-        return await deleteCustomerWithCacheFix(customerId);
+      const deletePromises = selectedIds.map(async (slotId) => {
+        // 순번으로 고객 찾기
+        const customerToDelete = customers.find(customer => customer.id === slotId);
+        if (!customerToDelete || !customerToDelete.db_id) {
+          throw new Error(`슬롯 ${slotId}의 DB ID를 찾을 수 없습니다.`);
+        }
+        
+        console.log(`🗑️ 슬롯 삭제 중 - 순번: ${slotId}, DB ID: ${customerToDelete.db_id}`);
+        
+        // 개별행 삭제와 동일한 API 엔드포인트 사용 (실제 데이터베이스 ID 사용)
+        const response = await fetch(`/api/slot-status?id=${customerToDelete.db_id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || `슬롯 ${slotId} 삭제에 실패했습니다.`);
+        }
+
+        console.log(`✅ 슬롯 삭제 성공 - 순번: ${slotId}, DB ID: ${customerToDelete.db_id}`);
+        return result;
       });
 
       await Promise.all(deletePromises);
 
-      // 로컬 상태 업데이트
+      // 로컬 상태 업데이트 (삭제된 슬롯들 제거)
       setCustomers(prev => prev.filter(customer => !selectedCustomers.has(customer.id || 0)));
+
+      // 슬롯 현황 업데이트 (삭제된 슬롯 개수만큼 사용 중 슬롯 수 감소)
+      setCustomerSlotStatus(prev => {
+        const newUsedSlots = Math.max(0, prev.usedSlots - totalSlotsToDelete);
+        const newRemainingSlots = prev.totalSlots - newUsedSlots;
+        
+        console.log(`📊 슬롯 현황 업데이트:`, {
+          이전사용중: prev.usedSlots,
+          삭제된슬롯: totalSlotsToDelete,
+          새사용중: newUsedSlots,
+          새사용가능: newRemainingSlots
+        });
+        
+        return {
+          ...prev,
+          usedSlots: newUsedSlots,
+          remainingSlots: newRemainingSlots
+        };
+      });
 
       setSelectedCustomers(new Set());
       setSelectAll(false);
-      alert(`${selectedIds.length}개 고객이 성공적으로 삭제되었습니다.`);
+      alert(`${selectedIds.length}개 슬롯이 성공적으로 삭제되었습니다.\n삭제된 총 슬롯 개수: ${totalSlotsToDelete}개`);
     } catch (error) {
       console.error('전체 삭제 실패:', error);
       alert('전체 삭제에 실패했습니다. 다시 시도해주세요.');
@@ -1153,6 +1279,9 @@ export default function SlotAddPage() {
                 const customerName = searchParams.get('customerName');
                 
                 if (username) {
+                  // 실제 데이터베이스에서 가져온 고객명 찾기
+                  const actualCustomerName = customers.length > 0 ? customers[0].customer : (customerName ? decodeURIComponent(customerName) : username);
+                  
                   return (
                     <div className="flex items-center space-x-3">
                       <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full">
@@ -1162,7 +1291,7 @@ export default function SlotAddPage() {
                       </div>
                       <div>
                         <div className="text-sm font-medium text-gray-800">고객 ID: {username}</div>
-                        <div className="text-sm text-gray-600">고객명: {customerName ? decodeURIComponent(customerName) : username}</div>
+                        <div className="text-sm text-gray-600">고객명: {actualCustomerName}</div>
                       </div>
                     </div>
                   );
@@ -1594,7 +1723,7 @@ export default function SlotAddPage() {
                 </thead>
                 <tbody>
                   {customers.map((customer, index) => (
-                    <tr key={customer.id} className={index === 0 ? 'bg-pink-100' : ''}>
+                    <tr key={`customer-${customer.id || index}`} className={index === 0 ? 'bg-pink-100' : ''}>
                       <td className="border border-gray-300 p-2 text-center">
                         <Checkbox 
                           checked={selectedCustomers.has(customer.id || 0)}

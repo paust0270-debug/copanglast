@@ -37,25 +37,73 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      // slot_status 데이터를 슬롯 등록 목록 형식으로 변환
-      const formattedSlotStatusData = slotStatusData?.map(slot => ({
-        id: slot.id,
-        customer_id: slot.customer_id,
-        customer_name: slot.customer_name,
-        distributor: slot.distributor,
-        work_group: slot.work_group,
-        keyword: slot.keyword,
-        link_url: slot.link_url,
-        memo: slot.memo,
-        current_rank: slot.current_rank,
-        start_rank: slot.start_rank,
-        slot_count: slot.slot_count,
-        traffic: slot.traffic,
-        equipment_group: slot.equipment_group,
-        usage_days: slot.usage_days,
-        status: slot.status,
-        created_at: slot.created_at
-      })) || [];
+      // slot_status 데이터를 슬롯 등록 목록 형식으로 변환 (사용자별 순번 1번부터 시작)
+      const formattedSlotStatusData = slotStatusData?.map((slot, index) => {
+        // 실제 사용시간 기반 잔여기간 계산 (일, 시간, 분 단위)
+        const now = new Date();
+        const createdDate = slot.created_at ? new Date(slot.created_at) : now;
+        const usageDays = slot.usage_days || 0;
+        
+        // 총 사용 시간을 밀리초로 변환
+        const totalUsageMs = usageDays * 24 * 60 * 60 * 1000;
+        
+        // 경과 시간 계산 (밀리초)
+        const elapsedMs = now.getTime() - createdDate.getTime();
+        
+        // 실제 잔여 시간 계산 (밀리초)
+        const remainingMs = Math.max(0, totalUsageMs - elapsedMs);
+        
+        // 잔여 시간을 일, 시간, 분으로 변환
+        const remainingDays = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
+        const remainingHours = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+        const remainingMinutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+        
+        // 잔여기간 문자열 생성
+        let remainingTimeString = '';
+        if (remainingDays > 0) {
+          remainingTimeString += `${remainingDays}일`;
+        }
+        if (remainingHours > 0) {
+          remainingTimeString += (remainingTimeString ? ' ' : '') + `${remainingHours}시간`;
+        }
+        if (remainingMinutes > 0) {
+          remainingTimeString += (remainingTimeString ? ' ' : '') + `${remainingMinutes}분`;
+        }
+        if (!remainingTimeString) {
+          remainingTimeString = '만료됨';
+        }
+        
+        // 등록일과 만료일 계산
+        const registrationDate = createdDate.toISOString().split('T')[0];
+        const expiryDate = usageDays > 0 ? 
+          new Date(createdDate.getTime() + usageDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : '';
+        
+        return {
+          id: index + 1, // 사용자별 순번 1번부터 시작
+          db_id: slot.id, // 실제 데이터베이스 ID (삭제용)
+          customer_id: slot.customer_id,
+          customer_name: slot.customer_name,
+          distributor: slot.distributor,
+          work_group: slot.work_group,
+          keyword: slot.keyword,
+          link_url: slot.link_url,
+          memo: slot.memo,
+          current_rank: slot.current_rank,
+          start_rank: slot.start_rank,
+          slot_count: slot.slot_count,
+          traffic: slot.traffic,
+          equipment_group: slot.equipment_group,
+          usage_days: slot.usage_days,
+          remaining_days: remainingDays,
+          remaining_hours: remainingHours,
+          remaining_minutes: remainingMinutes,
+          remaining_time_string: remainingTimeString,
+          registration_date: registrationDate,
+          expiry_date: expiryDate,
+          status: slot.status,
+          created_at: slot.created_at
+        };
+      }) || [];
 
       return NextResponse.json({
         success: true,
@@ -307,10 +355,10 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// 슬롯 등록 (slot_status 테이블에 저장)
+// 슬롯 등록 (개별 슬롯 할당 로직)
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔄 슬롯 등록 처리 중...');
+    console.log('🔄 개별 슬롯 할당 처리 중...');
     
     const body = await request.json();
     console.log('받은 데이터:', body);
@@ -326,47 +374,156 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // slot_status 테이블에 데이터 삽입
-    const { data, error } = await supabase
-      .from('slot_status')
-      .insert([{
-        customer_id: body.customer_id,
-        customer_name: body.customer_name,
-        distributor: body.distributor || '일반',
-        work_group: body.work_group || '공통',
-        keyword: body.keyword,
-        link_url: body.link_url,
-        memo: body.memo || '',
-        current_rank: body.current_rank || '1 [0]',
-        start_rank: body.start_rank || '1 [0]',
-        slot_count: body.slot_count,
-        traffic: body.traffic || '0 (0/0)',
-        equipment_group: body.equipment_group || '지정안함',
-        usage_days: body.usage_days || 30,
-        status: body.status || '작동중',
-        slot_type: body.slot_type || '쿠팡' // 슬롯 타입 (쿠팡, 네이버 등)
-      }])
-      .select()
-      .single();
+    const requestedSlotCount = parseInt(body.slot_count);
+    const customerId = body.customer_id;
 
-    if (error) {
-      console.error('슬롯 등록 오류:', error);
-      console.error('오류 상세:', JSON.stringify(error, null, 2));
+    console.log(`🎯 고객 ${customerId}에게 ${requestedSlotCount}개 슬롯 할당 요청`);
+
+    // 1. slots 테이블에서 해당 고객의 사용 가능한 슬롯 조회 (usage_days 내림차순)
+    const { data: availableSlots, error: slotsError } = await supabase
+      .from('slots')
+      .select('*')
+      .eq('customer_id', customerId)
+      .eq('status', 'active')
+      .order('usage_days', { ascending: false }); // 잔여기간이 긴 순서로 정렬
+
+    if (slotsError) {
+      console.error('사용 가능한 슬롯 조회 오류:', slotsError);
       return NextResponse.json(
-        { error: `슬롯 등록 중 오류가 발생했습니다: ${error.message}` },
+        { error: '사용 가능한 슬롯을 조회하는 중 오류가 발생했습니다.' },
         { status: 500 }
       );
     }
 
-    console.log('✅ 슬롯 등록 완료:', data);
+    if (!availableSlots || availableSlots.length === 0) {
+      console.log('❌ 할당 가능한 슬롯이 없습니다.');
+      return NextResponse.json(
+        { error: '할당 가능한 슬롯이 없습니다.' },
+        { status: 400 }
+      );
+    }
+
+    console.log('📊 사용 가능한 슬롯 목록:', availableSlots);
+
+    // 2. 요청된 슬롯 수만큼 순차적으로 할당
+    const slotStatusEntries = [];
+    let remainingRequestedSlots = requestedSlotCount;
+
+    for (const slot of availableSlots) {
+      if (remainingRequestedSlots <= 0) break;
+
+      const availableCount = slot.slot_count || 0;
+      const assignCount = Math.min(remainingRequestedSlots, availableCount);
+
+      if (assignCount > 0) {
+        // 개별 슬롯을 slot_status 테이블에 저장 (각각 slot_count: 1)
+        for (let i = 0; i < assignCount; i++) {
+          slotStatusEntries.push({
+            customer_id: customerId,
+            customer_name: body.customer_name,
+            distributor: body.distributor || '일반',
+            work_group: body.work_group || '공통',
+            keyword: body.keyword,
+            link_url: body.link_url,
+            memo: body.memo || '',
+            current_rank: body.current_rank || '1 [0]',
+            start_rank: body.start_rank || '1 [0]',
+            slot_count: 1, // 개별 슬롯은 항상 1개
+            traffic: body.traffic || '0 (0/0)',
+            equipment_group: body.equipment_group || '지정안함',
+            usage_days: slot.usage_days, // 원본 슬롯의 잔여기간 사용
+            status: body.status || '작동중',
+            slot_type: body.slot_type || '쿠팡',
+            created_at: new Date().toISOString()
+          });
+        }
+
+        remainingRequestedSlots -= assignCount;
+        console.log(`✅ 슬롯 ID ${slot.id}에서 ${assignCount}개 할당 (잔여기간: ${slot.usage_days}일)`);
+      }
+    }
+
+    if (slotStatusEntries.length === 0) {
+      console.log('❌ 할당할 수 있는 슬롯이 없습니다.');
+      return NextResponse.json(
+        { error: '할당할 수 있는 슬롯이 없습니다.' },
+        { status: 400 }
+      );
+    }
+
+    // 3. slot_status 테이블에 개별 슬롯들 삽입
+    const { data: insertedData, error: insertError } = await supabase
+      .from('slot_status')
+      .insert(slotStatusEntries)
+      .select();
+
+    if (insertError) {
+      console.error('개별 슬롯 저장 오류:', insertError);
+      return NextResponse.json(
+        { error: `개별 슬롯 저장 중 오류가 발생했습니다: ${insertError.message}` },
+        { status: 500 }
+      );
+    }
+
+    console.log(`✅ ${insertedData.length}개의 개별 슬롯이 성공적으로 할당되었습니다.`);
+    console.log('📋 할당된 슬롯 상세:', insertedData);
+
     return NextResponse.json({
       success: true,
-      data: data,
-      message: '슬롯이 성공적으로 등록되었습니다.'
+      data: insertedData,
+      message: `${insertedData.length}개의 슬롯이 성공적으로 할당되었습니다.`,
+      allocatedCount: insertedData.length,
+      requestedCount: requestedSlotCount
     });
 
   } catch (error) {
-    console.error('슬롯 등록 API 예외 발생:', error);
+    console.error('개별 슬롯 할당 API 예외 발생:', error);
+    return NextResponse.json(
+      { error: '서버 오류가 발생했습니다.' },
+      { status: 500 }
+    );
+  }
+}
+
+// 개별 슬롯 삭제
+export async function DELETE(request: NextRequest) {
+  try {
+    console.log('🔄 개별 슬롯 삭제 처리 중...');
+    
+    const { searchParams } = new URL(request.url);
+    const slotId = searchParams.get('id');
+
+    if (!slotId) {
+      return NextResponse.json(
+        { error: '삭제할 슬롯 ID가 필요합니다.' },
+        { status: 400 }
+      );
+    }
+
+    console.log(`🗑️ 슬롯 ID ${slotId} 삭제 요청`);
+
+    // slot_status 테이블에서 해당 슬롯 삭제
+    const { error: deleteError } = await supabase
+      .from('slot_status')
+      .delete()
+      .eq('id', slotId);
+
+    if (deleteError) {
+      console.error('슬롯 삭제 오류:', deleteError);
+      return NextResponse.json(
+        { error: `슬롯 삭제 중 오류가 발생했습니다: ${deleteError.message}` },
+        { status: 500 }
+      );
+    }
+
+    console.log(`✅ 슬롯 ID ${slotId} 삭제 완료`);
+    return NextResponse.json({
+      success: true,
+      message: '슬롯이 성공적으로 삭제되었습니다.'
+    });
+
+  } catch (error) {
+    console.error('슬롯 삭제 API 예외 발생:', error);
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }
