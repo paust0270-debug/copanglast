@@ -726,18 +726,63 @@ export default function SlotAddPage() {
     }
   };
 
-  // 고객 삭제 (Supabase 연동)
+  // 슬롯 삭제 (slot_status 테이블에서 삭제하고 슬롯 현황 업데이트)
   const handleDeleteCustomer = async (id: number | undefined) => {
     if (!id) return;
     
-    if (confirm('정말로 이 고객을 삭제하시겠습니까?')) {
+    // 삭제할 슬롯 정보 찾기
+    const customerToDelete = customers.find(customer => customer.id === id);
+    if (!customerToDelete) {
+      alert('삭제할 슬롯을 찾을 수 없습니다.');
+      return;
+    }
+    
+    if (confirm(`정말로 이 슬롯을 삭제하시겠습니까?\n슬롯 개수: ${customerToDelete.slotCount}개\n검색어: ${customerToDelete.keyword}`)) {
       try {
-        await deleteCustomerWithCacheFix(id);
+        console.log(`🗑️ 슬롯 삭제 시작 - ID: ${id}, 슬롯 개수: ${customerToDelete.slotCount}`);
+        
+        // slot_status 테이블에서 삭제
+        const response = await fetch(`/api/slot-status/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || '슬롯 삭제에 실패했습니다.');
+        }
+
+        console.log(`✅ 슬롯 삭제 성공 - ID: ${id}`);
+        
+        // 화면에서 삭제된 슬롯 제거
         setCustomers(prev => prev.filter(customer => customer.id !== id));
-        alert('고객이 성공적으로 삭제되었습니다.');
+        
+        // 슬롯 현황 업데이트 (삭제된 슬롯 개수만큼 사용 중 슬롯 수 감소)
+        setCustomerSlotStatus(prev => {
+          const newUsedSlots = Math.max(0, prev.usedSlots - customerToDelete.slotCount);
+          const newRemainingSlots = prev.totalSlots - newUsedSlots;
+          
+          console.log(`📊 슬롯 현황 업데이트:`, {
+            이전사용중: prev.usedSlots,
+            삭제된슬롯: customerToDelete.slotCount,
+            새사용중: newUsedSlots,
+            새사용가능: newRemainingSlots
+          });
+          
+          return {
+            ...prev,
+            usedSlots: newUsedSlots,
+            remainingSlots: newRemainingSlots
+          };
+        });
+        
+        alert(`슬롯이 성공적으로 삭제되었습니다.\n삭제된 슬롯 개수: ${customerToDelete.slotCount}개`);
       } catch (error) {
-        console.error('고객 삭제 실패:', error);
-        alert('고객 삭제에 실패했습니다. 다시 시도해주세요.');
+        console.error('슬롯 삭제 실패:', error);
+        alert('슬롯 삭제에 실패했습니다. 다시 시도해주세요.');
       }
     }
   };
@@ -1533,18 +1578,18 @@ export default function SlotAddPage() {
                       />
                     </th>
                     <th className="border border-gray-300 p-2 text-center w-12">순번</th>
-                    <th className="border border-gray-300 p-2 text-center w-20">아이디</th>
-                    <th className="border border-gray-300 p-2 text-center w-28">작업그룹/검색어</th>
-                    <th className="border border-gray-300 p-2 text-center w-40">링크주소/메모</th>
-                    <th className="border border-gray-300 p-2 text-center w-16">현재순위</th>
-                    <th className="border border-gray-300 p-2 text-center w-16">시작순위</th>
-                    <th className="border border-gray-300 p-2 text-center w-12">슬롯</th>
-                    <th className="border border-gray-300 p-2 text-center w-16">트래픽</th>
-                    <th className="border border-gray-300 p-2 text-center w-20">장비그룹</th>
-                    <th className="border border-gray-300 p-2 text-center w-24">잔여기간</th>
+                    <th className="border border-gray-300 p-2 text-center w-24">아이디</th>
+                    <th className="border border-gray-300 p-2 text-center w-32">작업그룹/검색어</th>
+                    <th className="border border-gray-300 p-2 text-center w-48">링크주소/메모</th>
+                    <th className="border border-gray-300 p-2 text-center w-20">현재순위</th>
+                    <th className="border border-gray-300 p-2 text-center w-20">시작순위</th>
+                    <th className="border border-gray-300 p-2 text-center w-16">슬롯</th>
+                    <th className="border border-gray-300 p-2 text-center w-20">트래픽</th>
+                    <th className="border border-gray-300 p-2 text-center w-24">장비그룹</th>
+                    <th className="border border-gray-300 p-2 text-center w-28">잔여기간</th>
                     <th className="border border-gray-300 p-2 text-center w-32">등록일/만료일</th>
-                    <th className="border border-gray-300 p-2 text-center w-12">상태</th>
-                    <th className="border border-gray-300 p-2 text-center w-16">작업</th>
+                    <th className="border border-gray-300 p-2 text-center w-16">상태</th>
+                    <th className="border border-gray-300 p-2 text-center w-20">작업</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1620,13 +1665,16 @@ export default function SlotAddPage() {
                       <td className="border border-gray-300 p-2 text-center text-xs">{customer.currentRank}</td>
                       <td className="border border-gray-300 p-2 text-center text-xs">{customer.startRank}</td>
                       <td className="border border-gray-300 p-2 text-center">
-                        <Input 
-                          type="number"
-                          value={editingCustomer?.id === customer.id ? editForm.slotCount : customer.slotCount} 
-                          onChange={(e) => editingCustomer?.id === customer.id ? handleEditInputChange('slotCount', parseInt(e.target.value) || 1) : undefined}
-                          className="w-12 h-6 text-xs text-center"
-                          readOnly={editingCustomer?.id !== customer.id}
-                        />
+                        {editingCustomer?.id === customer.id ? (
+                          <Input 
+                            type="number"
+                            value={editForm.slotCount} 
+                            onChange={(e) => handleEditInputChange('slotCount', parseInt(e.target.value) || 1)}
+                            className="w-12 h-6 text-xs text-center"
+                          />
+                        ) : (
+                          <span className="text-xs font-medium">{customer.slotCount}</span>
+                        )}
                       </td>
                       <td className="border border-gray-300 p-2 text-center">
                         <div className="text-xs">{customer.traffic}</div>
