@@ -426,16 +426,16 @@ export default function SlotAddPage() {
         return {
           id: item.id,
           db_id: item.db_id, // 실제 데이터베이스 ID
-          customer: item.customer_name || item.customerName || `_PD_${item.keyword?.substring(0, 8) || 'unknown'}`,
-          nickname: item.keyword?.substring(0, 10) || 'unknown',
-          workGroup: item.workGroup || item.work_group || '공통',
+          customer: item.customer_id || item.customer_name || 'unknown', // 고객 ID 표시
+          nickname: item.customer_name || 'unknown', // 고객명을 닉네임으로 표시
+          workGroup: item.work_group || '공통',
           keyword: item.keyword || '',
-          linkUrl: item.linkUrl || item.link_url || '',
-          currentRank: item.currentRank || item.current_rank || '1 [0]',
-          startRank: item.startRank || item.start_rank || '1 [0]',
-          slotCount: item.slotCount || item.slot_count || 1,
+          linkUrl: item.link_url || '',
+          currentRank: item.current_rank || '1 [0]',
+          startRank: item.start_rank || '1 [0]',
+          slotCount: item.slot_count || 1,
           traffic: item.traffic || '0 (0/0)',
-          equipmentGroup: item.equipmentGroup || item.equipment_group || '지정안함',
+          equipmentGroup: item.equipment_group || '지정안함',
           remainingDays: remainingTimeString,
           registrationDate: registrationDateRange,
           status: item.status || '작동중',
@@ -858,7 +858,7 @@ export default function SlotAddPage() {
         console.log(`🗑️ 슬롯 삭제 시작 - 순번: ${id}, DB ID: ${customerToDelete.db_id}, 슬롯 개수: ${customerToDelete.slotCount}`);
         
         // slot_status 테이블에서 삭제 (실제 데이터베이스 ID 사용)
-        const response = await fetch(`/api/slot-status?id=${customerToDelete.db_id}`, {
+        const response = await fetch(`/api/slot-status/${customerToDelete.db_id}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -1071,7 +1071,7 @@ export default function SlotAddPage() {
         console.log(`🗑️ 슬롯 삭제 중 - 순번: ${slotId}, DB ID: ${customerToDelete.db_id}`);
         
         // 개별행 삭제와 동일한 API 엔드포인트 사용 (실제 데이터베이스 ID 사용)
-        const response = await fetch(`/api/slot-status?id=${customerToDelete.db_id}`, {
+        const response = await fetch(`/api/slot-status/${customerToDelete.db_id}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',

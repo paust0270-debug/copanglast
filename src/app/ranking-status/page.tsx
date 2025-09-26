@@ -6,16 +6,17 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, Search, Link as LinkIcon, Package, DollarSign, TrendingUp, Calendar } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 
-// 임시 데이터 타입 정의
+// 키워드 데이터 타입 정의 (실제 DB 스키마와 일치)
 interface KeywordData {
   id: number;
-  slotType: string;
-  searchTerm: string;
-  linkUrl: string;
-  productCode: string;
-  priceComparison: string;
-  previousRank: number;
-  previousCheckDate: string;
+  slot_type: string;
+  keyword: string;
+  link_url: string;
+  slot_count: number;
+  current_rank: number | null;
+  last_check_date: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export default function RankingStatusPage() {
@@ -24,89 +25,53 @@ export default function RankingStatusPage() {
   const [totalKeywords, setTotalKeywords] = useState(0);
 
   useEffect(() => {
-    // 임시 데이터 로드
-    loadMockData();
+    // 실제 API에서 키워드 데이터 로드
+    loadKeywords();
   }, []);
 
-  const loadMockData = () => {
-    // 임시 데이터 생성
-    const mockData: KeywordData[] = [
-      {
-        id: 1,
-        slotType: 'VIP',
-        searchTerm: '노트북',
-        linkUrl: 'https://www.coupang.com/vp/products/123456',
-        productCode: 'CP001',
-        priceComparison: '저가',
-        previousRank: 5,
-        previousCheckDate: '2024-01-15'
-      },
-      {
-        id: 2,
-        slotType: '일반',
-        searchTerm: '스마트폰',
-        linkUrl: 'https://www.coupang.com/vp/products/789012',
-        productCode: 'CP002',
-        priceComparison: '고가',
-        previousRank: 12,
-        previousCheckDate: '2024-01-14'
-      },
-      {
-        id: 3,
-        slotType: 'VIP',
-        searchTerm: '헤드폰',
-        linkUrl: 'https://www.coupang.com/vp/products/345678',
-        productCode: 'CP003',
-        priceComparison: '중가',
-        previousRank: 8,
-        previousCheckDate: '2024-01-13'
-      },
-      {
-        id: 4,
-        slotType: '일반',
-        searchTerm: '키보드',
-        linkUrl: 'https://www.coupang.com/vp/products/901234',
-        productCode: 'CP004',
-        priceComparison: '저가',
-        previousRank: 15,
-        previousCheckDate: '2024-01-12'
-      },
-      {
-        id: 5,
-        slotType: 'VIP',
-        searchTerm: '마우스',
-        linkUrl: 'https://www.coupang.com/vp/products/567890',
-        productCode: 'CP005',
-        priceComparison: '고가',
-        previousRank: 3,
-        previousCheckDate: '2024-01-11'
+  const loadKeywords = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 키워드 목록 조회 중...');
+      
+      const response = await fetch('/api/keywords');
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('✅ 키워드 목록 조회 완료:', result.data);
+        setKeywords(result.data);
+        setTotalKeywords(result.data.length);
+      } else {
+        console.error('❌ 키워드 목록 조회 실패:', result.error);
+        setKeywords([]);
+        setTotalKeywords(0);
       }
-    ];
-
-    setKeywords(mockData);
-    setTotalKeywords(mockData.length);
-    setLoading(false);
+    } catch (error) {
+      console.error('❌ 키워드 목록 조회 예외:', error);
+      setKeywords([]);
+      setTotalKeywords(0);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getSlotTypeBadge = (slotType: string) => {
-    return slotType === 'VIP' ? (
-      <Badge className="bg-purple-100 text-purple-800">VIP</Badge>
+    return slotType === 'coupang' ? (
+      <Badge className="bg-orange-100 text-orange-800">쿠팡</Badge>
     ) : (
-      <Badge className="bg-gray-100 text-gray-800">일반</Badge>
+      <Badge className="bg-gray-100 text-gray-800">{slotType}</Badge>
     );
   };
 
-  const getPriceComparisonBadge = (priceComparison: string) => {
-    switch (priceComparison) {
-      case '저가':
-        return <Badge className="bg-green-100 text-green-800">저가</Badge>;
-      case '중가':
-        return <Badge className="bg-yellow-100 text-yellow-800">중가</Badge>;
-      case '고가':
-        return <Badge className="bg-red-100 text-red-800">고가</Badge>;
-      default:
-        return <Badge className="bg-gray-100 text-gray-800">{priceComparison}</Badge>;
-    }
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ko-KR');
+  };
+
+  const getRankDisplay = (rank: number | null) => {
+    if (rank === null) return '-';
+    return `${rank}위`;
   };
 
   if (loading) {
@@ -176,7 +141,7 @@ export default function RankingStatusPage() {
                     <thead>
                       <tr className="border-b">
                         <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          키워드ID
+                          순번
                         </th>
                         <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           슬롯유형
@@ -185,13 +150,10 @@ export default function RankingStatusPage() {
                           검색어
                         </th>
                         <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          슬롯개수
+                        </th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           링크주소
-                        </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          상품코드
-                        </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          가격비교
                         </th>
                         <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           이전순위
@@ -208,43 +170,40 @@ export default function RankingStatusPage() {
                             {keyword.id}
                           </td>
                           <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {getSlotTypeBadge(keyword.slotType)}
+                            {getSlotTypeBadge(keyword.slot_type)}
                           </td>
                           <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {keyword.searchTerm}
+                            {keyword.keyword}
                           </td>
                           <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <div className="max-w-xs truncate" title={keyword.linkUrl}>
+                            <div className="flex items-center">
+                              <Package className="h-3 w-3 mr-1 text-gray-400" />
+                              {keyword.slot_count}개
+                            </div>
+                          </td>
+                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div className="max-w-xs truncate" title={keyword.link_url}>
                               <a 
-                                href={keyword.linkUrl} 
+                                href={keyword.link_url} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="text-blue-600 hover:text-blue-800 flex items-center"
                               >
                                 <LinkIcon className="h-3 w-3 mr-1" />
-                                {keyword.linkUrl}
+                                {keyword.link_url}
                               </a>
                             </div>
                           </td>
                           <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
                             <div className="flex items-center">
-                              <Package className="h-3 w-3 mr-1 text-gray-400" />
-                              {keyword.productCode}
-                            </div>
-                          </td>
-                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {getPriceComparisonBadge(keyword.priceComparison)}
-                          </td>
-                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <div className="flex items-center">
                               <TrendingUp className="h-3 w-3 mr-1 text-gray-400" />
-                              {keyword.previousRank}위
+                              {getRankDisplay(keyword.current_rank)}
                             </div>
                           </td>
                           <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
                             <div className="flex items-center">
                               <Calendar className="h-3 w-3 mr-1 text-gray-400" />
-                              {keyword.previousCheckDate}
+                              {formatDate(keyword.last_check_date)}
                             </div>
                           </td>
                         </tr>

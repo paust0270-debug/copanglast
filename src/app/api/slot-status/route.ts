@@ -420,6 +420,32 @@ export async function POST(request: NextRequest) {
 
     console.log('📊 사용 가능한 슬롯 목록:', availableSlots);
 
+    // 1.5. 현재 사용 중인 슬롯 수 확인
+    const { data: currentSlotStatus } = await supabase
+      .from('slot_status')
+      .select('slot_count')
+      .eq('customer_id', customerId);
+    
+    const currentUsedSlots = currentSlotStatus?.reduce((sum, slot) => sum + (slot.slot_count || 0), 0) || 0;
+    const totalAvailableSlots = availableSlots.reduce((sum, slot) => sum + (slot.slot_count || 0), 0);
+    const remainingSlots = totalAvailableSlots - currentUsedSlots;
+    
+    console.log('📊 슬롯 현황:', {
+      totalAvailableSlots,
+      currentUsedSlots,
+      remainingSlots,
+      requestedSlotCount
+    });
+
+    // 슬롯 부족 검증
+    if (remainingSlots < requestedSlotCount) {
+      console.log(`❌ 슬롯 부족: 요청 ${requestedSlotCount}개, 사용 가능 ${remainingSlots}개`);
+      return NextResponse.json(
+        { error: `슬롯이 부족합니다. 사용 가능한 슬롯: ${remainingSlots}개, 요청한 슬롯: ${requestedSlotCount}개` },
+        { status: 400 }
+      );
+    }
+
     // 2. 요청된 슬롯 수만큼 순차적으로 할당
     const slotStatusEntries = [];
     let remainingRequestedSlots = requestedSlotCount;
@@ -482,6 +508,38 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ ${insertedData.length}개의 개별 슬롯이 성공적으로 할당되었습니다.`);
     console.log('📋 할당된 슬롯 상세:', insertedData);
+
+    // 4. keywords 테이블에 키워드 정보 자동 저장 (슬롯 등록 시에만)
+    try {
+      console.log('🔄 keywords 테이블에 키워드 정보 저장 중...');
+      
+      const keywordEntries = insertedData.map(slot => ({
+        slot_type: slot.slot_type || 'coupang',
+        keyword: slot.keyword,
+        link_url: slot.link_url,
+        slot_count: 1, // 개별 슬롯은 항상 1개
+        current_rank: null, // 순위 체크 후 업데이트
+        last_check_date: new Date().toISOString()
+      }));
+
+      const { data: keywordData, error: keywordError } = await supabase
+        .from('keywords')
+        .insert(keywordEntries)
+        .select();
+
+      if (keywordError) {
+        console.error('keywords 테이블 저장 오류:', keywordError);
+        // keywords 저장 실패해도 슬롯 등록은 성공으로 처리
+        console.log('⚠️ keywords 저장 실패했지만 슬롯 등록은 성공');
+      } else {
+        console.log(`✅ ${keywordData.length}개의 키워드가 keywords 테이블에 저장되었습니다.`);
+        console.log('📋 저장된 키워드 상세:', keywordData);
+      }
+    } catch (keywordError) {
+      console.error('keywords 테이블 저장 예외:', keywordError);
+      // keywords 저장 실패해도 슬롯 등록은 성공으로 처리
+      console.log('⚠️ keywords 저장 실패했지만 슬롯 등록은 성공');
+    }
 
     return NextResponse.json({
       success: true,
