@@ -87,8 +87,8 @@ export default function NoticesPage() {
   };
 
   const getTargetList = () => {
-    const targets = ['전체', ...new Set(notices.map(notice => notice.target))];
-    return targets.filter(target => target !== '전체');
+    const targets = [...new Set(notices.map(notice => notice.target))];
+    return targets.filter(target => target && target.trim() !== '');
   };
 
   const filteredNotices = selectedTarget === '전체' 
@@ -165,8 +165,8 @@ export default function NoticesPage() {
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
               >
                 <option value="전체">전체</option>
-                {getTargetList().map((target) => (
-                  <option key={target} value={target}>{target}</option>
+                {getTargetList().map((target, index) => (
+                  <option key={`${target}-${index}`} value={target}>{target}</option>
                 ))}
               </select>
             </div>

@@ -27,6 +27,12 @@ export async function GET(request: NextRequest) {
         .select('*')
         .order('created_at', { ascending: false });
 
+      // 개별 고객 필터링 (customerId와 username이 있는 경우)
+      if (customerId && username) {
+        slotStatusQuery = slotStatusQuery.eq('customer_id', username);
+        console.log('🔍 개별 고객 슬롯 필터링:', { customerId, username });
+      }
+
       const { data: slotStatusData, error: slotStatusError } = await slotStatusQuery;
 
       if (slotStatusError) {
@@ -166,23 +172,32 @@ export async function GET(request: NextRequest) {
         customerSlotsCount: customerSlots.length
       });
       
-      // 고객 정보 조회
+      // 고객 정보 조회 (slots 테이블에서 customer_name 우선 사용)
       let customerName = '';
       let distributor = '본사';
       
-      try {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('name, distributor')
-          .eq('username', username)
-          .single();
-        
-        if (userData) {
-          customerName = userData.name || '';
-          distributor = userData.distributor || '본사';
+      // slots 테이블에서 customer_name 조회
+      if (customerSlots && customerSlots.length > 0) {
+        customerName = customerSlots[0].customer_name || '';
+        distributor = customerSlots[0].work_group || '본사';
+      }
+      
+      // customer_name이 없으면 users 테이블에서 조회
+      if (!customerName) {
+        try {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('name, distributor')
+            .eq('username', username)
+            .single();
+          
+          if (userData) {
+            customerName = userData.name || '';
+            distributor = userData.distributor || '본사';
+          }
+        } catch (error) {
+          console.error('고객 정보 조회 오류:', error);
         }
-      } catch (error) {
-        console.error('고객 정보 조회 오류:', error);
       }
       
       return NextResponse.json({

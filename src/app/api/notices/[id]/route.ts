@@ -52,7 +52,7 @@ export async function PUT(
   try {
     const noticeId = parseInt(params.id);
     const body = await request.json();
-    const { target, title, content } = body;
+    const { title, content } = body;
 
     if (isNaN(noticeId)) {
       return NextResponse.json(
@@ -71,7 +71,6 @@ export async function PUT(
     const { data, error } = await supabase
       .from('notices')
       .update({
-        target,
         title,
         content,
         updated_at: new Date().toISOString()

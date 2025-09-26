@@ -84,10 +84,12 @@ export default function SlotAddPage() {
     totalSlots: number;
     usedSlots: number;
     remainingSlots: number;
+    customerName: string;
   }>({
     totalSlots: 0,
     usedSlots: 0,
-    remainingSlots: 0
+    remainingSlots: 0,
+    customerName: ''
   });
 
   // 대량 등록 모달 상태
@@ -112,6 +114,10 @@ export default function SlotAddPage() {
   // 수정 모드 상태 관리
   const [editingCustomer, setEditingCustomer] = useState<CustomerSlot | null>(null);
   const [editForm, setEditForm] = useState<Partial<CustomerSlot>>({});
+
+  // 페이지 제목 상태 관리
+  const [pageTitle, setPageTitle] = useState('쿠팡');
+  const [listTitle, setListTitle] = useState('슬롯 등록 목록');
 
   // 체크박스 상태 관리
   const [selectedCustomers, setSelectedCustomers] = useState<Set<number>>(new Set());
@@ -184,7 +190,8 @@ export default function SlotAddPage() {
         setCustomerSlotStatus({
           totalSlots,
           usedSlots,
-          remainingSlots
+          remainingSlots,
+          customerName: slotData.customerName || ''
         });
         console.log(`✅ ${slotType} 슬롯 현황 로드 완료:`, { totalSlots, usedSlots, remainingSlots });
       } else {
@@ -193,7 +200,8 @@ export default function SlotAddPage() {
         setCustomerSlotStatus({
           totalSlots: 0,
           usedSlots: 0,
-          remainingSlots: 0
+          remainingSlots: 0,
+          customerName: ''
         });
       }
     } catch (error) {
@@ -201,7 +209,8 @@ export default function SlotAddPage() {
       setCustomerSlotStatus({
         totalSlots: 0,
         usedSlots: 0,
-        remainingSlots: 0
+        remainingSlots: 0,
+        customerName: ''
       });
     }
   };
@@ -213,6 +222,16 @@ export default function SlotAddPage() {
     const slotCount = urlParams.get('slotCount');
     const customerName = urlParams.get('customerName');
     const slotType = urlParams.get('slotType');
+    const username = urlParams.get('username');
+    
+    // 페이지 제목 설정
+    if (customerId && username) {
+      setPageTitle(`쿠팡 - ${customerSlotStatus.customerName || username}`);
+      setListTitle(`${customerSlotStatus.customerName || username}님의 슬롯 등록 목록`);
+    } else {
+      setPageTitle('쿠팡 - 관리자 모드');
+      setListTitle('전체 슬롯 등록 목록 (관리자)');
+    }
     
     if (customerId && slotCount) {
       console.log('URL 파라미터에서 고객 정보 확인:', { customerId, slotCount, customerName, slotType });
@@ -224,7 +243,6 @@ export default function SlotAddPage() {
       }));
       
       // 고객의 슬롯 현황 로드 (username과 slotType 사용)
-      const username = urlParams.get('username');
       if (username && slotType) {
         loadCustomerSlotStatus(username, slotType);
       }
@@ -232,7 +250,7 @@ export default function SlotAddPage() {
       // 고객 정보를 메모에 추가
       console.log(`고객 ${customerName || 'Unknown'} (${customerId})의 ${slotCount}개 슬롯 등록 준비 완료`);
     }
-  }, []);
+  }, [customerSlotStatus.customerName]);
 
   // 실시간 시간 업데이트 (1초마다)
   useEffect(() => {
@@ -327,8 +345,22 @@ export default function SlotAddPage() {
       
       console.log('🔄 슬롯 등록 목록 로드 시작...');
       
-      // slot_status 테이블에서 데이터 직접 조회 (type 파라미터 추가)
-      const response = await fetch('/api/slot-status?type=slot_status');
+      // URL 파라미터에서 고객 정보 확인
+      const urlParams = new URLSearchParams(window.location.search);
+      const customerId = urlParams.get('customerId');
+      const username = urlParams.get('username');
+      
+      // 개별 고객 페이지인 경우 해당 고객의 슬롯만 조회
+      let apiUrl = '/api/slot-status?type=slot_status';
+      if (customerId && username) {
+        apiUrl += `&customerId=${customerId}&username=${username}`;
+        console.log('🔍 개별 고객 슬롯 조회:', { customerId, username });
+      } else {
+        console.log('🔍 전체 슬롯 조회 (관리자 모드)');
+      }
+      
+      // slot_status 테이블에서 데이터 직접 조회
+      const response = await fetch(apiUrl);
       const result = await response.json();
       
       if (!result.success) {
@@ -488,7 +520,8 @@ export default function SlotAddPage() {
           const newSlotStatus = {
             totalSlots: slotData.slotCount || 0,
             usedSlots: slotData.usedSlots || 0,
-            remainingSlots: slotData.remainingSlots || 0
+            remainingSlots: slotData.remainingSlots || 0,
+            customerName: slotData.customerName || ''
           };
           
           console.log('📈 새로운 슬롯 상태:', newSlotStatus);
@@ -499,7 +532,8 @@ export default function SlotAddPage() {
           setCustomerSlotStatus({
             totalSlots: 0,
             usedSlots: 0,
-            remainingSlots: 0
+            remainingSlots: 0,
+            customerName: ''
           });
         }
       } else {
@@ -507,7 +541,8 @@ export default function SlotAddPage() {
         setCustomerSlotStatus({
           totalSlots: 0,
           usedSlots: 0,
-          remainingSlots: 0
+          remainingSlots: 0,
+          customerName: ''
         });
       }
     } catch (error) {
@@ -515,7 +550,8 @@ export default function SlotAddPage() {
       setCustomerSlotStatus({
         totalSlots: 0,
         usedSlots: 0,
-        remainingSlots: 0
+        remainingSlots: 0,
+        customerName: ''
       });
     }
   };
@@ -641,8 +677,6 @@ export default function SlotAddPage() {
         created_at: result.data.created_at
       };
 
-      setCustomers(prev => [newCustomer, ...prev]);
-      
       // 슬롯 현황 업데이트 (사용된 슬롯 수 증가)
       setCustomerSlotStatus(prev => ({
         ...prev,
@@ -659,6 +693,9 @@ export default function SlotAddPage() {
         memo: '',
         equipmentGroup: '지정안함'
       });
+
+      // 슬롯 등록 목록 새로고침
+      await loadCustomers();
 
       alert('슬롯이 성공적으로 등록되었습니다!');
     } catch (error) {
@@ -779,8 +816,6 @@ export default function SlotAddPage() {
         created_at: savedCustomer.created_at
       }));
 
-      setCustomers(prev => [...newCustomers, ...prev]);
-      
       // 대량 등록 폼 초기화
       setBulkForm({
         workGroup: '공통',
@@ -794,6 +829,9 @@ export default function SlotAddPage() {
 
       // 모달 닫기
       setShowBulkModal(false);
+      
+      // 슬롯 등록 목록 새로고침
+      await loadCustomers();
       
       alert(`${parsedData.length}개의 슬롯이 성공적으로 등록되었습니다!`);
     } catch (error) {
@@ -835,9 +873,6 @@ export default function SlotAddPage() {
 
         console.log(`✅ 슬롯 삭제 성공 - 순번: ${id}, DB ID: ${customerToDelete.db_id}`);
         
-        // 화면에서 삭제된 슬롯 제거
-        setCustomers(prev => prev.filter(customer => customer.id !== id));
-        
         // 슬롯 현황 업데이트 (삭제된 슬롯 개수만큼 사용 중 슬롯 수 감소)
         setCustomerSlotStatus(prev => {
           const newUsedSlots = Math.max(0, prev.usedSlots - customerToDelete.slotCount);
@@ -856,6 +891,9 @@ export default function SlotAddPage() {
             remainingSlots: newRemainingSlots
           };
         });
+        
+        // 슬롯 등록 목록 새로고침
+        await loadCustomers();
         
         alert(`슬롯이 성공적으로 삭제되었습니다.\n삭제된 슬롯 개수: ${customerToDelete.slotCount}개`);
       } catch (error) {
@@ -1258,7 +1296,9 @@ export default function SlotAddPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 페이지 제목 */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">쿠팡</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {pageTitle}
+          </h1>
         </div>
 
         {/* 에러 메시지 표시 */}
@@ -1279,8 +1319,8 @@ export default function SlotAddPage() {
                 const customerName = searchParams.get('customerName');
                 
                 if (username) {
-                  // 실제 데이터베이스에서 가져온 고객명 찾기
-                  const actualCustomerName = customers.length > 0 ? customers[0].customer : (customerName ? decodeURIComponent(customerName) : username);
+                  // slots 테이블에서 실제 고객명 찾기
+                  const actualCustomerName = customerSlotStatus.customerName || (customerName ? decodeURIComponent(customerName) : username);
                   
                   return (
                     <div className="flex items-center space-x-3">
@@ -1521,7 +1561,9 @@ export default function SlotAddPage() {
         {/* 슬롯 등록 목록 */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">슬롯 등록 목록</CardTitle>
+            <CardTitle className="text-xl">
+              {listTitle}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {/* 전체 수정 모드 폼 */}
@@ -1732,20 +1774,76 @@ export default function SlotAddPage() {
                       </td>
                       <td className="border border-gray-300 p-2 text-center text-xs">{customer.id}</td>
                       <td className="border border-gray-300 p-2 text-center">
-                        <div className="font-bold text-xs">{customer.customer}</div>
                         {(() => {
-                          const customerInfo = findCustomerInfo(customer.customer);
-                          return customerInfo ? (
-                            <>
-                              <div className="text-xs text-gray-600">({customerInfo.name})</div>
-                              <div className="text-xs text-gray-500">{customerInfo.distributor}</div>
-                            </>
-                          ) : (
-                            <>
-                              <div className="text-xs text-gray-600">({customer.nickname})</div>
-                              <div className="text-xs text-gray-500">{customer.workGroup}</div>
-                            </>
-                          );
+                          // URL 파라미터에서 customerId와 username 확인
+                          const urlParams = new URLSearchParams(window.location.search);
+                          const customerId = urlParams.get('customerId');
+                          const username = urlParams.get('username');
+                          
+                          // 개별 고객 페이지인지 확인
+                          const isIndividualCustomerPage = customerId && username;
+                          
+                          if (isIndividualCustomerPage) {
+                            // 개별 고객 페이지에서는 링크 없이 일반 텍스트로 표시
+                            return (
+                              <>
+                                <div className="font-bold text-xs">{customer.customer}</div>
+                                {(() => {
+                                  const customerInfo = findCustomerInfo(customer.customer);
+                                  return customerInfo ? (
+                                    <>
+                                      <div className="text-xs text-gray-600">({customerInfo.name})</div>
+                                      <div className="text-xs text-gray-500">{customerInfo.distributor}</div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <div className="text-xs text-gray-600">({customer.nickname})</div>
+                                      <div className="text-xs text-gray-500">{customer.workGroup}</div>
+                                    </>
+                                  );
+                                })()}
+                              </>
+                            );
+                          } else {
+                            // 관리자 페이지에서는 클릭 가능한 링크로 표시
+                            return (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    // 고객 정보에서 customerId 찾기
+                                    const customerInfo = findCustomerInfo(customer.customer);
+                                    if (customerInfo) {
+                                      // 개별 고객 페이지로 이동
+                                      const url = `/coupangapp/add?customerId=${customerInfo.id}&username=${customerInfo.username}&slotCount=10&customerName=${encodeURIComponent(customerInfo.name)}&slotType=coupang`;
+                                      window.open(url, '_blank');
+                                    } else {
+                                      // 고객 정보가 없으면 기본값으로 이동
+                                      const url = `/coupangapp/add?customerId=unknown&username=${customer.customer}&slotCount=10&customerName=${encodeURIComponent(customer.customer)}&slotType=coupang`;
+                                      window.open(url, '_blank');
+                                    }
+                                  }}
+                                  className="font-bold text-xs text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                                  title="클릭하여 개별 고객 페이지로 이동"
+                                >
+                                  {customer.customer}
+                                </button>
+                                {(() => {
+                                  const customerInfo = findCustomerInfo(customer.customer);
+                                  return customerInfo ? (
+                                    <>
+                                      <div className="text-xs text-gray-600">({customerInfo.name})</div>
+                                      <div className="text-xs text-gray-500">{customerInfo.distributor}</div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <div className="text-xs text-gray-600">({customer.nickname})</div>
+                                      <div className="text-xs text-gray-500">{customer.workGroup}</div>
+                                    </>
+                                  );
+                                })()}
+                              </>
+                            );
+                          }
                         })()}
                       </td>
                       <td className="border border-gray-300 p-2 text-center">

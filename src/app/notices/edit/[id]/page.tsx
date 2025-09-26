@@ -44,7 +44,7 @@ export default function EditNoticePage() {
       if (result.success) {
         const notice = result.data;
         setFormData({
-          target: notice.target || '전체',
+          target: '전체', // 기본값으로 설정
           title: notice.title,
           content: notice.content
         });
@@ -73,7 +73,6 @@ export default function EditNoticePage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          target: formData.target,
           title: formData.title,
           content: formData.content
         }),
