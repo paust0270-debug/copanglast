@@ -108,7 +108,8 @@ export async function POST(request: NextRequest) {
       usage_days: usageDays ? parseInt(usageDays) : null,
       memo: memo || null,
       status: 'active',
-      created_at: new Date().toISOString()
+      created_at: new Date(new Date().getTime() + 9 * 60 * 60 * 1000).toISOString().split('.')[0],
+      updated_at: new Date(new Date().getTime() + 9 * 60 * 60 * 1000 + (usageDays ? parseInt(usageDays) : 0) * 24 * 60 * 60 * 1000).toISOString().split('.')[0]
     };
 
     // 슬롯 추가
@@ -209,8 +210,8 @@ export async function PUT(request: NextRequest) {
     const { data, error } = await supabase
       .from('slots')
       .update({ 
-        status, 
-        updated_at: new Date().toISOString() 
+        status
+        // updated_at은 만료일이므로 상태 업데이트 시 변경하지 않음
       })
       .eq('id', slotId)
       .select();

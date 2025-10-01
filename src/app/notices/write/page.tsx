@@ -7,16 +7,16 @@ import Navigation from '@/components/Navigation';
 export default function NoticeWritePage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    target: '전체',
     title: '',
-    content: ''
+    content: '',
+    is_important: false
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
@@ -46,10 +46,9 @@ export default function NoticeWritePage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          target: formData.target,
           title: formData.title,
           content: formData.content,
-          author: '관리자'
+          is_important: formData.is_important
         }),
       });
 
@@ -84,24 +83,18 @@ export default function NoticeWritePage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* 대상총판 선택 */}
+            {/* 중요 공지사항 체크박스 */}
             <div>
-              <label htmlFor="target" className="block text-sm font-medium text-gray-700 mb-2">
-                대상총판
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  name="is_important"
+                  checked={formData.is_important}
+                  onChange={handleInputChange}
+                  className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <span className="text-sm font-medium text-gray-700">중요 공지사항</span>
               </label>
-              <select
-                id="target"
-                name="target"
-                value={formData.target}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="전체">전체</option>
-                <option value="본사">본사</option>
-                <option value="총판A">총판A</option>
-                <option value="총판B">총판B</option>
-                <option value="총판C">총판C</option>
-              </select>
             </div>
 
             {/* 제목 입력 */}

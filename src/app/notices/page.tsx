@@ -9,10 +9,9 @@ interface Notice {
   id: number;
   title: string;
   content: string;
-  target: string;
-  author: string;
-  views: number;
+  is_important: boolean;
   created_at: string;
+  updated_at: string;
 }
 
 export default function NoticesPage() {
@@ -20,7 +19,7 @@ export default function NoticesPage() {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedTarget, setSelectedTarget] = useState('전체');
+  const [showImportantOnly, setShowImportantOnly] = useState(false);
 
   useEffect(() => {
     fetchNotices();
@@ -86,14 +85,9 @@ export default function NoticesPage() {
     }
   };
 
-  const getTargetList = () => {
-    const targets = [...new Set(notices.map(notice => notice.target))];
-    return targets.filter(target => target && target.trim() !== '');
-  };
-
-  const filteredNotices = selectedTarget === '전체' 
-    ? notices 
-    : notices.filter(notice => notice.target === selectedTarget);
+  const filteredNotices = showImportantOnly 
+    ? notices.filter(notice => notice.is_important)
+    : notices;
 
   if (loading) {
     return (
@@ -158,17 +152,15 @@ export default function NoticesPage() {
           {/* 필터 */}
           <div className="mb-6">
             <div className="flex items-center gap-4">
-              <label className="text-sm font-medium text-gray-700">대상:</label>
-              <select 
-                value={selectedTarget}
-                onChange={(e) => setSelectedTarget(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-              >
-                <option value="전체">전체</option>
-                {getTargetList().map((target, index) => (
-                  <option key={`${target}-${index}`} value={target}>{target}</option>
-                ))}
-              </select>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={showImportantOnly}
+                  onChange={(e) => setShowImportantOnly(e.target.checked)}
+                  className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <span className="text-sm font-medium text-gray-700">중요 공지사항만 보기</span>
+              </label>
             </div>
           </div>
 
@@ -190,9 +182,11 @@ export default function NoticesPage() {
                    <div key={notice.id} className="p-6 hover:bg-gray-50 transition-colors">
                      <div className="flex items-center justify-between">
                                                <div className="flex items-center gap-4 flex-1">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {notice.target}
-                          </span>
+                          {notice.is_important && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              중요
+                            </span>
+                          )}
                           <span className="text-sm text-gray-500">
                             {formatDate(notice.created_at)}
                           </span>

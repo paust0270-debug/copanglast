@@ -43,21 +43,53 @@ export async function GET(request: NextRequest) {
         );
       }
 
+      // slots 테이블에서 동일한 고객의 데이터 조회 (잔여기간/등록일·만료일 계산용)
+      let slotsData = null;
+      if (customerId && username) {
+        const { data: slotsQueryData, error: slotsError } = await supabase
+          .from('slots')
+          .select('*')
+          .eq('customer_id', username)
+          .order('created_at', { ascending: false });
+
+        if (!slotsError) {
+          slotsData = slotsQueryData;
+          console.log('🔍 slots 테이블 데이터 조회 완료:', slotsData?.length || 0, '개');
+        } else {
+          console.error('slots 테이블 조회 오류:', slotsError);
+        }
+      }
+
       // slot_status 데이터를 슬롯 등록 목록 형식으로 변환 (사용자별 순번 1번부터 시작)
       const formattedSlotStatusData = slotStatusData?.map((slot, index) => {
-        // 실제 사용시간 기반 잔여기간 계산 (일, 시간, 분 단위)
+        // slots 테이블에서 동일한 usage_days를 가진 데이터 찾기
+        const matchingSlot = slotsData?.find(s => s.usage_days === slot.usage_days);
+        
+        // slots 테이블 데이터가 있으면 그것을 사용, 없으면 slot_status 데이터 사용
+        const baseData = matchingSlot || slot;
+        
+        console.log('슬롯 매칭 확인:', {
+          slot_status_id: slot.id,
+          slot_status_usage_days: slot.usage_days,
+          slot_status_created_at: slot.created_at,
+          matching_slot_found: !!matchingSlot,
+          matching_slot_created_at: matchingSlot?.created_at,
+          final_created_at: baseData.created_at,
+          using_slots_data: !!matchingSlot
+        });
+        
+        
+        
+        // 만료일 기준 잔여기간 계산 (일, 시간, 분 단위)
         const now = new Date();
-        const createdDate = slot.created_at ? new Date(slot.created_at) : now;
-        const usageDays = slot.usage_days || 0;
+        const createdDate = baseData.created_at ? new Date(baseData.created_at) : now;
+        const usageDays = baseData.usage_days || 0;
         
-        // 총 사용 시간을 밀리초로 변환
-        const totalUsageMs = usageDays * 24 * 60 * 60 * 1000;
-        
-        // 경과 시간 계산 (밀리초)
-        const elapsedMs = now.getTime() - createdDate.getTime();
+        // 만료일 계산 (created_at + usage_days) - DB의 updated_at 대신 직접 계산
+        const expiryDate = new Date(createdDate.getTime() + usageDays * 24 * 60 * 60 * 1000);
         
         // 실제 잔여 시간 계산 (밀리초)
-        const remainingMs = Math.max(0, totalUsageMs - elapsedMs);
+        const remainingMs = Math.max(0, expiryDate.getTime() - now.getTime());
         
         // 잔여 시간을 일, 시간, 분으로 변환
         const remainingDays = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
@@ -79,9 +111,9 @@ export async function GET(request: NextRequest) {
           remainingTimeString = '만료됨';
         }
         
-        // 등록일과 만료일 계산
+        // 등록일과 만료일 계산 (slots 테이블 기준)
         const registrationDate = createdDate.toISOString().split('T')[0];
-        const expiryDate = usageDays > 0 ? 
+        const expiryDateString = usageDays > 0 ? 
           new Date(createdDate.getTime() + usageDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : '';
         
         return {
@@ -105,15 +137,16 @@ export async function GET(request: NextRequest) {
           remaining_minutes: remainingMinutes,
           remaining_time_string: remainingTimeString,
           registration_date: registrationDate,
-          expiry_date: expiryDate,
+          expiry_date: expiryDateString,
           status: slot.status,
-          created_at: slot.created_at
+          created_at: baseData.created_at // slots 테이블의 created_at 사용
         };
       }) || [];
 
       return NextResponse.json({
         success: true,
-        data: formattedSlotStatusData
+        data: formattedSlotStatusData,
+        slotsData: slotsData // slots 테이블 데이터도 함께 반환
       });
     }
 
@@ -214,7 +247,64 @@ export async function GET(request: NextRequest) {
           totalPaymentAmount: customerSlots.reduce((sum, slot) => sum + (slot.payment_amount || 0), 0),
           remainingDays: customerSlots[0]?.usage_days || 0,
           registrationDate: customerSlots[0]?.created_at ? new Date(customerSlots[0].created_at).toISOString().split('T')[0] : '',
-          expiryDate: customerSlots[0]?.expiry_date ? new Date(customerSlots[0].expiry_date).toISOString().split('T')[0] : '',
+          expiryDate: customerSlots[0]?.created_at && customerSlots[0]?.usage_days ? 
+            new Date(new Date(customerSlots[0].created_at).getTime() + customerSlots[0].usage_days * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : '',
+          // slot_status 테이블의 개별 슬롯 정보도 함께 반환
+          slotStatusData: await (async () => {
+            try {
+              const { data: slotStatusData } = await supabase
+                .from('slot_status')
+                .select('*')
+                .eq('customer_id', username)
+                .order('created_at', { ascending: false });
+              
+              return slotStatusData?.map((slot, index) => {
+                const now = new Date();
+                const createdDate = slot.created_at ? new Date(slot.created_at) : now;
+                const usageDays = slot.usage_days || 0;
+                
+                // 만료일 계산 (created_at + usage_days)
+                const expiryDate = new Date(createdDate.getTime() + usageDays * 24 * 60 * 60 * 1000);
+                
+                // 실제 잔여 시간 계산 (밀리초)
+                const remainingMs = Math.max(0, expiryDate.getTime() - now.getTime());
+                
+                // 잔여 시간을 일, 시간, 분으로 변환
+                const remainingDays = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
+                const remainingHours = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+                const remainingMinutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+                
+                // 잔여기간 문자열 생성
+                let remainingTimeString = '';
+                if (remainingDays > 0) {
+                  remainingTimeString += `${remainingDays}일`;
+                }
+                if (remainingHours > 0) {
+                  remainingTimeString += (remainingTimeString ? ' ' : '') + `${remainingHours}시간`;
+                }
+                if (remainingMinutes > 0) {
+                  remainingTimeString += (remainingTimeString ? ' ' : '') + `${remainingMinutes}분`;
+                }
+                if (!remainingTimeString) {
+                  remainingTimeString = '만료됨';
+                }
+                
+                return {
+                  id: index + 1,
+                  db_id: slot.id,
+                  usage_days: slot.usage_days,
+                  remaining_time_string: remainingTimeString,
+                  registration_date: createdDate.toISOString().split('T')[0],
+                  expiry_date: usageDays > 0 ? 
+                    new Date(createdDate.getTime() + usageDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : '',
+                  created_at: slot.created_at
+                };
+              }) || [];
+            } catch (error) {
+              console.error('slot_status 데이터 조회 오류:', error);
+              return [];
+            }
+          })(),
           addDate: customerSlots[0]?.created_at ? new Date(customerSlots[0].created_at).toISOString().split('T')[0] : '',
           status: customerSlots[0]?.status || '작동중',
           userGroup: distributor
@@ -234,10 +324,9 @@ export async function GET(request: NextRequest) {
       
       const now = new Date();
       const createdDate = new Date(slot.created_at);
-      const totalUsageMs = slot.usage_days * 24 * 60 * 60 * 1000;
-      const elapsedMs = now.getTime() - createdDate.getTime();
+      const expiryDate = new Date(createdDate.getTime() + slot.usage_days * 24 * 60 * 60 * 1000);
       
-      return elapsedMs >= totalUsageMs;
+      return now.getTime() >= expiryDate.getTime();
     }) || [];
 
     // 만료된 슬롯들을 데이터베이스에서 업데이트
@@ -249,8 +338,8 @@ export async function GET(request: NextRequest) {
       const { error: updateError } = await supabase
         .from('slots')
         .update({ 
-          status: '만료',
-          updated_at: new Date().toISOString()
+          status: '만료'
+          // updated_at은 만료일이므로 상태 업데이트 시 변경하지 않음
         })
         .in('id', expiredSlotIds);
       
@@ -275,14 +364,11 @@ export async function GET(request: NextRequest) {
       const createdDate = slot.created_at ? new Date(slot.created_at) : now;
       const usageDays = slot.usage_days || 0;
       
-      // 총 사용 시간을 밀리초로 변환
-      const totalUsageMs = usageDays * 24 * 60 * 60 * 1000;
-      
-      // 경과 시간 계산 (밀리초)
-      const elapsedMs = now.getTime() - createdDate.getTime();
+      // 만료일 계산 (created_at + usage_days) - DB의 updated_at 대신 직접 계산
+      const expiryDate = new Date(createdDate.getTime() + usageDays * 24 * 60 * 60 * 1000);
       
       // 실제 잔여 시간 계산 (밀리초)
-      const remainingMs = Math.max(0, totalUsageMs - elapsedMs);
+      const remainingMs = Math.max(0, expiryDate.getTime() - now.getTime());
       
       // 잔여 시간을 일, 시간, 분으로 변환
       const remainingDays = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
@@ -306,7 +392,7 @@ export async function GET(request: NextRequest) {
       
       // 등록일과 만료일 계산
       const registrationDate = createdDate.toISOString().split('T')[0];
-      const expiryDate = usageDays > 0 ? 
+      const expiryDateString = usageDays > 0 ? 
         new Date(createdDate.getTime() + usageDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : '';
       
       // 만료 여부 확인 (잔여 시간이 0이면 만료)
@@ -327,7 +413,7 @@ export async function GET(request: NextRequest) {
         remainingMinutes: remainingMinutes,
         remainingTimeString: remainingTimeString,
         registrationDate: registrationDate,
-        expiryDate: expiryDate,
+        expiryDate: expiryDateString,
         addDate: slot.created_at ? new Date(slot.created_at).toISOString().split('T')[0] : '',
         status: isExpired ? 'expired' : slot.status,
         userGroup: '본사' // 별도로 조회 필요
@@ -475,7 +561,8 @@ export async function POST(request: NextRequest) {
             usage_days: slot.usage_days, // 원본 슬롯의 잔여기간 사용
             status: body.status || '작동중',
             slot_type: body.slot_type || '쿠팡',
-            created_at: new Date().toISOString()
+            created_at: new Date(new Date().getTime() + 9 * 60 * 60 * 1000).toISOString().split('.')[0],
+            updated_at: new Date(new Date().getTime() + 9 * 60 * 60 * 1000 + (slot.usage_days || 0) * 24 * 60 * 60 * 1000).toISOString().split('.')[0]
           });
         }
 
@@ -519,7 +606,7 @@ export async function POST(request: NextRequest) {
         link_url: slot.link_url,
         slot_count: 1, // 개별 슬롯은 항상 1개
         current_rank: null, // 순위 체크 후 업데이트
-        last_check_date: new Date().toISOString()
+        last_check_date: new Date(new Date().getTime() + 9 * 60 * 60 * 1000).toISOString().split('.')[0]
       }));
 
       const { data: keywordData, error: keywordError } = await supabase

@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         link_url,
         slot_count: slot_count || 1,
         current_rank: current_rank || null,
-        last_check_date: new Date().toISOString()
+        last_check_date: new Date(new Date().getTime() + 9 * 60 * 60 * 1000).toISOString()
       })
       .select()
       .single();

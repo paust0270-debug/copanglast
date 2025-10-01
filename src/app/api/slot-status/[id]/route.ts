@@ -177,8 +177,8 @@ export async function PUT(
     const { data, error } = await supabase
       .from('slot_status')
       .update({
-        ...body,
-        updated_at: new Date().toISOString()
+        ...body
+        // updated_at은 만료일이므로 수정 시 변경하지 않음
       })
       .eq('id', id)
       .select()
@@ -216,7 +216,7 @@ export async function PUT(
               keyword: data.keyword,
               link_url: data.link_url,
               slot_type: data.slot_type || 'coupang',
-              updated_at: new Date().toISOString()
+              // updated_at은 만료일이므로 수정 시 변경하지 않음
             })
             .eq('id', existingKeywords[0].id);
 
@@ -235,7 +235,7 @@ export async function PUT(
               link_url: data.link_url,
               slot_count: 1,
               current_rank: null,
-              last_check_date: new Date().toISOString()
+              last_check_date: new Date(new Date().getTime() + 9 * 60 * 60 * 1000).toISOString().split('.')[0]
             });
 
           if (insertError) {

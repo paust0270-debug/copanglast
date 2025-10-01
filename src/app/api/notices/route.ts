@@ -35,7 +35,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { target, title, content, author = '관리자' } = body;
+    const { target, title, content, is_important = false } = body;
 
     // 필수 필드 검증
     if (!title || !content) {
@@ -61,12 +61,11 @@ export async function POST(request: NextRequest) {
       .from('notices')
       .insert([
         {
-          target,
           title,
           content,
-          author,
-          views: 0,
-          created_at: new Date().toISOString()
+          is_important,
+          created_at: new Date(new Date().getTime() + 9 * 60 * 60 * 1000).toISOString(),
+          updated_at: new Date(new Date().getTime() + 9 * 60 * 60 * 1000).toISOString()
         }
       ])
       .select();

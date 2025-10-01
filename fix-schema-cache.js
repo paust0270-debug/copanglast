@@ -1,6 +1,7 @@
 // 스키마 캐시 강제 갱신 스크립트
 // 이 스크립트를 브라우저 콘솔에서 실행하세요
 
+require('dotenv').config({ path: '.env.local' });
 const { createClient } = require('@supabase/supabase-js');
 
 // Supabase 클라이언트 설정
