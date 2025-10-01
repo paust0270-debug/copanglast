@@ -14,6 +14,27 @@ import { Badge } from '@/components/ui/badge';
 import { addCustomer, getCustomers, deleteCustomer, updateCustomer, Customer, fixSchemaCacheIssues, addSlot, withSchemaCacheFix } from '@/lib/supabase';
 import { forceSchemaRefresh, resetConnectionPool, clearBrowserCache } from '@/lib/schema-utils';
 import * as XLSX from 'xlsx';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 // 슬롯 등록 폼 인터페이스
 interface SlotAddForm {
@@ -46,6 +67,17 @@ interface CustomerSlot {
   created_at?: string;
 }
 
+// 순위 히스토리 인터페이스
+interface RankHistory {
+  id: number;
+  slot_status_id: number;
+  keyword: string;
+  link_url: string;
+  current_rank: number;
+  start_rank: number;
+  check_date: string;
+}
+
 // 대량 등록을 위한 인터페이스
 interface BulkSlotData {
   workGroup: string;
@@ -75,10 +107,38 @@ export default function SlotAddPage() {
   const [customers, setCustomers] = useState<CustomerSlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<CustomerSlot | null>(null);
+  const [rankHistory, setRankHistory] = useState<RankHistory[]>([]);
+  const [showRankChart, setShowRankChart] = useState(false);
 
   // 고객 페이지 데이터 (아이디, 고객명, 소속총판)
   const [customerData, setCustomerData] = useState<any[]>([]);
   
+  // 순위 히스토리 조회 함수
+  const fetchRankHistory = async (slotStatusId: number) => {
+    try {
+      const response = await fetch(`/api/rank-history?slotStatusId=${slotStatusId}`);
+      const result = await response.json();
+      
+      if (result.success) {
+        setRankHistory(result.data);
+        setShowRankChart(true);
+      } else {
+        console.error('순위 히스토리 조회 실패:', result.error);
+      }
+    } catch (error) {
+      console.error('순위 히스토리 조회 오류:', error);
+    }
+  };
+
+  // 순위 클릭 핸들러
+  const handleRankClick = (slot: CustomerSlot) => {
+    if (slot.db_id) {
+      setSelectedSlot(slot);
+      fetchRankHistory(slot.db_id);
+    }
+  };
+
   // 고객의 총 슬롯 현황 데이터
   const [customerSlotStatus, setCustomerSlotStatus] = useState<{
     totalSlots: number;
@@ -1889,7 +1949,15 @@ export default function SlotAddPage() {
                           placeholder="메모를 입력하세요"
                         />
                       </td>
-                      <td className="border border-gray-300 p-2 text-center text-xs">{customer.currentRank}</td>
+                      <td className="border border-gray-300 p-2 text-center text-xs">
+                        <button
+                          onClick={() => handleRankClick(customer)}
+                          className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                          title="클릭하여 순위 변동 그래프 보기"
+                        >
+                          {customer.currentRank}
+                        </button>
+                      </td>
                       <td className="border border-gray-300 p-2 text-center text-xs">{customer.startRank}</td>
                       <td className="border border-gray-300 p-2 text-center">
                         {editingCustomer?.id === customer.id ? (
@@ -2004,6 +2072,98 @@ export default function SlotAddPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* 순위 변동 그래프 모달 */}
+        {showRankChart && selectedSlot && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">
+                  순위 변동 그래프 - {selectedSlot.keyword}
+                </h3>
+                <button
+                  onClick={() => setShowRankChart(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              {rankHistory.length > 0 ? (
+                <div className="h-96">
+                  <Line
+                    data={{
+                      labels: rankHistory.map(item => 
+                        new Date(item.check_date).toLocaleDateString('ko-KR', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })
+                      ),
+                      datasets: [
+                        {
+                          label: '현재 순위',
+                          data: rankHistory.map(item => item.current_rank),
+                          borderColor: 'rgb(59, 130, 246)',
+                          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                          tension: 0.1,
+                        },
+                        {
+                          label: '시작 순위',
+                          data: rankHistory.map(item => item.start_rank),
+                          borderColor: 'rgb(239, 68, 68)',
+                          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                          tension: 0.1,
+                        }
+                      ]
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: 'top' as const,
+                        },
+                        title: {
+                          display: true,
+                          text: `${selectedSlot.keyword} 순위 변동 현황`
+                        }
+                      },
+                      scales: {
+                        y: {
+                          beginAtZero: false,
+                          reverse: true, // 순위는 낮을수록 좋으므로 Y축 반전
+                          title: {
+                            display: true,
+                            text: '순위'
+                          }
+                        },
+                        x: {
+                          title: {
+                            display: true,
+                            text: '체크 날짜'
+                          }
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  순위 히스토리 데이터가 없습니다.
+                </div>
+              )}
+              
+              <div className="mt-4 text-sm text-gray-600">
+                <p><strong>검색어:</strong> {selectedSlot.keyword}</p>
+                <p><strong>링크:</strong> {selectedSlot.linkUrl}</p>
+                <p><strong>현재 순위:</strong> {selectedSlot.currentRank}위</p>
+                <p><strong>시작 순위:</strong> {selectedSlot.startRank}위</p>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

@@ -164,10 +164,10 @@ export default function RankingStatusPage() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {keywords.map((keyword) => (
+                      {keywords.map((keyword, index) => (
                         <tr key={keyword.id} className="hover:bg-gray-50">
                           <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {keyword.id}
+                            {index + 1}
                           </td>
                           <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
                             {getSlotTypeBadge(keyword.slot_type)}

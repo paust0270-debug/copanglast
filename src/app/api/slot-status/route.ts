@@ -143,9 +143,29 @@ export async function GET(request: NextRequest) {
         };
       }) || [];
 
+      // 잔여기간 오름차순 정렬 (적게 남은 것부터)
+      const sortedSlotStatusData = formattedSlotStatusData.sort((a, b) => {
+        // remaining_days 기준으로 정렬
+        if (a.remaining_days !== b.remaining_days) {
+          return a.remaining_days - b.remaining_days;
+        }
+        // remaining_days가 같으면 remaining_hours 기준으로 정렬
+        if (a.remaining_hours !== b.remaining_hours) {
+          return a.remaining_hours - b.remaining_hours;
+        }
+        // remaining_hours도 같으면 remaining_minutes 기준으로 정렬
+        return a.remaining_minutes - b.remaining_minutes;
+      });
+
+      // 정렬된 데이터에 순번 재할당 (잔여기간 오름차순 기준)
+      const finalSlotStatusData = sortedSlotStatusData.map((slot, index) => ({
+        ...slot,
+        id: index + 1 // 잔여기간 오름차순에 따른 순번 재할당
+      }));
+
       return NextResponse.json({
         success: true,
-        data: formattedSlotStatusData,
+        data: finalSlotStatusData,
         slotsData: slotsData // slots 테이블 데이터도 함께 반환
       });
     }

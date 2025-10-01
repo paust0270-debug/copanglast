@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase
       .from('keywords')
       .select('*')
-      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
       .range(offset, offset + limit - 1);
 
     if (error) {
