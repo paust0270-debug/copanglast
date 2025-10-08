@@ -1,0 +1,47 @@
+[
+  {
+    "test_id": 1,
+    "keyword_id": 1001,
+    "keyword": "트롱리",
+    "target_url": "https://www.coupang.com/vp/products/8473798698?itemId=24519876305&vendorItemId=89369126187",
+    "rank": 12,
+    "timestamp": "2025-10-02T18:37:47.218973",
+    "success": true
+  },
+  {
+    "test_id": 2,
+    "keyword_id": 1002,
+    "keyword": "카트",
+    "target_url": "https://www.coupang.com/vp/products/1234567890",
+    "rank": 10,
+    "timestamp": "2025-10-02T18:37:56.290928",
+    "success": true
+  },
+  {
+    "test_id": 3,
+    "keyword_id": 1003,
+    "keyword": "장바구니",
+    "target_url": "https://www.coupang.com/vp/products/9876543210",
+    "rank": 18,
+    "timestamp": "2025-10-02T18:38:05.718282",
+    "success": true
+  },
+  {
+    "test_id": 4,
+    "keyword_id": 1004,
+    "keyword": "핸드카트",
+    "target_url": "https://www.coupang.com/vp/products/5555555555",
+    "rank": 12,
+    "timestamp": "2025-10-02T18:38:15.059723",
+    "success": true
+  },
+  {
+    "test_id": 5,
+    "keyword_id": 1005,
+    "keyword": "쇼핑카트",
+    "target_url": "https://www.coupang.com/vp/products/9999999999",
+    "rank": 3,
+    "timestamp": "2025-10-02T18:38:24.666671",
+    "success": true
+  }
+]

@@ -1,0 +1,860 @@
+[
+  {
+    "timestamp": "2025-10-03T06:18:13.523Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:13.525Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:13.526Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:13.691Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:13.776Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:13.860Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:14.343Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:14 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:14 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:14.367Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "6",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:14 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:14 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:14.395Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:14 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:14 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:14.491Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:14 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:14 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:14.585Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:14.601Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:14.619Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:14.620Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:14.621Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:14.621Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:14.649Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:14 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:14 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:14.649Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:14 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:14 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:14.899Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:14.951Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:14.982Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:15.045Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:15 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:15 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:15.052Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:15 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:15 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:15.113Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:15 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:15 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:15.115Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:15 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:15 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:15.139Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:15 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:15 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:15.197Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:15 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:15 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:15.222Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:15.464Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:15 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:15 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:15.512Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:15 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:15 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:15.517Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:15 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:15 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:15.792Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:16 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:16 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:17.135Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:17.612Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:17 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:17 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:17.962Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:18.401Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:18 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:18 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:19.146Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:19.752Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:19 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:19 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:21.134Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:21.279Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:21.628Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:21 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:21 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:21.711Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:21 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:21 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  },
+  {
+    "timestamp": "2025-10-03T06:18:23.135Z",
+    "method": "POST",
+    "headers": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+      "sec-fetch-site": "none",
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "document",
+      "accept-encoding": "gzip, deflate, br",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "content-type": "text/plain",
+      "sec-fetch-user": "?1",
+      "cache-control": "max-age=0",
+      "referer": "https://www.coupang.com/",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "upgrade-insecure-requests": "1",
+      "sec-fetch-mode": "navigate",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "dnt": "1"
+    }
+  },
+  {
+    "timestamp": "2025-10-03T06:18:23.561Z",
+    "headers": {
+      "strict-transport-security": "max-age=31536000",
+      "cache-control": "max-age=0",
+      "x-envoy-upstream-service-time": "0",
+      "connection": "keep-alive",
+      "x-envoy-decorator-operation": ":0/*",
+      "expires": "Fri, 03 Oct 2025 06:18:23 GMT",
+      "content-length": "51",
+      "date": "Fri, 03 Oct 2025 06:18:23 GMT",
+      "content-type": "application/json",
+      "vary": "Origin,Access-Control-Request-Method,Access-Control-Request-Headers",
+      "server": "istio-envoy"
+    },
+    "status": 200
+  }
+]

@@ -1,0 +1,39 @@
+<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="31.777382000000003">
+<testsuite name="test_coupang_rank_checker.spec.js" timestamp="2025-10-03T06:00:32.301Z" hostname="chromium" tests="1" failures="1" skipped="0" time="30.345" errors="0">
+<testcase name="쿠팡 자전거 자물쇠 검색 - 상품 순위 확인" classname="test_coupang_rank_checker.spec.js" time="30.345">
+<failure message="test_coupang_rank_checker.spec.js:38:1 쿠팡 자전거 자물쇠 검색 - 상품 순위 확인" type="FAILURE">
+<![CDATA[  [chromium] › test_coupang_rank_checker.spec.js:38:1 › 쿠팡 자전거 자물쇠 검색 - 상품 순위 확인 ───────────────────
+
+    TimeoutError: page.goto: Timeout 30000ms exceeded.
+    Call log:
+      - navigating to "https://www.coupang.com/", waiting until "networkidle"
+
+
+      56 |
+      57 |   console.log('📱 쿠팡 메인 페이지로 이동 중...');
+    > 58 |   await page.goto('https://www.coupang.com', { 
+         |              ^
+      59 |     waitUntil: 'networkidle',
+      60 |     timeout: 30000 
+      61 |   });
+        at C:\Users\qkrwn\Desktop\Course\Crawling\.vscode\test_coupang_rank_checker.spec.js:58:14
+
+    Error Context: test-results\test_coupang_rank_checker-쿠팡-자전거-자물쇠-검색---상품-순위-확인-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[🎯 상품번호 8617045901의 순위를 확인하기 시작합니다...
+🔍 검색 키워드: 자전거 자물쇠
+📱 쿠팡 메인 페이지로 이동 중...
+
+[[ATTACHMENT|test-results\test_coupang_rank_checker-쿠팡-자전거-자물쇠-검색---상품-순위-확인-chromium\error-context.md]]
+]]>
+</system-out>
+<system-err>
+<![CDATA[(node:26148) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+]]>
+</system-err>
+</testcase>
+</testsuite>
+</testsuites>

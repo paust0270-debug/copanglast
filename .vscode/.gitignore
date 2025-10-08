@@ -1,0 +1,96 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log
+logs/
+log/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Screenshots and images (temporary)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# IDE files (keep project files)
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+.idea/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+backup_*/
+*_backup/
+backup_*.js
+backup_*.json
+backup_*.md
+
+# Test results
+test-results/
+playwright-report/
+coverage/
+
+# Build outputs
+dist/
+build/
+
+# Cache directories
+.cache/
+.parcel-cache/
+
+# Mobile logs
+mobile_logs_*/
+toy_search_logs_*/
+logs_*/
