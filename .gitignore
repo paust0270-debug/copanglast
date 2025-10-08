@@ -37,7 +37,7 @@ yarn-error.log*
 next-env.d.ts
 
 # IDE
-.vscode/
+# .vscode/
 .idea/
 
 # OS
@@ -105,7 +105,7 @@ dev-debug.log
 node_modules/
 # Environment variables
 .idea
-.vscode
+# .vscode
 *.suo
 *.ntvs*
 *.njsproj

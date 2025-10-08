@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('slots')
-      .select('*')
+      .select('id, customer_id, customer_name, slot_type, slot_count, payment_type, payer_name, payment_amount, payment_date, usage_days, memo, status, created_at, updated_at, work_group, keyword, link_url, equipment_group')
       .order('created_at', { ascending: false });
 
     if (customerId) {

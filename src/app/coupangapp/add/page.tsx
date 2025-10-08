@@ -410,8 +410,8 @@ export default function SlotAddPage() {
       const customerId = urlParams.get('customerId');
       const username = urlParams.get('username');
       
-      // 개별 고객 페이지인 경우 해당 고객의 슬롯만 조회
-      let apiUrl = '/api/slot-status?type=slot_status';
+      // 개별 고객 페이지인 경우 해당 고객의 슬롯만 조회 (slots 테이블 조회 제외)
+      let apiUrl = '/api/slot-status?type=slot_status&skipSlotsTable=true';
       if (customerId && username) {
         apiUrl += `&customerId=${customerId}&username=${username}`;
         console.log('🔍 개별 고객 슬롯 조회:', { customerId, username });
@@ -420,10 +420,15 @@ export default function SlotAddPage() {
       }
       
       // slot_status 테이블에서 데이터 직접 조회
+      console.log('🔗 API URL:', apiUrl);
       const response = await fetch(apiUrl);
+      console.log('📡 API 응답 상태:', response.status, response.ok);
+      
       const result = await response.json();
+      console.log('📊 API 응답 데이터:', result);
       
       if (!result.success) {
+        console.error('❌ API 응답 실패:', result.error);
         throw new Error(result.error || '슬롯 등록 목록을 불러오는데 실패했습니다.');
       }
       
@@ -701,6 +706,7 @@ export default function SlotAddPage() {
       };
 
       // slot_status 테이블에 저장
+      console.log('🔄 API 호출 시작:', slotStatusData);
       const response = await fetch('/api/slot-status', {
         method: 'POST',
         headers: {
@@ -709,9 +715,12 @@ export default function SlotAddPage() {
         body: JSON.stringify(slotStatusData),
       });
 
+      console.log('📡 API 응답 상태:', response.status, response.ok);
       const result = await response.json();
+      console.log('📊 API 응답 데이터:', result);
       
       if (!result.success) {
+        console.error('❌ API 응답 실패:', result.error);
         throw new Error(result.error || '슬롯 등록에 실패했습니다.');
       }
 
@@ -759,8 +768,23 @@ export default function SlotAddPage() {
 
       alert('슬롯이 성공적으로 등록되었습니다!');
     } catch (error) {
-      console.error('슬롯 등록 실패:', error);
-      alert('슬롯 등록에 실패했습니다. 다시 시도해주세요.');
+      console.error('❌ 슬롯 등록 실패 - 전체 오류 객체:', error);
+      console.error('❌ 오류 메시지:', error?.message);
+      console.error('❌ 오류 코드:', error?.code);
+      console.error('❌ 오류 스택:', error?.stack);
+      console.error('❌ 오류 타입:', typeof error);
+      console.error('❌ 오류 키:', Object.keys(error || {}));
+      
+      // 사용자에게 더 구체적인 오류 메시지 표시
+      let errorMessage = '슬롯 등록에 실패했습니다.';
+      if (error?.message) {
+        errorMessage += ` (${error.message})`;
+      }
+      if (error?.code) {
+        errorMessage += ` [코드: ${error.code}]`;
+      }
+      
+      alert(errorMessage);
     }
   };
 
@@ -836,20 +860,24 @@ export default function SlotAddPage() {
           slot_type: slotType || '쿠팡' // 슬롯 타입 (쿠팡, 네이버 등)
         };
 
-        // slot_status 테이블에 저장
-        const response = await fetch('/api/slot-status', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(slotStatusData),
-        });
+      // slot_status 테이블에 저장
+      console.log('🔄 API 호출 시작:', slotStatusData);
+      const response = await fetch('/api/slot-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(slotStatusData),
+      });
 
-        const result = await response.json();
-        
-        if (!result.success) {
-          throw new Error(result.error || '슬롯 등록에 실패했습니다.');
-        }
+      console.log('📡 API 응답 상태:', response.status, response.ok);
+      const result = await response.json();
+      console.log('📊 API 응답 데이터:', result);
+      
+      if (!result.success) {
+        console.error('❌ API 응답 실패:', result.error);
+        throw new Error(result.error || '슬롯 등록에 실패했습니다.');
+      }
 
         return result.data;
       });

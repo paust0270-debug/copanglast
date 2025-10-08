@@ -299,7 +299,7 @@ export async function getSlots() {
   try {
     const { data, error } = await supabase
       .from('slots')
-      .select('*')
+      .select('id, customer_id, customer_name, slot_type, slot_count, payment_type, payer_name, payment_amount, payment_date, usage_days, memo, status, created_at, updated_at, work_group, keyword, link_url, equipment_group')
       .order('created_at', { ascending: false });
     
     if (error) throw error;
@@ -365,7 +365,7 @@ export async function getSlotStatus() {
   try {
     const { data: slotsData, error: slotsError } = await supabase
       .from('slots')
-      .select('*')
+      .select('id, customer_id, customer_name, slot_type, slot_count, payment_type, payer_name, payment_amount, payment_date, usage_days, memo, status, created_at, updated_at, work_group, keyword, link_url, equipment_group')
       .order('created_at', { ascending: false });
     
     if (slotsError) throw slotsError;
@@ -413,7 +413,8 @@ export async function getSlotStatus() {
 export async function forceSchemaRefresh() {
   try {
     await supabase.from('customers').select('count').limit(1);
-    await supabase.from('slots').select('count').limit(1);
+    // slots 테이블은 스키마 캐시 갱신에서 제외 (컬럼 문제로 인해)
+    // await supabase.from('slots').select('count').limit(1);
   } catch (err) {
     console.log('스키마 갱신 중 오류:', err);
   }

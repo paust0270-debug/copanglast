@@ -8,10 +8,11 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // 공지사항 조회
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const noticeId = parseInt(params.id);
+    const { id } = await params;
+    const noticeId = parseInt(id);
 
     if (isNaN(noticeId)) {
       return NextResponse.json(

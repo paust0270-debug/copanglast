@@ -85,7 +85,7 @@ export async function getUserSlotDetails(userId: string) {
     // 슬롯별 상세 정보
     const { data: slotsData, error: slotsError } = await supabase
       .from('slots')
-      .select('*')
+      .select('id, customer_id, customer_name, slot_type, slot_count, payment_type, payer_name, payment_amount, payment_date, usage_days, memo, status, created_at, updated_at, work_group, keyword, link_url, equipment_group')
       .eq('customer_id', userId)
       .order('created_at', { ascending: false });
 
