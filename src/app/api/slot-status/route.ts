@@ -22,10 +22,11 @@ export async function GET(request: NextRequest) {
 
     // type 파라미터에 따라 다른 테이블 조회
     if (type === 'slot_status') {
-      // slot_status 테이블 조회 (쿠팡 앱 추가 페이지용)
+      // slot_status 테이블 조회 (쿠팡 앱 추가 페이지용) - 키워드가 있는 레코드만
       let slotStatusQuery = supabase
         .from('slot_status')
         .select('*')
+        .not('keyword', 'eq', '') // 키워드가 비어있지 않은 레코드만
         .order('created_at', { ascending: false });
 
       // 개별 고객 필터링 (customerId와 username이 있는 경우)
@@ -96,12 +97,19 @@ export async function GET(request: NextRequest) {
         
         
         
-        // 만료일 기준 잔여기간 계산 (일, 시간, 분 단위)
+        // 실제 현재 잔여기간 계산 (일, 시간, 분 단위) - 로컬 시간 기준
         const now = new Date();
-        const createdDate = baseData.created_at ? new Date(baseData.created_at) : now;
+        
+        // DB에서 가져온 created_at을 로컬 시간으로 해석
+        let createdDate = now;
+        if (baseData.created_at) {
+          // DB의 created_at이 로컬 시간 형식이므로 그대로 사용
+          createdDate = new Date(baseData.created_at);
+        }
+        
         const usageDays = baseData.usage_days || 0;
         
-        // 만료일 계산 (created_at + usage_days) - DB의 updated_at 대신 직접 계산
+        // 만료일 계산 (created_at + usage_days)
         const expiryDate = new Date(createdDate.getTime() + usageDays * 24 * 60 * 60 * 1000);
         
         // 실제 잔여 시간 계산 (밀리초)
@@ -127,18 +135,16 @@ export async function GET(request: NextRequest) {
           remainingTimeString = '만료됨';
         }
         
-        // 등록일과 만료일 계산
-        const formatDate = (date: Date) => {
+        // 등록일과 만료일 계산 (로컬 시간 기준)
+        const formatLocalDate = (date: Date) => {
           const year = date.getFullYear();
           const month = String(date.getMonth() + 1).padStart(2, '0');
           const day = String(date.getDate()).padStart(2, '0');
-          const hours = String(date.getHours()).padStart(2, '0');
-          const minutes = String(date.getMinutes()).padStart(2, '0');
-          const seconds = String(date.getSeconds()).padStart(2, '0');
-          return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+          return `${year}-${month}-${day}`;
         };
         
-        const registrationDateRange = `${formatDate(createdDate)} ~ ${formatDate(expiryDate)}`;
+        const registrationDate = formatLocalDate(createdDate);
+        const expiryDateString = usageDays > 0 ? formatLocalDate(expiryDate) : '';
         
         return {
           id: index + 1, // 순번 (1부터 시작)
@@ -155,7 +161,8 @@ export async function GET(request: NextRequest) {
           traffic: slot.traffic,
           equipment_group: slot.equipment_group,
           remaining_days: remainingTimeString,
-          registration_date: registrationDateRange,
+          registration_date: registrationDate,
+          expiry_date: expiryDateString,
           status: slot.status,
           memo: slot.memo,
           created_at: slot.created_at,
@@ -199,15 +206,17 @@ export async function GET(request: NextRequest) {
       const customerSlots = slotsData || [];
       console.log('📊 고객 슬롯 현황:', customerSlots);
 
-      // 사용 중인 슬롯 수 계산 (slot_status 테이블에서)
+      // 사용 중인 슬롯 수 계산 (slot_status 테이블에서 키워드가 있는 레코드만)
       let usedSlots = 0;
       try {
         const { data: slotStatusData } = await supabase
           .from('slot_status')
-          .select('slot_count')
-          .eq('customer_id', username);
+          .select('slot_count, keyword')
+          .eq('customer_id', username)
+          .not('keyword', 'eq', ''); // 키워드가 비어있지 않은 레코드만
         
         usedSlots = slotStatusData?.reduce((sum, slot) => sum + (slot.slot_count || 0), 0) || 0;
+        console.log('📊 작업등록된 슬롯 수:', usedSlots);
       } catch (err) {
         console.log('slot_status 조회 중 오류 (무시):', err);
       }
@@ -278,23 +287,80 @@ export async function GET(request: NextRequest) {
       .eq('customer_id', username)
       .order('created_at', { ascending: false });
     
-    const filteredData = slotsData?.map(slot => ({
-      id: slot.id,
-      customerId: slot.customer_id,
-      customerName: '', // 별도 조회 필요
-      slotType: slot.slot_type || '쿠팡',
-      slotCount: slot.slot_count || 1,
-      usedSlots: 0, // 별도 계산 필요
-      remainingSlots: slot.slot_count || 1,
-      pausedSlots: 0,
-      totalPaymentAmount: slot.payment_amount || 0,
-      remainingDays: slot.usage_days || 0,
-      registrationDate: slot.payment_date || '',
-      expiryDate: slot.payment_date || '',
-      addDate: slot.payment_date || '',
-      status: slot.status || 'active',
-      userGroup: slot.work_group || '일반'
-    })) || [];
+    let filteredData = slotsData?.map(slot => {
+      // 실제 현재 시간 기준 잔여기간 계산 (일, 시간, 분 단위) - 로컬 시간 기준
+      const now = new Date();
+      
+      // DB에서 가져온 created_at을 로컬 시간으로 해석
+      let createdDate = now;
+      if (slot.created_at) {
+        // DB의 created_at이 로컬 시간 형식이므로 그대로 사용
+        createdDate = new Date(slot.created_at);
+      }
+      
+      const usageDays = slot.usage_days || 0;
+      
+      // 만료일 계산 (created_at + usage_days)
+      const expiryDate = new Date(createdDate.getTime() + usageDays * 24 * 60 * 60 * 1000);
+      
+      // 실제 잔여 시간 계산 (밀리초)
+      const remainingMs = Math.max(0, expiryDate.getTime() - now.getTime());
+      
+      // 잔여 시간을 일, 시간, 분으로 변환
+      const remainingDays = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
+      const remainingHours = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+      const remainingMinutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+      
+      // 잔여기간 문자열 생성
+      let remainingTimeString = '';
+      if (remainingDays > 0) {
+        remainingTimeString += `${remainingDays}일`;
+      }
+      if (remainingHours > 0) {
+        remainingTimeString += (remainingTimeString ? ' ' : '') + `${remainingHours}시간`;
+      }
+      if (remainingMinutes > 0) {
+        remainingTimeString += (remainingTimeString ? ' ' : '') + `${remainingMinutes}분`;
+      }
+      if (!remainingTimeString) {
+        remainingTimeString = '만료됨';
+      }
+      
+      // 등록일과 만료일 계산 (로컬 시간 기준)
+      const formatLocalDate = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+      
+      const registrationDate = formatLocalDate(createdDate);
+      const expiryDateString = usageDays > 0 ? formatLocalDate(expiryDate) : '';
+      
+      // 만료 상태 확인 (잔여 시간이 0이면 만료)
+      const isExpired = remainingMs === 0 && usageDays > 0;
+      
+      return {
+        id: slot.id,
+        customerId: slot.customer_id,
+        customerName: slot.customer_name || '', // customer_name 필드 사용
+        slotType: slot.slot_type || '쿠팡',
+        slotCount: slot.slot_count || 1,
+        usedSlots: 0, // slot_status 테이블에서 계산
+        remainingSlots: slot.slot_count || 1,
+        pausedSlots: 0,
+        totalPaymentAmount: slot.payment_amount || 0,
+        remainingDays: remainingDays,
+        remainingHours: remainingHours,
+        remainingMinutes: remainingMinutes,
+        remainingTimeString: remainingTimeString,
+        registrationDate: registrationDate,
+        expiryDate: expiryDateString,
+        addDate: slot.created_at ? new Date(slot.created_at).toISOString().split('T')[0] : '',
+        status: isExpired ? 'expired' : slot.status,
+        userGroup: slot.work_group || '일반'
+      };
+    }) || [];
 
     // 검색 필터링
     if (searchQuery) {
@@ -368,11 +434,12 @@ export async function POST(request: NextRequest) {
 
     console.log('📊 사용 가능한 슬롯 목록:', availableSlots);
 
-    // 1.5. 현재 사용 중인 슬롯 수 확인
+    // 1.5. 현재 사용 중인 슬롯 수 확인 (키워드가 있는 레코드만)
     const { data: currentSlotStatus } = await supabase
       .from('slot_status')
-      .select('slot_count')
-      .eq('customer_id', customerId);
+      .select('slot_count, keyword')
+      .eq('customer_id', customerId)
+      .not('keyword', 'eq', ''); // 키워드가 비어있지 않은 레코드만
 
     const currentUsedSlots = currentSlotStatus?.reduce((sum, slot) => sum + (slot.slot_count || 0), 0) || 0;
     const totalAvailableSlots = availableSlots.reduce((sum, slot) => sum + (slot.slot_count || 0), 0);
@@ -392,82 +459,134 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. slot_status 테이블에 데이터 삽입
-    const slotStatusEntries = [];
+    // 2. 기존 slot_status 레코드 업데이트 (새 레코드 생성 방지)
+    console.log('🔄 기존 slot_status 레코드 업데이트 시작...');
     
-    // 요청된 슬롯 수만큼 slot_status 엔트리 생성
+    // 기존 빈 레코드들 조회 (키워드가 비어있는 레코드)
+    const { data: emptySlotStatus, error: emptySlotError } = await supabase
+      .from('slot_status')
+      .select('*')
+      .eq('customer_id', customerId)
+      .eq('keyword', '')
+      .order('slot_sequence', { ascending: true })
+      .limit(requestedSlotCount);
+
+    if (emptySlotError) {
+      console.error('빈 slot_status 레코드 조회 오류:', emptySlotError);
+      return NextResponse.json(
+        { error: '기존 슬롯 레코드를 조회하는 중 오류가 발생했습니다.' },
+        { status: 500 }
+      );
+    }
+
+    console.log(`📊 조회된 빈 레코드 수: ${emptySlotStatus?.length || 0}개`);
+
+    if (!emptySlotStatus || emptySlotStatus.length < requestedSlotCount) {
+      return NextResponse.json(
+        { error: `작업등록 가능한 슬롯이 부족합니다. (사용 가능: ${emptySlotStatus?.length || 0}개, 요청: ${requestedSlotCount}개)` },
+        { status: 400 }
+      );
+    }
+
+    // 요청된 수만큼 기존 레코드 업데이트 (잔여기간, 등록일, 만료일 보존)
+    const updatePromises = [];
     for (let i = 0; i < requestedSlotCount; i++) {
-      slotStatusEntries.push({
-        customer_id: customerId,
-        customer_name: body.customer_name,
+      const existingRecord = emptySlotStatus[i];
+      
+      const updateData = {
         distributor: body.distributor || '일반',
         work_group: body.work_group || '공통',
         keyword: body.keyword,
         link_url: body.link_url,
         current_rank: body.current_rank || '1 [0]',
         start_rank: body.start_rank || '1 [0]',
-        slot_count: 1, // 각 엔트리는 1개 슬롯
         traffic: body.traffic || '0 (0/0)',
         equipment_group: body.equipment_group || '지정안함',
-        usage_days: body.usage_days || 30,
         status: body.status || '작동중',
         memo: body.memo || '',
         slot_type: body.slot_type || '쿠팡'
-      });
+        // usage_days, created_at, updated_at, expiry_date는 보존 (변경하지 않음)
+      };
+
+      updatePromises.push(
+        supabase
+          .from('slot_status')
+          .update(updateData)
+          .eq('id', existingRecord.id)
+          .select()
+      );
     }
 
-    console.log('📝 slot_status 테이블에 삽입할 데이터:', slotStatusEntries);
+    console.log(`📝 ${requestedSlotCount}개 레코드 업데이트 중...`);
 
-    const { data: insertedSlotStatus, error: insertError } = await supabase
-      .from('slot_status')
-      .insert(slotStatusEntries)
-      .select();
+    const updateResults = await Promise.all(updatePromises);
+    
+    // 업데이트 결과 확인
+    let successCount = 0;
+    let errors = [];
+    
+    updateResults.forEach((result, index) => {
+      if (result.error) {
+        console.error(`레코드 ${index + 1} 업데이트 실패:`, result.error);
+        errors.push(result.error);
+      } else {
+        successCount++;
+        console.log(`✅ 레코드 ${index + 1} 업데이트 성공`);
+      }
+    });
 
-    if (insertError) {
-      console.error('slot_status 삽입 오류:', insertError);
+    if (successCount === 0) {
       return NextResponse.json(
-        { error: '슬롯 등록 중 오류가 발생했습니다.' },
+        { error: '모든 슬롯 업데이트에 실패했습니다.' },
         { status: 500 }
       );
     }
 
-    console.log('✅ slot_status 테이블 삽입 성공:', insertedSlotStatus);
+    console.log(`✅ ${successCount}/${requestedSlotCount}개 레코드 업데이트 성공`);
 
-    // 3. keywords 테이블에 키워드 정보 저장 (중복 체크)
-    if (body.keyword) {
+    // 업데이트된 레코드들 조회
+    const { data: updatedSlotStatus, error: selectError } = await supabase
+      .from('slot_status')
+      .select('*')
+      .eq('customer_id', customerId)
+      .eq('keyword', body.keyword)
+      .order('slot_sequence', { ascending: true });
+
+    if (selectError) {
+      console.error('업데이트된 레코드 조회 오류:', selectError);
+    }
+
+    // 3. keywords 테이블에 키워드 정보 저장 (각 슬롯별로 개별 레코드 생성)
+    if (body.keyword && updatedSlotStatus && updatedSlotStatus.length > 0) {
       try {
-        const { data: existingKeyword } = await supabase
+        // current_rank에서 숫자만 추출 (예: "5 [3]" -> 5)
+        const extractRankNumber = (rankStr) => {
+          if (!rankStr) return 1;
+          const match = rankStr.match(/^(\d+)/);
+          return match ? parseInt(match[1]) : 1;
+        };
+
+        // 각 슬롯별로 keywords 테이블에 개별 레코드 생성
+        const keywordRecords = updatedSlotStatus.map(slot => ({
+          keyword: body.keyword,
+          link_url: body.link_url,
+          slot_type: body.slot_type || '쿠팡',
+          slot_count: 1, // 각 레코드는 1개 슬롯을 의미
+          current_rank: extractRankNumber(body.current_rank),
+          slot_sequence: slot.slot_sequence // slot_status의 순번을 그대로 사용
+        }));
+
+        console.log(`📝 ${keywordRecords.length}개 키워드 레코드 생성 중...`);
+
+        const { error: keywordError } = await supabase
           .from('keywords')
-          .select('id')
-          .eq('keyword', body.keyword)
-          .eq('slot_type', body.slot_type || '쿠팡')
-          .single();
+          .insert(keywordRecords);
 
-        if (!existingKeyword) {
-          const { error: keywordError } = await supabase
-            .from('keywords')
-            .insert([{
-              keyword: body.keyword,
-              link_url: body.link_url,
-              slot_type: body.slot_type || '쿠팡',
-              slot_count: requestedSlotCount,
-              current_rank: body.current_rank || '1 [0]',
-              start_rank: body.start_rank || '1 [0]',
-              traffic: body.traffic || '0 (0/0)',
-              equipment_group: body.equipment_group || '지정안함',
-              usage_days: body.usage_days || 30,
-              status: body.status || '작동중',
-              memo: body.memo || ''
-            }]);
-
-          if (keywordError) {
-            console.error('keywords 테이블 삽입 오류:', keywordError);
-            // keywords 삽입 실패해도 슬롯 등록은 성공으로 처리
-          } else {
-            console.log('✅ keywords 테이블 삽입 성공');
-          }
+        if (keywordError) {
+          console.error('keywords 테이블 삽입 오류:', keywordError);
+          // keywords 삽입 실패해도 슬롯 등록은 성공으로 처리
         } else {
-          console.log('ℹ️ 키워드가 이미 존재합니다:', body.keyword);
+          console.log(`✅ keywords 테이블에 ${keywordRecords.length}개 레코드 삽입 성공`);
         }
       } catch (err) {
         console.error('keywords 테이블 처리 중 오류:', err);
@@ -477,7 +596,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: insertedSlotStatus,
+      data: updatedSlotStatus,
       message: `${requestedSlotCount}개 슬롯이 성공적으로 등록되었습니다.`
     });
 

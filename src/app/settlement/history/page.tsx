@@ -190,7 +190,7 @@ export default function SettlementHistoryPage() {
     const slotTypeDisplay = settlement.slot_type === 'mixed' ? '혼합' : settlement.slot_type;
     const isAggregated = settlement.payment_type === 'batch' || settlement.slot_type === 'mixed';
     
-    alert(`정산 상세 내역\n\n순번: ${settlement.sequential_number || settlement.id}\n구분: ${category}\n총판명: ${settlement.distributor_name || '-'}\n슬롯유형: ${slotTypeDisplay}\n슬롯수: ${settlement.slot_count}개\n입금자명: ${settlement.payer_name || '-'}\n입금액: ${formatAmount(settlement.payment_amount)}\n슬롯추가일: ${formatDate(settlement.slot_addition_date)}\n아이디: ${settlement.customer_id}\n사용일수: ${settlement.usage_days}일\n메모: ${settlement.memo || '-'}\n상태: ${settlement.status}${isAggregated ? '\n\n※ 이 항목은 여러 건을 합산한 일괄 정산 내역입니다.' : ''}`);
+    alert(`정산 상세 내역\n\n순번: ${settlement.sequential_number || settlement.id}\n구분: ${category}\n소속총판: ${settlement.distributor_name || '-'}\n슬롯유형: ${slotTypeDisplay}\n슬롯수: ${settlement.slot_count}개\n입금자명: ${settlement.payer_name || '-'}\n입금액: ${formatAmount(settlement.payment_amount)}\n슬롯추가일: ${formatDate(settlement.slot_addition_date)}\n아이디: ${settlement.customer_id}\n사용일수: ${settlement.usage_days}일\n메모: ${settlement.memo || '-'}\n상태: ${settlement.status}${isAggregated ? '\n\n※ 이 항목은 여러 건을 합산한 일괄 정산 내역입니다.' : ''}`);
   };
 
   // 수정 함수
@@ -462,7 +462,7 @@ export default function SettlementHistoryPage() {
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">순번</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">구분</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">총판명</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">소속총판</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">아이디</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">슬롯추가일</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">슬롯유형</th>
@@ -488,7 +488,7 @@ export default function SettlementHistoryPage() {
                         입금
                       </span>
                     </td>
-                    {/* 총판명 */}
+                    {/* 소속총판 */}
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
                       <span className="font-medium">{item.distributor_name || '-'}</span>
                     </td>

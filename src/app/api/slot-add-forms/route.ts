@@ -30,17 +30,11 @@ export async function POST(request: NextRequest) {
 
     console.log(`슬롯 추가 폼 데이터 저장: ${customerName} (${slotType} ${slotCount}개)`);
 
-    // 슬롯 추가 폼 데이터 생성
+    // 슬롯 추가 폼 데이터 생성 (실제 테이블 스키마에 맞게 수정)
     const formData = {
-      customer_id: customerId,
-      slot_type: slotType,
-      slot_count: parseInt(slotCount),
-      payment_type: paymentType || null,
-      payer_name: payerName || null,
-      payment_amount: paymentAmount ? parseInt(paymentAmount) : null,
-      payment_date: paymentDate || null,
-      usage_days: usageDays ? parseInt(usageDays) : 30,
-      memo: memo || null,
+      customer_id: parseInt(customerId) || 1, // 필수 컬럼 (integer)
+      platform: slotType || 'coupang', // 필수 컬럼
+      product_name: `${slotType} 슬롯 ${slotCount}개`, // 필수 컬럼
       created_at: new Date().toISOString()
     };
 
@@ -60,6 +54,12 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('✅ 슬롯 추가 폼 데이터 저장 완료:', savedForm);
+
+    // slots 테이블 레코드 생성 제거 (중복 방지 - /api/slots에서 이미 생성함)
+    console.log('✅ slots 레코드 생성 생략 (중복 방지 - /api/slots에서 이미 생성함)');
+
+    // slot_status 레코드 생성 제거 (중복 방지 - /api/slots에서 이미 생성함)
+    console.log('✅ slot_status 레코드 생성 생략 (중복 방지 - /api/slots에서 이미 생성함)');
 
     return NextResponse.json({
       success: true,

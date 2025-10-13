@@ -343,7 +343,7 @@ export default function UnsettledPage() {
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">순번</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">구분</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">총판명</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">소속총판</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">아이디</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">슬롯추가일</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">슬롯유형</th>
@@ -374,7 +374,7 @@ export default function UnsettledPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 border-b">총판A</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 border-b">{slot.distributor_name || '-'}</td>
                     <td className="px-4 py-3 text-sm text-gray-900 border-b">{slot.customer_id}</td>
                     <td className="px-4 py-3 text-sm text-gray-900 border-b">{formatDate(slot.created_at)}</td>
                     <td className="px-4 py-3 text-sm text-gray-900 border-b">{getSlotTypeKorean(slot.slot_type)}</td>

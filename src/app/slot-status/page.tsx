@@ -435,45 +435,43 @@ export default function SlotStatusPage() {
         </div>
 
         {/* 통계 정보 */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900">총 슬롯</h3>
-            <p className="text-3xl font-bold text-blue-600">
-              {filteredData.reduce((sum, slot) => sum + slot.slotCount, 0)}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900">사용 중</h3>
-            <p className="text-3xl font-bold text-green-600">
-              {filteredData.reduce((sum, slot) => sum + slot.usedSlots, 0)}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900">잔여</h3>
-            <p className="text-3xl font-bold text-orange-600">
-              {filteredData.reduce((sum, slot) => sum + slot.remainingSlots, 0)}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900">일시 중지</h3>
-            <p className="text-3xl font-bold text-yellow-600">
-              {filteredData.reduce((sum, slot) => sum + (slot.pausedSlots || 0), 0)}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900">만료됨</h3>
-            <p className="text-3xl font-bold text-red-600">
-              {filteredData.filter(slot => slot.status === 'expired').reduce((sum, slot) => sum + slot.slotCount, 0)}
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              {filteredData.filter(slot => slot.remainingDays === 0 && slot.remainingHours > 0).length}개 시간 단위
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900">총 고객</h3>
-            <p className="text-3xl font-bold text-purple-600">
-              {filteredData.length}
-            </p>
+        <div className="bg-white rounded-lg shadow p-4 mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-600">총 슬롯:</span>
+              <span className="text-lg font-bold text-blue-600">
+                {filteredData.reduce((sum, slot) => sum + slot.slotCount, 0)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-600">사용 중:</span>
+              <span className="text-lg font-bold text-green-600">
+                {filteredData.reduce((sum, slot) => sum + slot.usedSlots, 0)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-600">잔여:</span>
+              <span className="text-lg font-bold text-orange-600">
+                {filteredData.reduce((sum, slot) => sum + slot.remainingSlots, 0)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-600">일시 중지:</span>
+              <span className="text-lg font-bold text-yellow-600">
+                {filteredData.reduce((sum, slot) => sum + (slot.pausedSlots || 0), 0)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-600">만료됨:</span>
+              <span className="text-lg font-bold text-red-600">
+                {filteredData.filter(slot => slot.status === 'expired').reduce((sum, slot) => sum + slot.slotCount, 0)}
+              </span>
+              {filteredData.filter(slot => slot.remainingDays === 0 && slot.remainingHours > 0).length > 0 && (
+                <span className="text-xs text-gray-500">
+                  ({filteredData.filter(slot => slot.remainingDays === 0 && slot.remainingHours > 0).length}개 시간 단위)
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

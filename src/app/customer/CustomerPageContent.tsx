@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { getDistributors, Distributor } from '@/lib/supabase';
 
 interface Customer {
   id: string;
@@ -43,6 +44,7 @@ export function CustomerPageContent() {
   const [excelImportLoading, setExcelImportLoading] = useState(false);
   const [selectedCustomers, setSelectedCustomers] = useState<Set<string>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
+  const [distributors, setDistributors] = useState<Distributor[]>([]);
 
   // Supabase에서 고객 목록 가져오기
   const fetchCustomers = async () => {
@@ -70,6 +72,16 @@ export function CustomerPageContent() {
     }
   };
 
+  // 총판 목록 가져오기
+  const fetchDistributors = async () => {
+    try {
+      const data = await getDistributors();
+      setDistributors(data);
+    } catch (error) {
+      console.error('총판 목록 조회 실패:', error);
+    }
+  };
+
   // 로그인 상태 확인
   useEffect(() => {
     const user = localStorage.getItem('user');
@@ -81,6 +93,7 @@ export function CustomerPageContent() {
       return;
     }
     fetchCustomers();
+    fetchDistributors();
   }, [router]);
 
   // 고객 목록이 변경될 때 선택 상태 초기화
@@ -602,7 +615,6 @@ export function CustomerPageContent() {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">순번</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">소속총판</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">총판명</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">아이디</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">비밀번호</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">고객명</th>
@@ -638,7 +650,6 @@ export function CustomerPageContent() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{index + 1}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{customer.distributor || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{customer.distributor_name || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{customer.username}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{customer.password || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{customer.name}</td>
@@ -829,23 +840,20 @@ export function CustomerPageContent() {
                 </div>
                 <div>
                   <Label htmlFor="edit-distributor">소속총판 *</Label>
-                  <Input
+                  <select
                     id="edit-distributor"
                     value={editForm.distributor || ''}
                     onChange={(e) => handleInputChange('distributor', e.target.value)}
-                    className="mt-1"
+                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-distributor-name">총판명 *</Label>
-                  <Input
-                    id="edit-distributor-name"
-                    value={editForm.distributor_name || ''}
-                    onChange={(e) => handleInputChange('distributor_name', e.target.value)}
-                    className="mt-1"
-                    required
-                  />
+                  >
+                    <option value="">소속총판을 선택하세요</option>
+                    {distributors.map((distributor) => (
+                      <option key={distributor.id} value={distributor.name}>
+                        {distributor.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="col-span-2">
                   <Label htmlFor="edit-memo">메모</Label>

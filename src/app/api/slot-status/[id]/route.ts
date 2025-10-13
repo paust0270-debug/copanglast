@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-// 특정 슬롯 삭제
+// 특정 슬롯 삭제 (날짜 정보 보존)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -40,55 +35,71 @@ export async function DELETE(
 
     console.log(`📋 삭제할 슬롯 정보:`, slotInfo);
 
-    // slot_status 테이블에서 삭제
-    const { error: deleteError } = await supabase
-      .from('slot_status')
-      .delete()
-      .eq('id', id);
+    // 날짜 정보 보존을 위해 초기화 (삭제 대신 빈 상태로 리셋)
+    const resetData = {
+      distributor: '일반',
+      work_group: '공통',
+      keyword: '', // 빈 문자열로 리셋
+      link_url: '', // 빈 문자열로 리셋
+      current_rank: '',
+      start_rank: '',
+      traffic: '',
+      equipment_group: '지정안함',
+      status: '작동중',
+      memo: '',
+      slot_type: '쿠팡'
+      // usage_days, created_at, updated_at, expiry_date는 보존 (변경하지 않음)
+    };
 
-    if (deleteError) {
-      console.error('슬롯 삭제 오류:', deleteError);
+    console.log('🔄 슬롯 초기화 중 (날짜 정보 보존)...');
+
+    const { data: resetSlot, error: resetError } = await supabase
+      .from('slot_status')
+      .update(resetData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (resetError) {
+      console.error('슬롯 초기화 오류:', resetError);
       return NextResponse.json(
-        { success: false, error: `슬롯 삭제 중 오류가 발생했습니다: ${deleteError.message}` },
+        { success: false, error: `슬롯 초기화 중 오류가 발생했습니다: ${resetError.message}` },
         { status: 500 }
       );
     }
 
-    console.log(`✅ 슬롯 삭제 완료 - ID: ${id}, 슬롯 개수: ${slotInfo.slot_count}`);
+    console.log(`✅ 슬롯 초기화 완료 - ID: ${id}, 날짜 정보 보존됨`);
 
-    // keywords 테이블에서 해당 키워드 정리 (분리 저장 방식)
+    // keywords 테이블에서 해당 키워드 정리
     try {
       console.log('🔄 keywords 테이블에서 키워드 정리 중...');
       
-      // 해당 슬롯의 키워드와 링크로 keywords 테이블에서 검색
-      const { data: keywordsToDelete, error: findError } = await supabase
-        .from('keywords')
-        .select('*')
-        .eq('keyword', slotInfo.keyword)
-        .eq('link_url', slotInfo.link_url);
-
-      if (findError) {
-        console.error('keywords 테이블 조회 오류:', findError);
-      } else if (keywordsToDelete && keywordsToDelete.length > 0) {
-        // 해당 키워드가 keywords 테이블에 있으면 삭제
-        const { error: deleteError } = await supabase
+      if (slotInfo.keyword) {
+        const { data: keywordsToDelete, error: findError } = await supabase
           .from('keywords')
-          .delete()
+          .select('*')
           .eq('keyword', slotInfo.keyword)
           .eq('link_url', slotInfo.link_url);
 
-        if (deleteError) {
-          console.error('keywords 테이블 삭제 오류:', deleteError);
-        } else {
-          console.log(`✅ keywords 테이블에서 키워드 정리 완료: ${slotInfo.keyword}`);
+        if (findError) {
+          console.error('keywords 테이블 조회 오류:', findError);
+        } else if (keywordsToDelete && keywordsToDelete.length > 0) {
+          const { error: deleteError } = await supabase
+            .from('keywords')
+            .delete()
+            .eq('keyword', slotInfo.keyword)
+            .eq('link_url', slotInfo.link_url);
+
+          if (deleteError) {
+            console.error('keywords 테이블 삭제 오류:', deleteError);
+          } else {
+            console.log(`✅ keywords 테이블에서 키워드 정리 완료: ${slotInfo.keyword}`);
+          }
         }
-      } else {
-        console.log('ℹ️ keywords 테이블에 해당 키워드가 없어서 정리할 필요 없음');
       }
     } catch (keywordError) {
       console.error('keywords 테이블 정리 예외:', keywordError);
-      // keywords 정리 실패해도 슬롯 삭제는 성공으로 처리
-      console.log('⚠️ keywords 정리 실패했지만 슬롯 삭제는 성공');
+      console.log('⚠️ keywords 정리 실패했지만 슬롯 초기화는 성공');
     }
     
     return NextResponse.json({
@@ -96,13 +107,16 @@ export async function DELETE(
       data: {
         id: parseInt(id),
         slot_count: slotInfo.slot_count,
-        keyword: slotInfo.keyword
+        keyword: slotInfo.keyword,
+        usage_days: slotInfo.usage_days,
+        created_at: slotInfo.created_at,
+        updated_at: slotInfo.updated_at
       },
-      message: '슬롯이 성공적으로 삭제되었습니다.'
+      message: '슬롯이 성공적으로 초기화되었습니다. (날짜 정보 보존)'
     });
 
   } catch (error) {
-    console.error('슬롯 삭제 API 예외 발생:', error);
+    console.error('슬롯 초기화 API 예외 발생:', error);
     return NextResponse.json(
       { success: false, error: '서버 오류가 발생했습니다.' },
       { status: 500 }
@@ -156,7 +170,7 @@ export async function GET(
   }
 }
 
-// 특정 슬롯 수정
+// 특정 슬롯 수정 (날짜 정보 보존)
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -174,11 +188,35 @@ export async function PUT(
     const body = await request.json();
     console.log(`✏️ 슬롯 수정 요청 - ID: ${id}`, body);
 
+    // 기존 데이터 조회 (잔여기간/등록일/만료일 보존용)
+    const { data: existingData, error: fetchError } = await supabase
+      .from('slot_status')
+      .select('usage_days, created_at, updated_at, expiry_date')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) {
+      console.error('기존 데이터 조회 오류:', fetchError);
+      return NextResponse.json(
+        { success: false, error: '기존 슬롯 데이터를 찾을 수 없습니다.' },
+        { status: 404 }
+      );
+    }
+
+    // 잔여기간/등록일/만료일은 기존 값으로 보존
+    const { usage_days, created_at, updated_at, expiry_date, ...updateData } = body;
+    console.log(`🔒 보존되는 필드: usage_days=${existingData.usage_days}, created_at=${existingData.created_at}, updated_at=${existingData.updated_at}`);
+    console.log(`📝 업데이트되는 필드:`, updateData);
+
+    // 기존의 잔여기간/등록일/만료일을 명시적으로 포함하여 업데이트
     const { data, error } = await supabase
       .from('slot_status')
       .update({
-        ...body
-        // updated_at은 만료일이므로 수정 시 변경하지 않음
+        ...updateData,
+        usage_days: existingData.usage_days,
+        created_at: existingData.created_at,
+        updated_at: existingData.updated_at,
+        expiry_date: existingData.expiry_date
       })
       .eq('id', id)
       .select()
@@ -199,7 +237,6 @@ export async function PUT(
       try {
         console.log('🔄 keywords 테이블 동기화 중...');
         
-        // 기존 keywords에서 해당 슬롯의 키워드 찾기
         const { data: existingKeywords, error: findError } = await supabase
           .from('keywords')
           .select('*')
@@ -209,14 +246,12 @@ export async function PUT(
         if (findError) {
           console.error('기존 키워드 조회 오류:', findError);
         } else if (existingKeywords && existingKeywords.length > 0) {
-          // 기존 키워드가 있으면 업데이트
           const { error: updateError } = await supabase
             .from('keywords')
             .update({
               keyword: data.keyword,
               link_url: data.link_url,
-              slot_type: data.slot_type || 'coupang',
-              // updated_at은 만료일이므로 수정 시 변경하지 않음
+              slot_type: data.slot_type || 'coupang'
             })
             .eq('id', existingKeywords[0].id);
 
@@ -226,7 +261,6 @@ export async function PUT(
             console.log('✅ keywords 테이블 동기화 완료');
           }
         } else {
-          // 기존 키워드가 없으면 새로 추가
           const { error: insertError } = await supabase
             .from('keywords')
             .insert({
@@ -246,7 +280,6 @@ export async function PUT(
         }
       } catch (keywordError) {
         console.error('keywords 테이블 동기화 예외:', keywordError);
-        // keywords 동기화 실패해도 슬롯 수정은 성공으로 처리
         console.log('⚠️ keywords 동기화 실패했지만 슬롯 수정은 성공');
       }
     }
@@ -265,5 +298,3 @@ export async function PUT(
     );
   }
 }
-
-

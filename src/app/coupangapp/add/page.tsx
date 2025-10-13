@@ -152,6 +152,10 @@ export default function SlotAddPage() {
     customerName: ''
   });
 
+  // 작업등록된 슬롯이 있는지 확인하는 상태
+  const [hasWorkRegisteredSlots, setHasWorkRegisteredSlots] = useState(false);
+
+
   // 대량 등록 모달 상태
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -511,6 +515,12 @@ export default function SlotAddPage() {
       
       console.log('✅ 변환된 데이터:', convertedData);
       setCustomers(convertedData);
+      
+      // 작업등록된 슬롯이 있는지 확인 (keyword가 있는 슬롯이 있는지)
+      const hasRegisteredSlots = convertedData.some(slot => slot.keyword && slot.keyword.trim() !== '');
+      setHasWorkRegisteredSlots(hasRegisteredSlots);
+      console.log(`📊 작업등록된 슬롯 존재 여부: ${hasRegisteredSlots ? 'YES' : 'NO'}`);
+      
       console.log('✅ 슬롯 등록 목록 상태 업데이트 완료');
     } catch (err: any) {
       // 더 자세한 오류 정보 로깅
@@ -766,6 +776,9 @@ export default function SlotAddPage() {
       // 슬롯 등록 목록 새로고침
       await loadCustomers();
 
+      // 작업등록 상태 업데이트
+      setHasWorkRegisteredSlots(true);
+
       alert('슬롯이 성공적으로 등록되었습니다!');
     } catch (error) {
       console.error('❌ 슬롯 등록 실패 - 전체 오류 객체:', error);
@@ -921,6 +934,9 @@ export default function SlotAddPage() {
       // 슬롯 등록 목록 새로고침
       await loadCustomers();
       
+      // 작업등록 상태 업데이트
+      setHasWorkRegisteredSlots(true);
+      
       alert(`${parsedData.length}개의 슬롯이 성공적으로 등록되었습니다!`);
     } catch (error) {
       console.error('대량 슬롯 등록 실패:', error);
@@ -982,6 +998,11 @@ export default function SlotAddPage() {
         
         // 슬롯 등록 목록 새로고침
         await loadCustomers();
+        
+        // 작업등록 상태 재확인
+        const updatedCustomers = customers.filter(customer => customer.id !== id);
+        const hasRegisteredSlots = updatedCustomers.some(slot => slot.keyword && slot.keyword.trim() !== '');
+        setHasWorkRegisteredSlots(hasRegisteredSlots);
         
         alert(`슬롯이 성공적으로 삭제되었습니다.\n삭제된 슬롯 개수: ${customerToDelete.slotCount}개`);
       } catch (error) {
@@ -1202,6 +1223,12 @@ export default function SlotAddPage() {
 
       setSelectedCustomers(new Set());
       setSelectAll(false);
+      
+      // 작업등록 상태 재확인
+      const updatedCustomers = customers.filter(customer => !selectedCustomers.has(customer.id || 0));
+      const hasRegisteredSlots = updatedCustomers.some(slot => slot.keyword && slot.keyword.trim() !== '');
+      setHasWorkRegisteredSlots(hasRegisteredSlots);
+      
       alert(`${selectedIds.length}개 슬롯이 성공적으로 삭제되었습니다.\n삭제된 총 슬롯 개수: ${totalSlotsToDelete}개`);
     } catch (error) {
       console.error('전체 삭제 실패:', error);
@@ -1440,8 +1467,12 @@ export default function SlotAddPage() {
               
               <div className="flex items-center space-x-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600">{customerSlotStatus.remainingSlots}</div>
-                  <div className="text-sm text-gray-600">사용 가능 {customerSlotStatus.remainingSlots}개</div>
+                  <div className="text-3xl font-bold text-green-600">
+                    {hasWorkRegisteredSlots ? customerSlotStatus.remainingSlots : customerSlotStatus.totalSlots}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    사용 가능 {hasWorkRegisteredSlots ? customerSlotStatus.remainingSlots : customerSlotStatus.totalSlots}개
+                  </div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-red-600">{customerSlotStatus.usedSlots}</div>
@@ -1550,16 +1581,16 @@ export default function SlotAddPage() {
                 <Button 
                   type="submit" 
                   className="bg-purple-600 hover:bg-purple-700 px-6 h-9"
-                  disabled={customerSlotStatus.remainingSlots < form.slotCount}
+                  disabled={(hasWorkRegisteredSlots ? customerSlotStatus.remainingSlots : customerSlotStatus.totalSlots) < form.slotCount}
                 >
-                  {customerSlotStatus.remainingSlots < form.slotCount ? '사용 가능한 슬롯 부족' : '작업등록'}
+                  {(hasWorkRegisteredSlots ? customerSlotStatus.remainingSlots : customerSlotStatus.totalSlots) < form.slotCount ? '사용 가능한 슬롯 부족' : '작업등록'}
                 </Button>
                 <Button 
                   type="button" 
                   variant="outline" 
                   onClick={() => setShowBulkModal(true)} 
                   className="px-6 h-9"
-                  disabled={customerSlotStatus.remainingSlots === 0}
+                  disabled={(hasWorkRegisteredSlots ? customerSlotStatus.remainingSlots : customerSlotStatus.totalSlots) === 0}
                 >
                   대량 작업등록
                 </Button>
@@ -1825,8 +1856,13 @@ export default function SlotAddPage() {
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 <p className="mt-2 text-gray-600">고객 목록을 불러오는 중...</p>
               </div>
+            ) : !hasWorkRegisteredSlots ? (
+              <div className="text-center py-8">
+                <div className="text-gray-500 text-lg mb-2">📋 작업등록된 슬롯이 없습니다</div>
+                <p className="text-gray-400">위의 슬롯 등록 폼을 사용하여 작업을 등록해주세요.</p>
+              </div>
             ) : (
-                          <div className="w-full">
+              <div className="w-full">
                 <table className="w-full border-collapse border border-gray-300">
                 <thead>
                   <tr className="bg-gray-100">
