@@ -12,7 +12,9 @@ export async function GET(
 
     const { data: slot, error } = await supabase
       .from('slots')
-      .select('id, customer_id, customer_name, slot_type, slot_count, payment_type, payer_name, payment_amount, payment_date, usage_days, memo, status, created_at, updated_at, work_group, keyword, link_url, equipment_group')
+      .select(
+        'id, customer_id, customer_name, slot_type, slot_count, payment_type, payer_name, payment_amount, payment_date, usage_days, memo, status, created_at, updated_at, work_group, keyword, link_url, equipment_group'
+      )
       .eq('id', slotId)
       .single();
 
@@ -26,9 +28,8 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      data: slot
+      data: slot,
     });
-
   } catch (error) {
     console.error('슬롯 조회 API 예외 발생:', error);
     return NextResponse.json(
@@ -54,17 +55,18 @@ export async function PUT(
       payment_amount,
       payment_date,
       usage_days,
-      memo
+      memo,
     } = body;
 
     // 수정할 데이터 준비
-    const updateData: any = {
-      updated_at: new Date().toISOString()
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
     };
 
     if (payment_type !== undefined) updateData.payment_type = payment_type;
     if (payer_name !== undefined) updateData.payer_name = payer_name;
-    if (payment_amount !== undefined) updateData.payment_amount = payment_amount;
+    if (payment_amount !== undefined)
+      updateData.payment_amount = payment_amount;
     if (payment_date !== undefined) updateData.payment_date = payment_date;
     if (usage_days !== undefined) updateData.usage_days = usage_days;
     if (memo !== undefined) updateData.memo = memo;
@@ -90,9 +92,8 @@ export async function PUT(
     return NextResponse.json({
       success: true,
       data: slot,
-      message: '슬롯이 성공적으로 수정되었습니다.'
+      message: '슬롯이 성공적으로 수정되었습니다.',
     });
-
   } catch (error) {
     console.error('슬롯 수정 API 예외 발생:', error);
     return NextResponse.json(
