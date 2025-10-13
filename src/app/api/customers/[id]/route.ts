@@ -1,9 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from '@/lib/supabase';
 
 // GET: 특정 고객 조회
 export async function GET(
@@ -20,13 +16,19 @@ export async function GET(
 
     if (error) {
       console.error('Error fetching customer:', error);
-      return NextResponse.json({ error: 'Failed to fetch customer' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to fetch customer' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json(data);
   } catch (error) {
     console.error('Unexpected error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -38,7 +40,7 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    
+
     const { data, error } = await supabase
       .from('customers')
       .update(body)
@@ -47,13 +49,19 @@ export async function PATCH(
 
     if (error) {
       console.error('Error updating customer:', error);
-      return NextResponse.json({ error: 'Failed to update customer' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to update customer' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json(data[0]);
   } catch (error) {
     console.error('Unexpected error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -64,19 +72,22 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const { error } = await supabase
-      .from('customers')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabase.from('customers').delete().eq('id', id);
 
     if (error) {
       console.error('Error deleting customer:', error);
-      return NextResponse.json({ error: 'Failed to delete customer' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to delete customer' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ message: 'Customer deleted successfully' });
   } catch (error) {
     console.error('Unexpected error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

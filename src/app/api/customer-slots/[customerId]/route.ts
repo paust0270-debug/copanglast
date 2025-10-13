@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from '@/lib/supabase';
 
 export async function GET(
   request: NextRequest,
@@ -56,8 +52,10 @@ export async function GET(
       );
     }
 
-    const totalUsedSlots = usedSlots?.reduce((sum, item) => sum + (item.slot_count || 0), 0) || 0;
-    const totalSlots = slots?.reduce((sum, item) => sum + (item.slotCount || 0), 0) || 0;
+    const totalUsedSlots =
+      usedSlots?.reduce((sum, item) => sum + (item.slot_count || 0), 0) || 0;
+    const totalSlots =
+      slots?.reduce((sum, item) => sum + (item.slotCount || 0), 0) || 0;
     const remainingSlots = Math.max(0, totalSlots - totalUsedSlots);
 
     const slotInfo = {
@@ -66,7 +64,7 @@ export async function GET(
       totalSlots,
       usedSlots: totalUsedSlots,
       remainingSlots,
-      slots: slots || []
+      slots: slots || [],
     };
 
     return NextResponse.json(slotInfo);
@@ -78,4 +76,3 @@ export async function GET(
     );
   }
 }
-

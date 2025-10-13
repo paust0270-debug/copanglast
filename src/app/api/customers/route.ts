@@ -1,9 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from '@/lib/supabase';
 
 // GET: 모든 고객 조회
 export async function GET() {
@@ -15,13 +11,19 @@ export async function GET() {
 
     if (error) {
       console.error('Error fetching customers:', error);
-      return NextResponse.json({ error: 'Failed to fetch customers' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to fetch customers' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json(data || []);
   } catch (error) {
     console.error('Unexpected error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -29,7 +31,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    
+
     const { data, error } = await supabase
       .from('customers')
       .insert([body])
@@ -37,12 +39,18 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('Error adding customer:', error);
-      return NextResponse.json({ error: 'Failed to add customer' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to add customer' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json(data[0]);
   } catch (error) {
     console.error('Unexpected error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

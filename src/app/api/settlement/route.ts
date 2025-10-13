@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,15 +13,18 @@ export async function POST(request: NextRequest) {
       paymentAmount,
       usageDays,
       memo,
-      status
+      status,
     } = body;
 
     // 필수 필드 검증
     if (!slotId || !customerId || !customerName || !slotType || !slotCount) {
-      return NextResponse.json({
-        success: false,
-        error: '필수 필드가 누락되었습니다.'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '필수 필드가 누락되었습니다.',
+        },
+        { status: 400 }
+      );
     }
 
     // 정산 테이블에 데이터 삽입
@@ -42,17 +41,20 @@ export async function POST(request: NextRequest) {
           usage_days: usageDays || 0,
           memo: memo || '',
           status: status || 'pending',
-          created_at: new Date().toISOString()
-        }
+          created_at: new Date().toISOString(),
+        },
       ])
       .select();
 
     if (error) {
       console.error('정산 데이터 삽입 오류:', error);
-      return NextResponse.json({
-        success: false,
-        error: '정산 데이터 저장에 실패했습니다.'
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '정산 데이터 저장에 실패했습니다.',
+        },
+        { status: 500 }
+      );
     }
 
     // 슬롯 상태를 'settlement_requested'로 업데이트
@@ -67,22 +69,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         warning: '정산요청은 등록되었지만 슬롯 상태 업데이트에 실패했습니다.',
-        data
+        data,
       });
     }
 
     return NextResponse.json({
       success: true,
       message: '정산요청이 성공적으로 등록되었습니다.',
-      data
+      data,
     });
-
   } catch (error) {
     console.error('정산요청 처리 오류:', error);
-    return NextResponse.json({
-      success: false,
-      error: '서버 오류가 발생했습니다.'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: '서버 오류가 발생했습니다.',
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -96,22 +100,27 @@ export async function GET() {
 
     if (error) {
       console.error('정산 데이터 조회 오류:', error);
-      return NextResponse.json({
-        success: false,
-        error: '정산 데이터 조회에 실패했습니다.'
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '정산 데이터 조회에 실패했습니다.',
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
       success: true,
-      data: data || []
+      data: data || [],
     });
-
   } catch (error) {
     console.error('정산 목록 조회 오류:', error);
-    return NextResponse.json({
-      success: false,
-      error: '서버 오류가 발생했습니다.'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: '서버 오류가 발생했습니다.',
+      },
+      { status: 500 }
+    );
   }
 }

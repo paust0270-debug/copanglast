@@ -1,21 +1,26 @@
 import { createClient as _createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co';
+const supabaseAnonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key';
 
 // createClient를 명시적으로 export
 export const createClient = _createClient;
 
 // 환경 변수 검증 (빌드 시에는 경고만 출력)
-if (!supabaseUrl || !supabaseAnonKey) {
+if (
+  !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+) {
   console.warn('⚠️ Supabase 환경 변수가 설정되지 않았습니다!');
   console.warn(
     'NEXT_PUBLIC_SUPABASE_URL:',
-    supabaseUrl ? '✅ 설정됨' : '❌ 설정되지 않음'
+    process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ 설정됨' : '❌ 설정되지 않음'
   );
   console.warn(
     'NEXT_PUBLIC_SUPABASE_ANON_KEY:',
-    supabaseAnonKey ? '✅ 설정됨' : '❌ 설정되지 않음'
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✅ 설정됨' : '❌ 설정되지 않음'
   );
   console.warn(
     '프로젝트 루트에 .env.local 파일을 생성하고 환경 변수를 설정하세요.'
@@ -36,7 +41,14 @@ export function createSupabaseClient() {
     console.warn(
       'Supabase 환경 변수가 설정되지 않았습니다. 더미 클라이언트를 반환합니다.'
     );
-    return _createClient('https://dummy.supabase.co', 'dummy-key', {
+    // 빌드 시에는 실제 Supabase URL과 키가 필요하므로 기본값 제공
+    const fallbackUrl =
+      process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      'https://your-project.supabase.co';
+    const fallbackKey =
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key';
+
+    return _createClient(fallbackUrl, fallbackKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: false,
