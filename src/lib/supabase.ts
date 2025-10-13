@@ -6,21 +6,21 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 // createClient를 명시적으로 export
 export const createClient = _createClient;
 
-// 환경 변수 검증
+// 환경 변수 검증 (빌드 시에는 경고만 출력)
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Supabase 환경 변수가 설정되지 않았습니다!');
-  console.error(
+  console.warn('⚠️ Supabase 환경 변수가 설정되지 않았습니다!');
+  console.warn(
     'NEXT_PUBLIC_SUPABASE_URL:',
     supabaseUrl ? '✅ 설정됨' : '❌ 설정되지 않음'
   );
-  console.error(
+  console.warn(
     'NEXT_PUBLIC_SUPABASE_ANON_KEY:',
     supabaseAnonKey ? '✅ 설정됨' : '❌ 설정되지 않음'
   );
-  console.error(
+  console.warn(
     '프로젝트 루트에 .env.local 파일을 생성하고 환경 변수를 설정하세요.'
   );
-  console.error(
+  console.warn(
     '설정 방법: node setup-env.js 실행 또는 수동으로 .env.local 파일 생성'
   );
 } else {
@@ -31,10 +31,33 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 // 성능 최적화된 Supabase 클라이언트 설정
 export function createSupabaseClient() {
+  // 빌드 시에는 환경 변수가 없을 수 있으므로 더미 클라이언트 반환
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      'Supabase 환경 변수가 설정되지 않았습니다. NEXT_PUBLIC_SUPABASE_URL과 NEXT_PUBLIC_SUPABASE_ANON_KEY를 확인하세요.'
+    console.warn(
+      'Supabase 환경 변수가 설정되지 않았습니다. 더미 클라이언트를 반환합니다.'
     );
+    return _createClient('https://dummy.supabase.co', 'dummy-key', {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: false,
+        detectSessionInUrl: false,
+        flowType: 'pkce',
+      },
+      db: {
+        schema: 'public',
+      },
+      global: {
+        headers: {
+          'Cache-Control': 'public, max-age=300', // 5분 캐시 허용으로 성능 향상
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10,
+        },
+      },
+    });
   }
 
   return _createClient(supabaseUrl, supabaseAnonKey, {
@@ -62,15 +85,7 @@ export function createSupabaseClient() {
 }
 
 // 성능 최적화된 Supabase 클라이언트 (환경 변수 확인 후 생성)
-export const supabase = (() => {
-  try {
-    return createSupabaseClient();
-  } catch (error) {
-    console.error('Supabase 클라이언트 생성 실패:', error);
-    // 더미 클라이언트 반환 (빌드 시 오류 방지)
-    return null as any;
-  }
-})();
+export const supabase = createSupabaseClient();
 
 // Supabase 연결 테스트 함수 (간소화)
 export async function testSupabaseConnection() {
