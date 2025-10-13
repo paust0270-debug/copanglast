@@ -116,3 +116,12 @@ node_modules/
 # Task files
 # tasks.json
 # tasks/ 
+
+# Backup and temporary folders
+copangbackup/
+temp-backup-restore/
+
+# Test and debug scripts
+test-*.js
+check-*.js
+debug-*.js
