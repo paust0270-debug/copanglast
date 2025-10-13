@@ -1,13 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Customer {
   id: string;
@@ -17,7 +23,7 @@ interface Customer {
   status: string;
 }
 
-export default function SlotAddPage() {
+function SlotAddPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -32,7 +38,7 @@ export default function SlotAddPage() {
     paymentAmount: '',
     paymentDate: new Date().toISOString().split('T')[0], // 오늘 날짜를 기본값으로 설정
     usageDays: '30', // 기본값을 30일로 설정
-    memo: ''
+    memo: '',
   });
 
   // URL 파라미터에서 고객 정보 받아오기
@@ -40,12 +46,12 @@ export default function SlotAddPage() {
     const customerId = searchParams.get('customerId');
     const username = searchParams.get('username');
     const name = searchParams.get('name');
-    
+
     if (customerId && username && name) {
       setFormData(prev => ({
         ...prev,
         customerId: username,
-        customerName: decodeURIComponent(name)
+        customerName: decodeURIComponent(name),
       }));
     }
   }, [searchParams]);
@@ -56,7 +62,7 @@ export default function SlotAddPage() {
       try {
         const response = await fetch('/api/users');
         const result = await response.json();
-        
+
         if (result.success) {
           setCustomers(result.data);
         }
@@ -73,17 +79,20 @@ export default function SlotAddPage() {
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
-
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // 폼 검증
-    if (!formData.customerId || !formData.customerName || !formData.slotType || !formData.slotCount) {
+    if (
+      !formData.customerId ||
+      !formData.customerName ||
+      !formData.slotType ||
+      !formData.slotCount
+    ) {
       alert('필수 항목을 모두 입력해주세요.');
       return;
     }
@@ -111,14 +120,20 @@ export default function SlotAddPage() {
         });
 
         const formBackupResult = await formBackupResponse.json();
-        
+
         if (formBackupResult.success) {
           console.log('✅ 폼 데이터 백업 저장 성공:', formBackupResult);
         } else {
-          console.warn('⚠️ 폼 데이터 백업 저장 실패 (기능에는 영향 없음):', formBackupResult.error);
+          console.warn(
+            '⚠️ 폼 데이터 백업 저장 실패 (기능에는 영향 없음):',
+            formBackupResult.error
+          );
         }
       } catch (backupError) {
-        console.warn('⚠️ 폼 데이터 백업 저장 중 오류 (기능에는 영향 없음):', backupError);
+        console.warn(
+          '⚠️ 폼 데이터 백업 저장 중 오류 (기능에는 영향 없음):',
+          backupError
+        );
       }
 
       // 3. 기존 로직 처리
@@ -127,14 +142,16 @@ export default function SlotAddPage() {
         const customerId = searchParams.get('customerId');
         const username = searchParams.get('username');
         const name = searchParams.get('name');
-        
+
         const params = new URLSearchParams({
           customerId: customerId || formData.customerId,
           username: username || formData.customerId,
-          name: name || formData.customerName
+          name: name || formData.customerName,
         });
-        
-        alert('슬롯이 성공적으로 추가되었습니다. 슬롯 현황 페이지로 이동합니다.');
+
+        alert(
+          '슬롯이 성공적으로 추가되었습니다. 슬롯 현황 페이지로 이동합니다.'
+        );
         router.push(`/slot-status?${params.toString()}`);
       } else {
         alert(`슬롯 추가 실패: ${slotResult.error}`);
@@ -152,12 +169,14 @@ export default function SlotAddPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
-      
+
       <div className="max-w-4xl mx-auto p-6">
         {/* 헤더 */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">슬롯 추가</h1>
-          <p className="text-gray-600 mt-2">고객에게 새로운 슬롯을 추가합니다.</p>
+          <p className="text-gray-600 mt-2">
+            고객에게 새로운 슬롯을 추가합니다.
+          </p>
         </div>
 
         {/* 폼 */}
@@ -166,7 +185,10 @@ export default function SlotAddPage() {
             {/* 기본 정보 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <Label htmlFor="customerId" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="customerId"
+                  className="text-sm font-medium text-gray-700"
+                >
                   아이디 <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -180,7 +202,10 @@ export default function SlotAddPage() {
               </div>
 
               <div>
-                <Label htmlFor="customerName" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="customerName"
+                  className="text-sm font-medium text-gray-700"
+                >
                   고객명 <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -197,10 +222,16 @@ export default function SlotAddPage() {
             {/* 슬롯 정보 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <Label htmlFor="slotType" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="slotType"
+                  className="text-sm font-medium text-gray-700"
+                >
                   슬롯유형 <span className="text-red-500">*</span>
                 </Label>
-                <Select value={formData.slotType} onValueChange={(value) => handleInputChange('slotType', value)}>
+                <Select
+                  value={formData.slotType}
+                  onValueChange={value => handleInputChange('slotType', value)}
+                >
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="슬롯 유형을 선택하세요" />
                   </SelectTrigger>
@@ -217,7 +248,10 @@ export default function SlotAddPage() {
               </div>
 
               <div>
-                <Label htmlFor="slotCount" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="slotCount"
+                  className="text-sm font-medium text-gray-700"
+                >
                   슬롯개수 <span className="text-red-500">*</span>
                 </Label>
                 <div className="flex mt-1">
@@ -225,7 +259,9 @@ export default function SlotAddPage() {
                     id="slotCount"
                     type="number"
                     value={formData.slotCount}
-                    onChange={(e) => handleInputChange('slotCount', e.target.value)}
+                    onChange={e =>
+                      handleInputChange('slotCount', e.target.value)
+                    }
                     placeholder="0"
                     className="rounded-r-none"
                   />
@@ -239,10 +275,18 @@ export default function SlotAddPage() {
             {/* 결제 정보 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <Label htmlFor="paymentType" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="paymentType"
+                  className="text-sm font-medium text-gray-700"
+                >
                   입금구분
                 </Label>
-                <Select value={formData.paymentType} onValueChange={(value) => handleInputChange('paymentType', value)}>
+                <Select
+                  value={formData.paymentType}
+                  onValueChange={value =>
+                    handleInputChange('paymentType', value)
+                  }
+                >
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="입금 구분을 선택하세요" />
                   </SelectTrigger>
@@ -254,14 +298,17 @@ export default function SlotAddPage() {
               </div>
 
               <div>
-                <Label htmlFor="payerName" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="payerName"
+                  className="text-sm font-medium text-gray-700"
+                >
                   입금자명
                 </Label>
                 <Input
                   id="payerName"
                   type="text"
                   value={formData.payerName}
-                  onChange={(e) => handleInputChange('payerName', e.target.value)}
+                  onChange={e => handleInputChange('payerName', e.target.value)}
                   placeholder="입금자명을 입력하세요"
                   className="mt-1"
                 />
@@ -270,7 +317,10 @@ export default function SlotAddPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <Label htmlFor="paymentAmount" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="paymentAmount"
+                  className="text-sm font-medium text-gray-700"
+                >
                   입금액
                 </Label>
                 <div className="flex mt-1">
@@ -278,7 +328,9 @@ export default function SlotAddPage() {
                     id="paymentAmount"
                     type="number"
                     value={formData.paymentAmount}
-                    onChange={(e) => handleInputChange('paymentAmount', e.target.value)}
+                    onChange={e =>
+                      handleInputChange('paymentAmount', e.target.value)
+                    }
                     placeholder="0"
                     className="rounded-r-none"
                   />
@@ -289,20 +341,28 @@ export default function SlotAddPage() {
               </div>
 
               <div>
-                <Label htmlFor="paymentDate" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="paymentDate"
+                  className="text-sm font-medium text-gray-700"
+                >
                   입금일자
                 </Label>
                 <Input
                   id="paymentDate"
                   type="date"
                   value={formData.paymentDate}
-                  onChange={(e) => handleInputChange('paymentDate', e.target.value)}
+                  onChange={e =>
+                    handleInputChange('paymentDate', e.target.value)
+                  }
                   className="mt-1"
                 />
               </div>
 
               <div>
-                <Label htmlFor="usageDays" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="usageDays"
+                  className="text-sm font-medium text-gray-700"
+                >
                   사용일수
                 </Label>
                 <div className="flex mt-1">
@@ -310,7 +370,9 @@ export default function SlotAddPage() {
                     id="usageDays"
                     type="number"
                     value={formData.usageDays}
-                    onChange={(e) => handleInputChange('usageDays', e.target.value)}
+                    onChange={e =>
+                      handleInputChange('usageDays', e.target.value)
+                    }
                     placeholder="0"
                     className="rounded-r-none"
                   />
@@ -323,13 +385,16 @@ export default function SlotAddPage() {
 
             {/* 메모 */}
             <div>
-              <Label htmlFor="memo" className="text-sm font-medium text-gray-700">
+              <Label
+                htmlFor="memo"
+                className="text-sm font-medium text-gray-700"
+              >
                 메모
               </Label>
               <Textarea
                 id="memo"
                 value={formData.memo}
-                onChange={(e) => handleInputChange('memo', e.target.value)}
+                onChange={e => handleInputChange('memo', e.target.value)}
                 placeholder="추가 메모를 입력하세요"
                 rows={4}
                 className="mt-1"
@@ -357,5 +422,25 @@ export default function SlotAddPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SlotAddPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50">
+          <Navigation />
+          <div className="max-w-4xl mx-auto p-6">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600">페이지를 불러오는 중...</p>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <SlotAddPageContent />
+    </Suspense>
   );
 }

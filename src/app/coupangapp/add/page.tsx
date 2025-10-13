@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -100,7 +100,7 @@ interface BulkSlotData {
   bulkData: string;
 }
 
-export default function SlotAddPage() {
+function SlotAddPageContent() {
   const searchParams = useSearchParams();
 
   // 폼 상태
@@ -2590,5 +2590,25 @@ export default function SlotAddPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function SlotAddPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50">
+          <Navigation />
+          <div className="max-w-7xl mx-auto py-8 px-4">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600">페이지를 불러오는 중...</p>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <SlotAddPageContent />
+    </Suspense>
   );
 }

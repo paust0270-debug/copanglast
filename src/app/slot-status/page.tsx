@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
@@ -23,11 +23,17 @@ interface SlotData {
   registrationDate: string; // 등록일
   expiryDate: string; // 만료일
   addDate: string;
-  status: 'pending' | 'active' | 'completed' | 'inactive' | 'expired' | 'paused';
+  status:
+    | 'pending'
+    | 'active'
+    | 'completed'
+    | 'inactive'
+    | 'expired'
+    | 'paused';
   userGroup: string;
 }
 
-export default function SlotStatusPage() {
+function SlotStatusPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [slotData, setSlotData] = useState<SlotData[]>([]);
@@ -35,8 +41,12 @@ export default function SlotStatusPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFilteredByCustomer, setIsFilteredByCustomer] = useState(false);
-  const [filteredCustomerInfo, setFilteredCustomerInfo] = useState<{id: string, username: string, name: string} | null>(null);
-  
+  const [filteredCustomerInfo, setFilteredCustomerInfo] = useState<{
+    id: string;
+    username: string;
+    name: string;
+  } | null>(null);
+
   // 연장 모달 상태
   const [showExtendModal, setShowExtendModal] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<SlotData | null>(null);
@@ -45,7 +55,7 @@ export default function SlotStatusPage() {
     payerName: '',
     paymentAmount: '',
     paymentDate: '',
-    usageDays: ''
+    usageDays: '',
   });
 
   // URL 파라미터에서 고객 정보 확인
@@ -53,15 +63,19 @@ export default function SlotStatusPage() {
     const customerId = searchParams.get('customerId');
     const username = searchParams.get('username');
     const name = searchParams.get('name');
-    
+
     if (customerId && username && name) {
       setIsFilteredByCustomer(true);
       setFilteredCustomerInfo({
         id: customerId,
         username: decodeURIComponent(username),
-        name: decodeURIComponent(name)
+        name: decodeURIComponent(name),
       });
-      console.log('고객 필터링 모드:', { customerId, username: decodeURIComponent(username), name: decodeURIComponent(name) });
+      console.log('고객 필터링 모드:', {
+        customerId,
+        username: decodeURIComponent(username),
+        name: decodeURIComponent(name),
+      });
     } else {
       setIsFilteredByCustomer(false);
       setFilteredCustomerInfo(null);
@@ -73,25 +87,24 @@ export default function SlotStatusPage() {
     try {
       setLoading(true);
       setError(null);
-      
+
       console.log('슬롯 데이터 조회 시작...');
-      
+
       // API 엔드포인트 호출 (원래대로)
       const response = await fetch('/api/slot-status');
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const result = await response.json();
-      
+
       if (!result.success) {
         throw new Error(result.error || '데이터 조회에 실패했습니다.');
       }
-      
+
       console.log('조회된 슬롯 데이터:', result.data);
       setSlotData(result.data);
-      
     } catch (error) {
       console.error('슬롯 데이터 조회 오류:', error);
       setError('슬롯 데이터를 불러오는 중 오류가 발생했습니다.');
@@ -102,12 +115,12 @@ export default function SlotStatusPage() {
 
   useEffect(() => {
     fetchSlotData();
-    
+
     // 1분마다 자동 새로고침 (실시간 잔여기간 업데이트)
     const interval = setInterval(() => {
       fetchSlotData();
     }, 60000); // 60초 = 1분
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -117,11 +130,18 @@ export default function SlotStatusPage() {
 
     // 고객별 필터링 (URL 파라미터로 전달된 경우)
     if (isFilteredByCustomer && filteredCustomerInfo) {
-      filtered = filtered.filter(slot => 
-        slot.customerId === filteredCustomerInfo.username || 
-        slot.customerName === filteredCustomerInfo.name
+      filtered = filtered.filter(
+        slot =>
+          slot.customerId === filteredCustomerInfo.username ||
+          slot.customerName === filteredCustomerInfo.name
       );
-      console.log('고객별 필터링 적용:', filteredCustomerInfo.username, '결과:', filtered.length, '개');
+      console.log(
+        '고객별 필터링 적용:',
+        filteredCustomerInfo.username,
+        '결과:',
+        filtered.length,
+        '개'
+      );
     }
 
     setFilteredData(filtered);
@@ -144,22 +164,22 @@ export default function SlotStatusPage() {
       slotType: slot.slotType,
       remainingSlots: slot.remainingSlots,
       customerId: slot.customerId,
-      customerName: slot.customerName
+      customerName: slot.customerName,
     });
-    
+
     if (slot.remainingSlots > 0) {
       // URL에서 전달받은 파라미터들 사용
       const actualCustomerId = searchParams.get('customerId');
       const username = searchParams.get('username');
-      
+
       const params = new URLSearchParams({
         customerId: actualCustomerId || slot.customerId, // UUID 우선 사용
         username: username || slot.customerId, // username 추가
         slotCount: slot.remainingSlots.toString(),
         customerName: slot.customerName,
-        slotType: slot.slotType
+        slotType: slot.slotType,
       });
-      
+
       // 슬롯타입에 따라 다른 페이지로 이동
       let targetUrl = '';
       switch (slot.slotType) {
@@ -176,16 +196,16 @@ export default function SlotStatusPage() {
           targetUrl = `/coupangapp/add?${params.toString()}`;
           break;
       }
-      
+
       console.log('🚀 슬롯타입 클릭 - 이동할 URL:', targetUrl);
       console.log('📋 전달되는 파라미터:', {
         customerId: actualCustomerId || slot.customerId,
         username: username || slot.customerId,
         slotCount: slot.remainingSlots,
         customerName: slot.customerName,
-        slotType: slot.slotType
+        slotType: slot.slotType,
       });
-      
+
       router.push(targetUrl);
     } else {
       console.log('❌ 사용 가능한 슬롯이 없어서 이동할 수 없습니다.');
@@ -208,7 +228,7 @@ export default function SlotStatusPage() {
       payerName: '',
       paymentAmount: '',
       paymentDate: new Date().toISOString().split('T')[0],
-      usageDays: ''
+      usageDays: '',
     });
     setShowExtendModal(true);
   };
@@ -216,19 +236,19 @@ export default function SlotStatusPage() {
   // 연장 처리 함수
   const handleExtendSubmit = async () => {
     if (!selectedSlot) return;
-    
+
     // 필수 필드 검증
     if (!extendForm.usageDays || parseInt(extendForm.usageDays) <= 0) {
       alert('사용일수를 올바르게 입력해주세요.');
       return;
     }
-    
+
     try {
       console.log('슬롯 연장 요청:', {
         slotId: selectedSlot.id,
         customerName: selectedSlot.customerName,
         currentExpiry: selectedSlot.expiryDate,
-        extendDays: extendForm.usageDays
+        extendDays: extendForm.usageDays,
       });
 
       const response = await fetch('/api/slots/extend', {
@@ -242,7 +262,7 @@ export default function SlotStatusPage() {
           payerName: extendForm.payerName,
           paymentAmount: parseInt(extendForm.paymentAmount) || 0,
           paymentDate: extendForm.paymentDate,
-          usageDays: parseInt(extendForm.usageDays)
+          usageDays: parseInt(extendForm.usageDays),
         }),
       });
 
@@ -252,19 +272,19 @@ export default function SlotStatusPage() {
         const extendedDays = parseInt(extendForm.usageDays);
         alert(
           `슬롯이 성공적으로 연장되었습니다!\n\n` +
-          `고객: ${selectedSlot.customerName}\n` +
-          `슬롯 타입: ${selectedSlot.slotType}\n` +
-          `연장 일수: ${extendedDays}일\n` +
-          `이전 만료일: ${new Date(result.data.previousExpiryDate).toLocaleDateString('ko-KR')}\n` +
-          `새 만료일: ${new Date(result.data.newExpiryDate).toLocaleDateString('ko-KR')}\n\n` +
-          `잔여기간이 ${extendedDays}일 연장되었습니다.`
+            `고객: ${selectedSlot.customerName}\n` +
+            `슬롯 타입: ${selectedSlot.slotType}\n` +
+            `연장 일수: ${extendedDays}일\n` +
+            `이전 만료일: ${new Date(result.data.previousExpiryDate).toLocaleDateString('ko-KR')}\n` +
+            `새 만료일: ${new Date(result.data.newExpiryDate).toLocaleDateString('ko-KR')}\n\n` +
+            `잔여기간이 ${extendedDays}일 연장되었습니다.`
         );
-        
+
         setShowExtendModal(false);
-        
+
         // 데이터 새로고침 (연장된 잔여기간 반영)
         await fetchSlotData();
-        
+
         console.log('연장 완료 후 데이터 새로고침 완료');
       } else {
         alert(`연장 실패: ${result.error}`);
@@ -284,27 +304,28 @@ export default function SlotStatusPage() {
       payerName: '',
       paymentAmount: '',
       paymentDate: '',
-      usageDays: ''
+      usageDays: '',
     });
   };
 
   // 슬롯 상태 변경 처리 (중지/재개)
   const handleSlotStatusChange = async (slot: SlotData, newStatus: string) => {
     const action = newStatus === 'inactive' ? '중지' : '재개';
-    const actionText = newStatus === 'inactive' ? '중지하시겠습니까' : '재개하시겠습니까';
-    
+    const actionText =
+      newStatus === 'inactive' ? '중지하시겠습니까' : '재개하시겠습니까';
+
     try {
       console.log(`${action} 버튼 클릭:`, slot);
-      
+
       // 확인 대화상자
       const confirmed = window.confirm(
         `정말로 "${slot.slotType}" 슬롯을 ${actionText}?\n\n` +
-        `고객: ${slot.customerName}\n` +
-        `슬롯 개수: ${slot.slotCount}개\n` +
-        `잔여 슬롯: ${slot.remainingSlots}개\n\n` +
-        `${newStatus === 'inactive' ? '중지된 슬롯은 사용가능한 슬롯 수에서 차감됩니다.' : '재개된 슬롯은 사용가능한 슬롯 수에 추가됩니다.'}`
+          `고객: ${slot.customerName}\n` +
+          `슬롯 개수: ${slot.slotCount}개\n` +
+          `잔여 슬롯: ${slot.remainingSlots}개\n\n` +
+          `${newStatus === 'inactive' ? '중지된 슬롯은 사용가능한 슬롯 수에서 차감됩니다.' : '재개된 슬롯은 사용가능한 슬롯 수에 추가됩니다.'}`
       );
-      
+
       if (!confirmed) {
         console.log(`${action} 취소됨`);
         return;
@@ -318,7 +339,7 @@ export default function SlotStatusPage() {
         },
         body: JSON.stringify({
           slotId: slot.id,
-          status: newStatus
+          status: newStatus,
         }),
       });
 
@@ -326,14 +347,14 @@ export default function SlotStatusPage() {
 
       if (result.success) {
         console.log(`✅ 슬롯 ${action} 성공:`, result);
-        
+
         // 성공 알림
         alert(
           `슬롯이 성공적으로 ${action}되었습니다!\n\n` +
-          `고객: ${slot.customerName}\n` +
-          `슬롯 유형: ${slot.slotType}\n` +
-          `${action}된 슬롯: ${slot.slotCount}개\n\n` +
-          `사용가능한 슬롯 수가 자동으로 업데이트됩니다.`
+            `고객: ${slot.customerName}\n` +
+            `슬롯 유형: ${slot.slotType}\n` +
+            `${action}된 슬롯: ${slot.slotCount}개\n\n` +
+            `사용가능한 슬롯 수가 자동으로 업데이트됩니다.`
         );
 
         // 페이지 새로고침하여 최신 데이터 표시
@@ -373,14 +394,22 @@ export default function SlotStatusPage() {
   };
 
   // 로딩 중이거나 고객별 필터링이 적용되는 중이면 로딩 화면 표시
-  if (loading || (isFilteredByCustomer && filteredCustomerInfo && slotData.length > 0 && filteredData.length === 0)) {
+  if (
+    loading ||
+    (isFilteredByCustomer &&
+      filteredCustomerInfo &&
+      slotData.length > 0 &&
+      filteredData.length === 0)
+  ) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navigation />
         <div className="container mx-auto p-6">
           <div className="flex flex-col items-center justify-center h-64">
             <p className="text-gray-600 text-lg">
-              {isFilteredByCustomer ? `${filteredCustomerInfo?.name || '고객'}님의 데이터를 불러오는 중...` : '데이터를 불러오는 중...'}
+              {isFilteredByCustomer
+                ? `${filteredCustomerInfo?.name || '고객'}님의 데이터를 불러오는 중...`
+                : '데이터를 불러오는 중...'}
             </p>
           </div>
         </div>
@@ -411,14 +440,14 @@ export default function SlotStatusPage() {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              {isFilteredByCustomer && filteredCustomerInfo 
+              {isFilteredByCustomer && filteredCustomerInfo
                 ? `${filteredCustomerInfo.name} 고객 슬롯 현황`
-                : '슬롯 현황'
-              }
+                : '슬롯 현황'}
             </h1>
             {isFilteredByCustomer && filteredCustomerInfo && (
               <p className="text-sm text-gray-600 mt-1">
-                고객 ID: {filteredCustomerInfo.username} | 총 {filteredData.length}개 슬롯
+                고객 ID: {filteredCustomerInfo.username} | 총{' '}
+                {filteredData.length}개 슬롯
               </p>
             )}
           </div>
@@ -438,13 +467,17 @@ export default function SlotStatusPage() {
         <div className="bg-white rounded-lg shadow p-4 mb-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-600">총 슬롯:</span>
+              <span className="text-sm font-medium text-gray-600">
+                총 슬롯:
+              </span>
               <span className="text-lg font-bold text-blue-600">
                 {filteredData.reduce((sum, slot) => sum + slot.slotCount, 0)}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-600">사용 중:</span>
+              <span className="text-sm font-medium text-gray-600">
+                사용 중:
+              </span>
               <span className="text-lg font-bold text-green-600">
                 {filteredData.reduce((sum, slot) => sum + slot.usedSlots, 0)}
               </span>
@@ -452,23 +485,42 @@ export default function SlotStatusPage() {
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-gray-600">잔여:</span>
               <span className="text-lg font-bold text-orange-600">
-                {filteredData.reduce((sum, slot) => sum + slot.remainingSlots, 0)}
+                {filteredData.reduce(
+                  (sum, slot) => sum + slot.remainingSlots,
+                  0
+                )}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-600">일시 중지:</span>
+              <span className="text-sm font-medium text-gray-600">
+                일시 중지:
+              </span>
               <span className="text-lg font-bold text-yellow-600">
-                {filteredData.reduce((sum, slot) => sum + (slot.pausedSlots || 0), 0)}
+                {filteredData.reduce(
+                  (sum, slot) => sum + (slot.pausedSlots || 0),
+                  0
+                )}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-gray-600">만료됨:</span>
               <span className="text-lg font-bold text-red-600">
-                {filteredData.filter(slot => slot.status === 'expired').reduce((sum, slot) => sum + slot.slotCount, 0)}
+                {filteredData
+                  .filter(slot => slot.status === 'expired')
+                  .reduce((sum, slot) => sum + slot.slotCount, 0)}
               </span>
-              {filteredData.filter(slot => slot.remainingDays === 0 && slot.remainingHours > 0).length > 0 && (
+              {filteredData.filter(
+                slot => slot.remainingDays === 0 && slot.remainingHours > 0
+              ).length > 0 && (
                 <span className="text-xs text-gray-500">
-                  ({filteredData.filter(slot => slot.remainingDays === 0 && slot.remainingHours > 0).length}개 시간 단위)
+                  (
+                  {
+                    filteredData.filter(
+                      slot =>
+                        slot.remainingDays === 0 && slot.remainingHours > 0
+                    ).length
+                  }
+                  개 시간 단위)
                 </span>
               )}
             </div>
@@ -522,19 +574,30 @@ export default function SlotStatusPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredData.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="px-6 py-4 text-center text-gray-500">
-                      {isFilteredByCustomer ? '해당 고객의 슬롯 데이터가 없습니다.' : '조회된 슬롯 데이터가 없습니다.'}
+                    <td
+                      colSpan={12}
+                      className="px-6 py-4 text-center text-gray-500"
+                    >
+                      {isFilteredByCustomer
+                        ? '해당 고객의 슬롯 데이터가 없습니다.'
+                        : '조회된 슬롯 데이터가 없습니다.'}
                     </td>
                   </tr>
                 ) : (
                   filteredData.map((slot, index) => (
                     <tr key={slot.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{filteredData.length - index}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{slot.userGroup}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{slot.customerId}</td>
-                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                         {(slot.totalPaymentAmount || 0).toLocaleString()}원
-                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {filteredData.length - index}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {slot.userGroup}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {slot.customerId}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {(slot.totalPaymentAmount || 0).toLocaleString()}원
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <Button
                           onClick={() => handleSlotTypeClick(slot)}
@@ -542,39 +605,63 @@ export default function SlotStatusPage() {
                           variant="outline"
                           size="sm"
                           className={`${
-                            slot.remainingSlots === 0 
-                              ? 'text-gray-400 border-gray-200 cursor-not-allowed' 
+                            slot.remainingSlots === 0
+                              ? 'text-gray-400 border-gray-200 cursor-not-allowed'
                               : 'text-blue-600 border-blue-300 hover:bg-blue-50'
                           }`}
                         >
                           {slot.slotType}
                         </Button>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{slot.slotCount}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{slot.usedSlots}</td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
-                        slot.remainingSlots > 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {slot.slotCount}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {slot.usedSlots}
+                      </td>
+                      <td
+                        className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
+                          slot.remainingSlots > 0
+                            ? 'text-green-600'
+                            : 'text-red-600'
+                        }`}
+                      >
                         {slot.remainingSlots}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div className="flex flex-col">
-                          <span className={`font-medium ${
-                            slot.remainingDays > 7 ? 'text-green-600' : 
-                            slot.remainingDays > 3 ? 'text-yellow-600' : 
-                            slot.remainingDays > 0 ? 'text-orange-600' : 'text-red-600'
-                          }`}>
+                          <span
+                            className={`font-medium ${
+                              slot.remainingDays > 7
+                                ? 'text-green-600'
+                                : slot.remainingDays > 3
+                                  ? 'text-yellow-600'
+                                  : slot.remainingDays > 0
+                                    ? 'text-orange-600'
+                                    : 'text-red-600'
+                            }`}
+                          >
                             {slot.remainingTimeString}
                           </span>
-                          {slot.remainingDays > 0 && slot.remainingDays <= 3 && (
-                            <span className="text-xs text-red-500 mt-1">⚠️ 곧 만료</span>
-                          )}
-                          {slot.remainingDays === 0 && slot.remainingHours > 0 && (
-                            <span className="text-xs text-orange-500 mt-1">⏰ 시간 단위 남음</span>
-                          )}
-                          {slot.remainingDays === 0 && slot.remainingHours === 0 && slot.remainingMinutes > 0 && (
-                            <span className="text-xs text-red-500 mt-1">🔥 분 단위 남음</span>
-                          )}
+                          {slot.remainingDays > 0 &&
+                            slot.remainingDays <= 3 && (
+                              <span className="text-xs text-red-500 mt-1">
+                                ⚠️ 곧 만료
+                              </span>
+                            )}
+                          {slot.remainingDays === 0 &&
+                            slot.remainingHours > 0 && (
+                              <span className="text-xs text-orange-500 mt-1">
+                                ⏰ 시간 단위 남음
+                              </span>
+                            )}
+                          {slot.remainingDays === 0 &&
+                            slot.remainingHours === 0 &&
+                            slot.remainingMinutes > 0 && (
+                              <span className="text-xs text-red-500 mt-1">
+                                🔥 분 단위 남음
+                              </span>
+                            )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -594,8 +681,18 @@ export default function SlotStatusPage() {
                             size="sm"
                             className="h-8 px-3 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 border border-blue-200 hover:border-blue-300 rounded-md transition-all duration-200"
                           >
-                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            <svg
+                              className="w-3 h-3 mr-1"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                              />
                             </svg>
                             내역
                           </Button>
@@ -605,13 +702,30 @@ export default function SlotStatusPage() {
                             size="sm"
                             className="h-8 px-3 text-xs font-medium text-green-600 hover:text-green-700 hover:bg-green-50 border border-green-200 hover:border-green-300 rounded-md transition-all duration-200"
                           >
-                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            <svg
+                              className="w-3 h-3 mr-1"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                              />
                             </svg>
                             연장
                           </Button>
                           <Button
-                            onClick={() => handleSlotStatusChange(slot, slot.status === 'inactive' ? 'active' : 'inactive')}
+                            onClick={() =>
+                              handleSlotStatusChange(
+                                slot,
+                                slot.status === 'inactive'
+                                  ? 'active'
+                                  : 'inactive'
+                              )
+                            }
                             variant="ghost"
                             size="sm"
                             disabled={slot.status === 'expired'}
@@ -619,18 +733,37 @@ export default function SlotStatusPage() {
                               slot.status === 'expired'
                                 ? 'text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed'
                                 : slot.status === 'inactive'
-                                ? 'text-white bg-green-600 hover:bg-green-700 border border-green-600 hover:border-green-700'
-                                : 'text-white bg-red-600 hover:bg-red-700 border border-red-600 hover:border-red-700'
+                                  ? 'text-white bg-green-600 hover:bg-green-700 border border-green-600 hover:border-green-700'
+                                  : 'text-white bg-red-600 hover:bg-red-700 border border-red-600 hover:border-red-700'
                             }`}
                           >
-                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg
+                              className="w-3 h-3 mr-1"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
                               {slot.status === 'inactive' ? (
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h1m4 0h1m6-4a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h1m4 0h1m6-4a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
                               ) : (
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
                               )}
                             </svg>
-                            {slot.status === 'inactive' ? '재개' : slot.status === 'expired' ? '만료됨' : '중지'}
+                            {slot.status === 'inactive'
+                              ? '재개'
+                              : slot.status === 'expired'
+                                ? '만료됨'
+                                : '중지'}
                           </Button>
                         </div>
                       </td>
@@ -642,20 +775,28 @@ export default function SlotStatusPage() {
           </div>
         </div>
       </div>
-      
+
       {/* 연장 모달 */}
       {showExtendModal && selectedSlot && (
         <div className="fixed inset-0 bg-transparent flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-2xl border border-gray-200">
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">슬롯 연장</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  슬롯 연장
+                </h3>
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-2 mt-2">
                   <p className="text-sm text-blue-800 font-medium">
-                    현재 잔여기간: <span className="text-blue-900">{selectedSlot.remainingDays}일</span>
+                    현재 잔여기간:{' '}
+                    <span className="text-blue-900">
+                      {selectedSlot.remainingDays}일
+                    </span>
                   </p>
                   <p className="text-xs text-blue-600 mt-1">
-                    만료일: {new Date(selectedSlot.expiryDate).toLocaleDateString('ko-KR')}
+                    만료일:{' '}
+                    {new Date(selectedSlot.expiryDate).toLocaleDateString(
+                      'ko-KR'
+                    )}
                   </p>
                 </div>
               </div>
@@ -663,12 +804,22 @@ export default function SlotStatusPage() {
                 onClick={handleExtendCancel}
                 className="text-gray-400 hover:text-gray-600"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
-            
+
             <div className="space-y-4">
               {/* 슬롯 정보 */}
               <div className="bg-gray-50 p-3 rounded-md">
@@ -680,72 +831,108 @@ export default function SlotStatusPage() {
                   <div>현재 잔여기간: {selectedSlot.remainingTimeString}</div>
                 </div>
               </div>
-              
+
               {/* 입금구분 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">입금구분</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  입금구분
+                </label>
                 <select
                   value={extendForm.paymentType}
-                  onChange={(e) => setExtendForm({...extendForm, paymentType: e.target.value})}
+                  onChange={e =>
+                    setExtendForm({
+                      ...extendForm,
+                      paymentType: e.target.value,
+                    })
+                  }
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="deposit">입금</option>
                   <option value="coupon">쿠폰</option>
                 </select>
               </div>
-              
+
               {/* 입금자명 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">입금자명</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  입금자명
+                </label>
                 <input
                   type="text"
                   value={extendForm.payerName}
-                  onChange={(e) => setExtendForm({...extendForm, payerName: e.target.value})}
+                  onChange={e =>
+                    setExtendForm({ ...extendForm, payerName: e.target.value })
+                  }
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="입금자명을 입력하세요"
                 />
               </div>
-              
+
               {/* 입금액 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">입금액</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  입금액
+                </label>
                 <div className="relative">
                   <input
                     type="number"
                     value={extendForm.paymentAmount}
-                    onChange={(e) => setExtendForm({...extendForm, paymentAmount: e.target.value})}
+                    onChange={e =>
+                      setExtendForm({
+                        ...extendForm,
+                        paymentAmount: e.target.value,
+                      })
+                    }
                     className="w-full border border-gray-300 rounded-md px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="0"
                   />
-                  <span className="absolute right-3 top-2 text-gray-500 text-sm">원</span>
+                  <span className="absolute right-3 top-2 text-gray-500 text-sm">
+                    원
+                  </span>
                 </div>
               </div>
-              
+
               {/* 입금일자 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">입금일자</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  입금일자
+                </label>
                 <input
                   type="date"
                   value={extendForm.paymentDate}
-                  onChange={(e) => setExtendForm({...extendForm, paymentDate: e.target.value})}
+                  onChange={e =>
+                    setExtendForm({
+                      ...extendForm,
+                      paymentDate: e.target.value,
+                    })
+                  }
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              
+
               {/* 사용일수 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">사용일수 (연장할 일수)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  사용일수 (연장할 일수)
+                </label>
                 <div className="relative">
                   <input
                     type="number"
                     value={extendForm.usageDays}
-                    onChange={(e) => setExtendForm({...extendForm, usageDays: e.target.value})}
+                    onChange={e =>
+                      setExtendForm({
+                        ...extendForm,
+                        usageDays: e.target.value,
+                      })
+                    }
                     className="w-full border border-gray-300 rounded-md px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="연장할 일수를 입력하세요"
                     min="1"
                     required
                   />
-                  <span className="absolute right-3 top-2 text-gray-500 text-sm">일</span>
+                  <span className="absolute right-3 top-2 text-gray-500 text-sm">
+                    일
+                  </span>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
                   입력한 일수만큼 현재 잔여기간에 추가됩니다
@@ -753,19 +940,25 @@ export default function SlotStatusPage() {
                 {extendForm.usageDays && parseInt(extendForm.usageDays) > 0 && (
                   <div className="bg-green-50 border border-green-200 rounded-md p-2 mt-2">
                     <p className="text-sm text-green-800 font-medium">
-                      연장 후 예상 잔여기간: <span className="text-green-900">
-                        {selectedSlot.remainingDays + parseInt(extendForm.usageDays)}일
+                      연장 후 예상 잔여기간:{' '}
+                      <span className="text-green-900">
+                        {selectedSlot.remainingDays +
+                          parseInt(extendForm.usageDays)}
+                        일
                       </span>
                     </p>
                     <p className="text-xs text-green-600 mt-1">
-                      새 만료일: {new Date(new Date(selectedSlot.expiryDate).getTime() + parseInt(extendForm.usageDays) * 24 * 60 * 60 * 1000).toLocaleDateString('ko-KR')}
+                      새 만료일:{' '}
+                      {new Date(
+                        new Date(selectedSlot.expiryDate).getTime() +
+                          parseInt(extendForm.usageDays) * 24 * 60 * 60 * 1000
+                      ).toLocaleDateString('ko-KR')}
                     </p>
                   </div>
                 )}
               </div>
-              
             </div>
-            
+
             {/* 버튼 */}
             <div className="flex gap-3 mt-6">
               <button
@@ -785,5 +978,25 @@ export default function SlotStatusPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SlotStatusPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50">
+          <Navigation />
+          <div className="max-w-7xl mx-auto py-8 px-4">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600">페이지를 불러오는 중...</p>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <SlotStatusPageContent />
+    </Suspense>
   );
 }
