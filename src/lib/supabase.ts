@@ -1,7 +1,7 @@
 import { createClient as _createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 // createClient를 명시적으로 export
 export const createClient = _createClient;
@@ -31,7 +31,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 // 성능 최적화된 Supabase 클라이언트 설정
 export function createSupabaseClient() {
-  return _createClient(supabaseUrl!, supabaseAnonKey!, {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      'Supabase 환경 변수가 설정되지 않았습니다. NEXT_PUBLIC_SUPABASE_URL과 NEXT_PUBLIC_SUPABASE_ANON_KEY를 확인하세요.'
+    );
+  }
+
+  return _createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       autoRefreshToken: true,
       persistSession: false,
@@ -55,8 +61,16 @@ export function createSupabaseClient() {
   });
 }
 
-// 성능 최적화된 Supabase 클라이언트
-export const supabase = createSupabaseClient();
+// 성능 최적화된 Supabase 클라이언트 (환경 변수 확인 후 생성)
+export const supabase = (() => {
+  try {
+    return createSupabaseClient();
+  } catch (error) {
+    console.error('Supabase 클라이언트 생성 실패:', error);
+    // 더미 클라이언트 반환 (빌드 시 오류 방지)
+    return null as any;
+  }
+})();
 
 // Supabase 연결 테스트 함수 (간소화)
 export async function testSupabaseConnection() {
