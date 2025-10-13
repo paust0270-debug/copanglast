@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
           .limit(1);
 
         if (itemsTableCheck !== null) {
-          const itemsData = settlementItems.map((item: any) => ({
+          const itemsData = settlementItems.map((item: { slot_id: string; customer_id: string; customer_name: string; slot_type: string; usage_days: number; amount: number }) => ({
             settlement_id: newSettlement.id,
             slot_id: item.slot_id,
             customer_id: item.customer_id,

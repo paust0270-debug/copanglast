@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
       // slot_status 데이터를 슬롯 등록 목록 형식으로 변환 (사용자별 순번 1번부터 시작)
       const formattedSlotStatusData = slotStatusData?.map((slot, index) => {
         // slots 테이블에서 동일한 usage_days를 가진 데이터 찾기
-        const matchingSlot = slotsData?.find((s: any) => s.usage_days === slot.usage_days);
+        const matchingSlot = slotsData?.find((s: { usage_days: number }) => s.usage_days === slot.usage_days);
         
         // slots 테이블 데이터가 있으면 그것을 사용, 없으면 slot_status 데이터 사용
         const baseData = matchingSlot || slot;
@@ -524,7 +524,7 @@ export async function POST(request: NextRequest) {
     
     // 업데이트 결과 확인
     let successCount = 0;
-    let errors = [];
+    const errors: string[] = [];
     
     updateResults.forEach((result, index) => {
       if (result.error) {

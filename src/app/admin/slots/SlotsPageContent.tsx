@@ -398,7 +398,7 @@ export function SlotsPageContent() {
                           {editingId === slot.id ? (
                             <Select 
                               value={editForm.status || slot.status} 
-                              onValueChange={(value) => setEditForm(prev => ({ ...prev, status: value as any }))}
+                              onValueChange={(value) => setEditForm(prev => ({ ...prev, status: value as string }))}
                             >
                               <SelectTrigger className="w-20 h-8 text-xs">
                                 <SelectValue />

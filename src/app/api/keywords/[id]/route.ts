@@ -4,10 +4,11 @@ import { supabase } from '@/lib/supabase';
 // 키워드 수정
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const keywordId = parseInt(params.id);
+    const { id } = await params;
+    const keywordId = parseInt(id);
     const body = await request.json();
     const { slot_type, keyword, link_url, slot_count, current_rank } = body;
 
@@ -61,10 +62,11 @@ export async function PUT(
 // 키워드 삭제
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const keywordId = parseInt(params.id);
+    const { id } = await params;
+    const keywordId = parseInt(id);
 
     console.log('🗑️ 키워드 삭제:', { keywordId });
 

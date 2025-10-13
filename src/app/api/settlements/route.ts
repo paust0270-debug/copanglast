@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 데이터 포맷팅 (실제 테이블 구조에 맞게)
-    const formattedSettlements = settlements?.map((settlement: any) => ({
+    const formattedSettlements = settlements?.map((settlement: Record<string, unknown>) => ({
       id: settlement.id,
       customer_id: settlement.customer_id,
       customer_name: settlement.customer_name,

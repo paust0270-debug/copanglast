@@ -115,7 +115,7 @@ export async function PATCH(
       'slot_addition_date'
     ];
 
-    const filteredUpdateData: any = {};
+    const filteredUpdateData: Record<string, unknown> = {};
     allowedFields.forEach(field => {
       if (updateData[field] !== undefined) {
         filteredUpdateData[field] = updateData[field];

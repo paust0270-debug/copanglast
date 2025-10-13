@@ -4,15 +4,16 @@ import { supabase } from '@/lib/supabase';
 // 개별 슬롯 조회
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slotId: string } }
+  { params }: { params: Promise<{ slotId: string }> }
 ) {
   try {
-    console.log(`🔄 슬롯 조회 중: ${params.slotId}`);
+    const { slotId } = await params;
+    console.log(`🔄 슬롯 조회 중: ${slotId}`);
 
     const { data: slot, error } = await supabase
       .from('slots')
       .select('id, customer_id, customer_name, slot_type, slot_count, payment_type, payer_name, payment_amount, payment_date, usage_days, memo, status, created_at, updated_at, work_group, keyword, link_url, equipment_group')
-      .eq('id', params.slotId)
+      .eq('id', slotId)
       .single();
 
     if (error) {
@@ -40,10 +41,11 @@ export async function GET(
 // 슬롯 수정
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { slotId: string } }
+  { params }: { params: Promise<{ slotId: string }> }
 ) {
   try {
-    console.log(`🔄 슬롯 수정 시작: ${params.slotId}`);
+    const { slotId } = await params;
+    console.log(`🔄 슬롯 수정 시작: ${slotId}`);
 
     const body = await request.json();
     const {
@@ -71,7 +73,7 @@ export async function PUT(
     const { data: slot, error } = await supabase
       .from('slots')
       .update(updateData)
-      .eq('id', params.slotId)
+      .eq('id', slotId)
       .select()
       .single();
 

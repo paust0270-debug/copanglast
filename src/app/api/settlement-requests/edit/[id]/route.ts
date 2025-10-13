@@ -9,10 +9,11 @@ const supabase = createClient(
 // 특정 settlement_history와 연결된 개별 settlements 항목들 조회
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const settlementHistoryId = params.id;
+    const { id } = await params;
+    const settlementHistoryId = id;
     console.log('정산수정용 데이터 조회 시작, settlement_history ID:', settlementHistoryId);
 
     // 1. settlement_history에서 해당 ID의 정보 조회

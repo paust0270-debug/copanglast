@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Supabase 연결 상태 확인
@@ -16,7 +16,8 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const userId = params.id;
+    const { id } = await params;
+    const userId = id;
     
     // 상태 값 검증
     if (!body.status || !['pending', 'approved', 'rejected'].includes(body.status)) {

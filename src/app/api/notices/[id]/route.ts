@@ -48,10 +48,11 @@ export async function GET(
 // 공지사항 수정
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const noticeId = parseInt(params.id);
+    const { id } = await params;
+    const noticeId = parseInt(id);
     const body = await request.json();
     const { title, content } = body;
 
@@ -101,10 +102,11 @@ export async function PUT(
 // 공지사항 삭제
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const noticeId = parseInt(params.id);
+    const { id } = await params;
+    const noticeId = parseInt(id);
 
     if (isNaN(noticeId)) {
       return NextResponse.json(

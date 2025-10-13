@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     // settlements 테이블에서 해당 ID들의 상태를 'completed'로 업데이트 (정산대기 상태)
     // 제약조건 문제로 인해 임시로 completed 사용
-    const settlementIds = settlementData.map((item: any) => item.id);
+    const settlementIds = settlementData.map((item: { id: string }) => item.id);
     
     const { data, error } = await supabase
       .from('settlements')

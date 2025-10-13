@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     console.log('미정산 내역 조회 완료:', pendingSettlements?.length || 0, '개');
 
     // 데이터 포맷팅 (표준 필드명으로 통합)
-    const settlementItems = pendingSettlements?.map((settlement: any) => ({
+    const settlementItems = pendingSettlements?.map((settlement: Record<string, unknown>) => ({
       id: settlement.id,
       customer_id: settlement.customer_id,
       customer_name: settlement.customer_name,

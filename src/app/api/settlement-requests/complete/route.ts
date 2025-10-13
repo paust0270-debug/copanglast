@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
       console.log('수정 모드: settlement_history 업데이트, ID:', settlementHistoryId);
       
       // 안전하게 필수 필드만 업데이트
-      const updateFields: any = {};
+      const updateFields: Record<string, unknown> = {};
       
       if (settlementData.payer_name !== undefined) {
         updateFields.payer_name = settlementData.payer_name;
