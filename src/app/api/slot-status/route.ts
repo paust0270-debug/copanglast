@@ -504,7 +504,8 @@ export async function POST(request: NextRequest) {
         equipment_group: body.equipment_group || '지정안함',
         status: body.status || '작동중',
         memo: body.memo || '',
-        slot_type: body.slot_type || '쿠팡'
+        slot_type: body.slot_type || '쿠팡',
+        slot_sequence: existingRecord.slot_sequence || (i + 1) // 기존 slot_sequence 보존, 없으면 순번 생성
         // usage_days, created_at, updated_at, expiry_date는 보존 (변경하지 않음)
       };
 
@@ -573,7 +574,9 @@ export async function POST(request: NextRequest) {
           slot_type: body.slot_type || '쿠팡',
           slot_count: 1, // 각 레코드는 1개 슬롯을 의미
           current_rank: extractRankNumber(body.current_rank),
-          slot_sequence: slot.slot_sequence // slot_status의 순번을 그대로 사용
+          slot_sequence: slot.slot_sequence, // slot_status의 순번을 그대로 사용
+          customer_id: customerId, // 고객 ID 추가
+          slot_id: slot.id // slot_status 레코드 ID를 slot_id로 사용
         }));
 
         console.log(`📝 ${keywordRecords.length}개 키워드 레코드 생성 중...`);

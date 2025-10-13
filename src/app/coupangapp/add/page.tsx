@@ -50,6 +50,8 @@ interface SlotAddForm {
 interface CustomerSlot {
   id?: number;
   db_id?: number; // 실제 데이터베이스 ID (삭제용)
+  customerId?: string; // 고객 ID (히스토리 조회용)
+  slotSequence?: number; // 슬롯 순번 (히스토리 조회용)
   customer: string;
   nickname: string;
   workGroup: string;
@@ -69,13 +71,13 @@ interface CustomerSlot {
 
 // 순위 히스토리 인터페이스
 interface RankHistory {
-  id: number;
-  slot_status_id: number;
+  sequence: number;
+  changeDate: string;
+  rank: string;
+  rankChange: number;
+  startRankDiff: number;
   keyword: string;
-  link_url: string;
-  current_rank: number;
-  start_rank: number;
-  check_date: string;
+  linkUrl: string;
 }
 
 // 대량 등록을 위한 인터페이스
@@ -132,10 +134,35 @@ export default function SlotAddPage() {
   };
 
   // 순위 클릭 핸들러
-  const handleRankClick = (slot: CustomerSlot) => {
-    if (slot.db_id) {
+  const handleRankClick = async (slot: CustomerSlot) => {
+    if (slot.customerId && slot.slotSequence) {
+      console.log('🔍 순위 클릭:', { customerId: slot.customerId, slotSequence: slot.slotSequence });
       setSelectedSlot(slot);
-      fetchRankHistory(slot.db_id);
+      await fetchRankHistoryFromAPI(slot.customerId, slot.slotSequence);
+      setShowRankChart(true); // 모달창 열기
+    } else {
+      console.log('❌ customerId 또는 slotSequence가 없습니다:', { customerId: slot.customerId, slotSequence: slot.slotSequence });
+    }
+  };
+
+  // API에서 순위 히스토리 가져오기
+  const fetchRankHistoryFromAPI = async (customerId: string, slotSequence: number) => {
+    try {
+      console.log('🔄 순위 히스토리 조회:', { customerId, slotSequence });
+      const response = await fetch(`/api/rank-history?customerId=${customerId}&slotSequence=${slotSequence}`);
+      const result = await response.json();
+      
+      if (result.success) {
+        setRankHistory(result.data);
+        setShowRankChart(true);
+        console.log('✅ 순위 히스토리 조회 성공:', result.data.length, '개');
+      } else {
+        console.error('❌ 순위 히스토리 조회 실패:', result.error);
+        setRankHistory([]);
+      }
+    } catch (error) {
+      console.error('❌ 순위 히스토리 조회 오류:', error);
+      setRankHistory([]);
     }
   };
 
@@ -325,6 +352,27 @@ export default function SlotAddPage() {
     return () => clearInterval(timer);
   }, []);
 
+  // ESC 키로 모달창 닫기
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showRankChart) {
+        setShowRankChart(false);
+      }
+    };
+
+    if (showRankChart) {
+      document.addEventListener('keydown', handleKeyDown);
+      // 모달이 열릴 때 body 스크롤 방지
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      // 모달이 닫힐 때 body 스크롤 복원
+      document.body.style.overflow = 'unset';
+    };
+  }, [showRankChart]);
+
   // 실시간 트래픽 카운터 업데이트 (1초마다)
   useEffect(() => {
     const timer = setInterval(() => {
@@ -495,6 +543,8 @@ export default function SlotAddPage() {
         return {
           id: item.id,
           db_id: item.db_id, // 실제 데이터베이스 ID
+          customerId: item.customer_id, // 고객 ID (히스토리 조회용)
+          slotSequence: item.slot_sequence || (index + 1), // 슬롯 순번 (API에서 없으면 인덱스 기반으로 생성)
           customer: item.customer_id || item.customer_name || 'unknown', // 고객 ID 표시
           nickname: item.customer_name || 'unknown', // 고객명을 닉네임으로 표시
           workGroup: item.work_group || '공통',
@@ -2015,9 +2065,13 @@ export default function SlotAddPage() {
                       </td>
                       <td className="border border-gray-300 p-2 text-center text-xs">
                         <button
-                          onClick={() => handleRankClick(customer)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleRankClick(customer);
+                          }}
                           className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
-                          title="클릭하여 순위 변동 그래프 보기"
+                          title="클릭하여 순위 변동 히스토리 보기"
                         >
                           {customer.currentRank}
                         </button>
@@ -2137,93 +2191,77 @@ export default function SlotAddPage() {
           </CardContent>
         </Card>
 
-        {/* 순위 변동 그래프 모달 */}
+        {/* 순위 히스토리 테이블 모달 */}
         {showRankChart && selectedSlot && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div 
+            className="fixed inset-0 flex items-center justify-center z-[9999]"
+            onClick={() => setShowRankChart(false)}
+          >
+            <div 
+              className="bg-white rounded-lg p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200 transform transition-all duration-300 ease-in-out"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">
-                  순위 변동 그래프 - {selectedSlot.keyword}
+                  순위 변동 히스토리 - {selectedSlot.keyword}
                 </h3>
                 <button
                   onClick={() => setShowRankChart(false)}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full p-2 transition-colors duration-200"
+                  title="닫기"
                 >
-                  ✕
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
               
               {rankHistory.length > 0 ? (
-                <div className="h-96">
-                  <Line
-                    data={{
-                      labels: rankHistory.map(item => 
-                        new Date(item.check_date).toLocaleDateString('ko-KR', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })
-                      ),
-                      datasets: [
-                        {
-                          label: '현재 순위',
-                          data: rankHistory.map(item => item.current_rank),
-                          borderColor: 'rgb(59, 130, 246)',
-                          backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                          tension: 0.1,
-                        },
-                        {
-                          label: '시작 순위',
-                          data: rankHistory.map(item => item.start_rank),
-                          borderColor: 'rgb(239, 68, 68)',
-                          backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                          tension: 0.1,
-                        }
-                      ]
-                    }}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          position: 'top' as const,
-                        },
-                        title: {
-                          display: true,
-                          text: `${selectedSlot.keyword} 순위 변동 현황`
-                        }
-                      },
-                      scales: {
-                        y: {
-                          beginAtZero: false,
-                          reverse: true, // 순위는 낮을수록 좋으므로 Y축 반전
-                          title: {
-                            display: true,
-                            text: '순위'
-                          }
-                        },
-                        x: {
-                          title: {
-                            display: true,
-                            text: '체크 날짜'
-                          }
-                        }
-                      }
-                    }}
-                  />
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse border border-gray-300 text-sm">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="border border-gray-300 p-2 text-center">순번</th>
+                        <th className="border border-gray-300 p-2 text-center">변동일</th>
+                        <th className="border border-gray-300 p-2 text-center">순위</th>
+                        <th className="border border-gray-300 p-2 text-center">등락폭</th>
+                        <th className="border border-gray-300 p-2 text-center">시작대비</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rankHistory.map((item, index) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="border border-gray-300 p-2 text-center">{item.sequence}</td>
+                          <td className="border border-gray-300 p-2 text-center">{item.changeDate}</td>
+                          <td className="border border-gray-300 p-2 text-center font-medium">{item.rank}</td>
+                          <td className={`border border-gray-300 p-2 text-center ${
+                            item.rankChange > 0 ? 'text-red-600' : 
+                            item.rankChange < 0 ? 'text-blue-600' : 'text-gray-600'
+                          }`}>
+                            {item.rankChange > 0 ? `+${item.rankChange}` : item.rankChange}
+                          </td>
+                          <td className={`border border-gray-300 p-2 text-center ${
+                            item.startRankDiff > 0 ? 'text-red-600' : 
+                            item.startRankDiff < 0 ? 'text-blue-600' : 'text-gray-600'
+                          }`}>
+                            {item.startRankDiff > 0 ? `+${item.startRankDiff}` : item.startRankDiff}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
-                  순위 히스토리 데이터가 없습니다.
+                  순위 변동 데이터가 없습니다.
                 </div>
               )}
               
               <div className="mt-4 text-sm text-gray-600">
                 <p><strong>검색어:</strong> {selectedSlot.keyword}</p>
                 <p><strong>링크:</strong> {selectedSlot.linkUrl}</p>
-                <p><strong>현재 순위:</strong> {selectedSlot.currentRank}위</p>
-                <p><strong>시작 순위:</strong> {selectedSlot.startRank}위</p>
+                <p><strong>현재 순위:</strong> {selectedSlot.currentRank}</p>
+                <p><strong>시작 순위:</strong> {selectedSlot.startRank}</p>
               </div>
             </div>
           </div>
