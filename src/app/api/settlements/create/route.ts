@@ -9,7 +9,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { items } = body;
+    const { items }: { items: { slot_id: string; customer_id: string; customer_name: string; slot_type: string; slot_count: number; payment_amount: number; usage_days: number; memo: string }[] } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         .limit(1);
 
       if (tableCheck !== null) {
-        const settlementItems = items.map((item: { slot_id: string; customer_id: string; customer_name: string; slot_type: string; slot_count: number; payment_amount: number; usage_days: number; memo: string }) => ({
+        const settlementItems = items.map((item) => ({
           settlement_id: settlement.id,
           slot_id: item.slot_id,
           customer_id: item.customer_id,
