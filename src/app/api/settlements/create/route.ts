@@ -9,7 +9,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { items }: { items: { slot_id: string; customer_id: string; customer_name: string; slot_type: string; slot_count: number; payment_amount: number; usage_days: number; memo: string }[] } = body;
+    const { items }: { items: any[] } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({
