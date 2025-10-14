@@ -517,7 +517,7 @@ function SlotsPageContentInner() {
                                 onValueChange={value =>
                                   setEditForm(prev => ({
                                     ...prev,
-                                    status: value as string,
+                                    status: value as "active" | "expired" | "suspended",
                                   }))
                                 }
                               >
