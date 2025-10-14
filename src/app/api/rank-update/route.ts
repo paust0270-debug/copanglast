@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. 상품 ID 추출 함수
-    const extractProductId = (url) => {
+    const extractProductId = (url: string) => {
       const match = url.match(/products\/(\d+)/);
       return match ? match[1] : null;
     };
