@@ -1,6 +1,6 @@
 # 설치 가이드
 
-쿠팡 순위 체킹기 v1.0 설치 및 설정 가이드입니다.
+Supabase 연동 쿠팡 순위 체킹기 v2.0 설치 및 설정 가이드입니다.
 
 ## 📋 시스템 요구사항
 
@@ -52,6 +52,7 @@
 ### 방법 2: 배치 파일 실행
 
 1. 프로젝트 폴더에서 다음 파일 중 하나를 더블클릭:
+   - `쿠팡_순위_체킹기_24시간_실행.bat` (24시간 연속 실행 버전 - 신규)
    - `쿠팡_순위_체킹기_GUI_실행.bat` (GUI 버전)
    - `쿠팡_순위_체킹기_실행.bat` (콘솔 버전)
 
@@ -128,26 +129,61 @@ npm start
 
 ## 🎯 첫 실행 설정
 
-### 1. 상품 설정
+### 1. Supabase 설정 (24시간 연속 실행 버전)
+
+#### Supabase 프로젝트 생성
+1. [Supabase 공식 사이트](https://supabase.com/)에서 계정 생성
+2. 새 프로젝트 생성
+3. 프로젝트 URL과 API Key 복사
+
+#### 데이터베이스 테이블 생성
+```sql
+-- keywords 테이블 (작업 목록)
+CREATE TABLE keywords (
+  id SERIAL PRIMARY KEY,
+  keyword VARCHAR(255) NOT NULL,
+  url VARCHAR(500) NOT NULL,
+  slot_type VARCHAR(50) NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- slot_status 테이블 (순위 결과)
+CREATE TABLE slot_status (
+  id SERIAL PRIMARY KEY,
+  keyword VARCHAR(255) NOT NULL,
+  url VARCHAR(500) NOT NULL,
+  slot_type VARCHAR(50) NOT NULL,
+  product_id VARCHAR(50) NOT NULL,
+  current_rank INTEGER,
+  start_rank INTEGER,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### 환경 변수 설정
+`.env` 파일을 생성하고 다음 내용을 추가:
+```bash
+# Supabase Configuration
+SUPABASE_URL=your_supabase_url_here
+SUPABASE_ANON_KEY=your_supabase_anon_key_here
+
+# Target Product ID (for fallback)
+TARGET_PRODUCT_ID=8617045901
+
+# Application Settings
+NODE_ENV=production
+```
+
+### 2. 기존 버전 설정
 - `database/products.json` 파일에서 검색할 상품 정보 수정
 - 상품번호와 키워드 확인
 
-### 2. 설정 조정
-- `database/products.json`의 `settings` 섹션에서 옵션 조정:
-  ```json
-  {
-    "maxPages": 20,        // 최대 검색 페이지 수
-    "maxProducts": 2000,    // 최대 상품 수집 수
-    "delay": 600,          // 페이지 로딩 대기 시간 (ms)
-    "timeout": 6000,       // 페이지 로딩 타임아웃 (ms)
-    "headless": false      // 브라우저 표시 여부
-  }
-  ```
-
 ### 3. 테스트 실행
-- GUI 버전으로 먼저 테스트
+- 24시간 연속 실행 버전으로 먼저 테스트
+- GUI 버전으로 테스트
 - 콘솔 로그 확인
-- 결과 데이터베이스 확인
+- Supabase DB 결과 확인
 
 ## 📊 성능 최적화
 
@@ -186,11 +222,20 @@ npm install
 
 설치가 완료되면 다음을 확인하세요:
 
+### 기본 확인사항
 - [ ] Node.js 버전 확인 (`node --version`)
 - [ ] npm 버전 확인 (`npm --version`)
 - [ ] Playwright 브라우저 설치 확인
 - [ ] GUI 애플리케이션 실행
 - [ ] 테스트 검색 실행
 - [ ] 결과 데이터베이스 확인
+
+### 24시간 연속 실행 버전 확인사항
+- [ ] Supabase 계정 및 프로젝트 생성
+- [ ] 데이터베이스 테이블 생성 (keywords, slot_status)
+- [ ] .env 파일 설정 (SUPABASE_URL, SUPABASE_ANON_KEY)
+- [ ] 24시간 연속 실행 버전 테스트
+- [ ] Supabase DB에 데이터 저장 확인
+- [ ] 작업 목록 자동 처리 확인
 
 모든 항목이 체크되면 설치가 완료된 것입니다! 🎉
