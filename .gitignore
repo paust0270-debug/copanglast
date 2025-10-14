@@ -125,3 +125,7 @@ temp-backup-restore/
 test-*.js
 check-*.js
 debug-*.js
+
+# Build outputs
+dist/
+copangappfinal/.next/
