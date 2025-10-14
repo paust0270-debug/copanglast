@@ -14,6 +14,19 @@ const nextConfig: NextConfig = {
     // Turbopack 설정 제거 (Next.js 15에서 문제 발생)
   },
   // swcMinify 제거 (Next.js 15에서 더 이상 필요하지 않음)
+  
+  // 백업 폴더 제외 설정
+  webpack: (config, { isServer }) => {
+    config.watchOptions = {
+      ...config.watchOptions,
+      ignored: [
+        '**/node_modules/**',
+        '**/backup_*/**',
+        '**/*.backup.*'
+      ]
+    };
+    return config;
+  },
 };
 
 export default nextConfig;
