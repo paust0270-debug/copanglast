@@ -104,7 +104,7 @@ export default function SlotAddPage() {
           let errorDetails = '';
           
           if (connectionTest.error) {
-            const error = connectionTest.error;
+            const error = connectionTest.error as any;
             if (typeof error === 'object' && error !== null) {
               if ('message' in error && typeof error.message === 'string') {
                 errorMessage = error.message;
