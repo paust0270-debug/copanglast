@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     // 로그인 유지가 체크된 경우 쿠키 설정
     if (rememberMe) {
-      const cookieStore = cookies();
+      const cookieStore = await cookies();
       cookieStore.set('rememberMe', 'true', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',

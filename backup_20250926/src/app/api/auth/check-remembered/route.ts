@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     
     // rememberMe 쿠키 확인
     const rememberMe = cookieStore.get('rememberMe');
