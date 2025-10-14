@@ -1,0 +1,77 @@
+{
+	"meta": {
+		"generatedAt": "2025-08-28T14:58:08.459Z",
+		"tasksAnalyzed": 8,
+		"totalTasks": 8,
+		"analysisCount": 8,
+		"thresholdScore": 5,
+		"projectName": "Taskmaster",
+		"usedResearch": true
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 1,
+			"taskTitle": "프로젝트 초기화 및 기본 구조 설정",
+			"complexityScore": 4,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Break down the project initialization task into subtasks covering environment setup, dependency installation, folder structure creation, and configuration of essential services.",
+			"reasoning": "This task involves standard Next.js project setup with well-documented steps. The complexity is moderate due to the need to configure multiple technologies (Next.js, Supabase, Tailwind, shadcn/ui) correctly, but follows established patterns with good documentation."
+		},
+		{
+			"taskId": 2,
+			"taskTitle": "Supabase 데이터베이스 스키마 설계 및 구현",
+			"complexityScore": 6,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Divide the Supabase database schema implementation into subtasks covering project creation, table definitions, relationships, security policies, and TypeScript type generation.",
+			"reasoning": "Database schema design requires careful planning to ensure proper relationships and constraints. The complexity comes from implementing RLS policies, setting up foreign key relationships, and ensuring the TypeScript types match the database schema."
+		},
+		{
+			"taskId": 3,
+			"taskTitle": "Supabase 클라이언트 설정 및 인증 구현",
+			"complexityScore": 7,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Break down the Supabase authentication implementation into subtasks covering client setup, auth context creation, login/logout functionality, protected routes, session management, and error handling.",
+			"reasoning": "Authentication is inherently complex due to security considerations, state management across the application, and handling edge cases like session expiration. Implementing a robust auth system requires careful integration with Next.js routing and Supabase's auth features."
+		},
+		{
+			"taskId": 4,
+			"taskTitle": "공통 UI 컴포넌트 구현",
+			"complexityScore": 5,
+			"recommendedSubtasks": 7,
+			"expansionPrompt": "Divide the UI component implementation into subtasks for each major component type: layout components, navigation components, data display components, form components, feedback components, modal components, and responsive design optimization.",
+			"reasoning": "While shadcn/ui provides pre-built components, customizing and integrating them into a cohesive system requires significant effort. The task involves creating multiple component types with consistent styling, proper accessibility, and responsive behavior."
+		},
+		{
+			"taskId": 5,
+			"taskTitle": "고객 관리 CRUD 기능 구현",
+			"complexityScore": 7,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Break down the customer management implementation into subtasks covering data types, API functions for each CRUD operation, list view implementation, detail view implementation, form validation, and error handling.",
+			"reasoning": "Implementing full CRUD functionality requires careful state management, form validation, error handling, and optimistic UI updates. The complexity comes from ensuring data consistency across components and handling edge cases like concurrent updates."
+		},
+		{
+			"taskId": 6,
+			"taskTitle": "슬롯 관리 기능 구현",
+			"complexityScore": 8,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Divide the slot management implementation into subtasks covering data types, API functions, slot listing by customer, slot creation interface, slot detail/edit functionality, and slot status management.",
+			"reasoning": "Slot management is more complex than customer management due to the nested relationship with customers and the flexible data structure (jsonb field). The implementation must handle the parent-child relationship correctly and manage potentially complex slot data."
+		},
+		{
+			"taskId": 7,
+			"taskTitle": "고객-슬롯 통합 인터페이스 구현",
+			"complexityScore": 7,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Break down the integrated interface implementation into subtasks covering dashboard layout, customer-slot relationship display, search and filtering functionality, pagination implementation, responsive design optimization, and loading/error states.",
+			"reasoning": "Creating an integrated interface that effectively displays the relationship between customers and slots requires careful UI/UX design. The complexity comes from managing related data efficiently, implementing search/filtering, and ensuring good performance with potentially large datasets."
+		},
+		{
+			"taskId": 8,
+			"taskTitle": "최적화 및 배포 준비",
+			"complexityScore": 8,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Divide the optimization and deployment preparation into subtasks covering performance optimization, SEO implementation, error handling, environment configuration, CI/CD setup, and monitoring/analytics integration.",
+			"reasoning": "Optimization and deployment preparation involve multiple technical domains and require deep understanding of Next.js performance patterns. The complexity comes from balancing performance optimizations, implementing proper error boundaries, and setting up a robust deployment pipeline."
+		}
+	]
+}

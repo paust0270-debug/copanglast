@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>쿠팡 순위 체크 시스템</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .control-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(244, 67, 54, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status-panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .status-value {
+            color: #6c757d;
+        }
+
+        .status-value.success {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .status-value.error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .keywords-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .keywords-panel h3 {
+            margin-bottom: 20px;
+            color: #495057;
+            font-size: 1.5rem;
+        }
+
+        .keywords-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .keyword-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+
+        .keyword-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .keyword-info {
+            flex: 1;
+        }
+
+        .keyword-name {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .keyword-url {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .results-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .results-panel h3 {
+            margin-bottom: 20px;
+            color: #495057;
+            font-size: 1.5rem;
+        }
+
+        .results-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            border-left: 4px solid #28a745;
+            background: #f8f9fa;
+        }
+
+        .result-item.failed {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+
+        .result-info {
+            flex: 1;
+        }
+
+        .result-keyword {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+
+        .result-rank {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        .result-rank.failed {
+            color: #dc3545;
+        }
+
+        .result-time {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .log-panel {
+            background: #1e1e1e;
+            color: #00ff00;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+
+        .log-entry.success {
+            color: #00ff00;
+        }
+
+        .log-entry.error {
+            color: #ff6b6b;
+        }
+
+        .log-entry.info {
+            color: #4fc3f7;
+        }
+
+        .log-entry.warning {
+            color: #ffeb3b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 쿠팡 순위 체크 시스템</h1>
+            <p>휴대폰 테더링 환경에서 실시간 순위 모니터링</p>
+        </div>
+
+        <div class="control-panel">
+            <div class="control-buttons">
+                <button id="startBtn" class="btn btn-primary">순위 체크 시작</button>
+                <button id="stopBtn" class="btn btn-danger" disabled>중지</button>
+                <button id="refreshBtn" class="btn btn-primary">키워드 새로고침</button>
+            </div>
+
+            <div class="status-panel">
+                <div class="status-item">
+                    <span class="status-label">시스템 상태:</span>
+                    <span id="systemStatus" class="status-value">대기 중</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">네트워크 IP:</span>
+                    <span id="networkIP" class="status-value">확인 중...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">처리된 키워드:</span>
+                    <span id="processedCount" class="status-value">0</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">성공률:</span>
+                    <span id="successRate" class="status-value">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="keywords-panel">
+            <h3>📋 대기 중인 키워드</h3>
+            <div id="keywordsList" class="keywords-list">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>키워드 목록을 불러오는 중...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-panel">
+            <h3>📊 순위 체크 결과</h3>
+            <div id="resultsList" class="results-list">
+                <p style="text-align: center; color: #6c757d; padding: 20px;">
+                    순위 체크를 시작하면 결과가 여기에 표시됩니다.
+                </p>
+            </div>
+        </div>
+
+        <div class="log-panel">
+            <div id="logContainer">
+                <div class="log-entry info">[시스템] 쿠팡 순위 체크 시스템이 시작되었습니다.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        let isRunning = false;
+        let results = [];
+        let keywords = [];
+
+        // DOM 요소
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const systemStatus = document.getElementById('systemStatus');
+        const networkIP = document.getElementById('networkIP');
+        const processedCount = document.getElementById('processedCount');
+        const successRate = document.getElementById('successRate');
+        const keywordsList = document.getElementById('keywordsList');
+        const resultsList = document.getElementById('resultsList');
+        const logContainer = document.getElementById('logContainer');
+
+        // 로그 추가 함수
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // 키워드 목록 새로고침
+        async function refreshKeywords() {
+            try {
+                keywordsList.innerHTML = '<div class="loading"><div class="spinner"></div><p>키워드 목록을 불러오는 중...</p></div>';
+                
+                const result = await ipcRenderer.invoke('get-keywords');
+                
+                if (result.success) {
+                    keywords = result.data || [];
+                    displayKeywords();
+                    addLog(`키워드 목록 새로고침 완료: ${keywords.length}개`, 'success');
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                addLog(`키워드 목록 새로고침 실패: ${error.message}`, 'error');
+                keywordsList.innerHTML = '<p style="text-align: center; color: #dc3545;">키워드 목록을 불러올 수 없습니다.</p>';
+            }
+        }
+
+        // 키워드 목록 표시
+        function displayKeywords() {
+            if (keywords.length === 0) {
+                keywordsList.innerHTML = '<p style="text-align: center; color: #6c757d;">대기 중인 키워드가 없습니다.</p>';
+                return;
+            }
+
+            keywordsList.innerHTML = keywords.map(keyword => `
+                <div class="keyword-item">
+                    <div class="keyword-info">
+                        <div class="keyword-name">${keyword.keyword}</div>
+                        <div class="keyword-url">${keyword.link_url}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 결과 표시
+        function displayResults() {
+            if (results.length === 0) {
+                resultsList.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 20px;">순위 체크를 시작하면 결과가 여기에 표시됩니다.</p>';
+                return;
+            }
+
+            resultsList.innerHTML = results.map(result => `
+                <div class="result-item ${result.status === 'failed' ? 'failed' : ''}">
+                    <div class="result-info">
+                        <div class="result-keyword">${result.keyword}</div>
+                        <div class="result-time">${new Date(result.timestamp).toLocaleString()}</div>
+                    </div>
+                    <div class="result-rank ${result.status === 'failed' ? 'failed' : ''}">
+                        ${result.status === 'success' ? `${result.rank}위` : '실패'}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 상태 업데이트
+        function updateStatus() {
+            const successCount = results.filter(r => r.status === 'success').length;
+            const totalCount = results.length;
+            const rate = totalCount > 0 ? Math.round((successCount / totalCount) * 100) : 0;
+
+            processedCount.textContent = totalCount;
+            successRate.textContent = `${rate}%`;
+        }
+
+        // 순위 체크 시작
+        async function startRankCheck() {
+            if (isRunning) return;
+
+            isRunning = true;
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            systemStatus.textContent = '실행 중';
+            systemStatus.className = 'status-value success';
+
+            results = [];
+            displayResults();
+            updateStatus();
+
+            addLog('순위 체크를 시작합니다...', 'info');
+
+            try {
+                const result = await ipcRenderer.invoke('start-rank-check');
+                
+                if (result.success) {
+                    addLog('순위 체크가 완료되었습니다.', 'success');
+                    systemStatus.textContent = '완료';
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                addLog(`순위 체크 실패: ${error.message}`, 'error');
+                systemStatus.textContent = '오류';
+                systemStatus.className = 'status-value error';
+            } finally {
+                isRunning = false;
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+        }
+
+        // 순위 체크 중지
+        async function stopRankCheck() {
+            try {
+                await ipcRenderer.invoke('stop-rank-check');
+                addLog('순위 체크가 중지되었습니다.', 'warning');
+                systemStatus.textContent = '중지됨';
+                systemStatus.className = 'status-value';
+            } catch (error) {
+                addLog(`중지 실패: ${error.message}`, 'error');
+            }
+        }
+
+        // 이벤트 리스너
+        startBtn.addEventListener('click', startRankCheck);
+        stopBtn.addEventListener('click', stopRankCheck);
+        refreshBtn.addEventListener('click', refreshKeywords);
+
+        // IPC 이벤트 리스너
+        ipcRenderer.on('rank-check-update', (event, result) => {
+            results.push(result);
+            displayResults();
+            updateStatus();
+            
+            if (result.status === 'success') {
+                addLog(`${result.keyword}: ${result.rank}위`, 'success');
+            } else {
+                addLog(`${result.keyword}: 실패 - ${result.error}`, 'error');
+            }
+        });
+
+        ipcRenderer.on('rank-check-complete', (event, result) => {
+            addLog(`순위 체크 완료: ${result.results.length}개 처리`, 'success');
+            if (result.networkInfo) {
+                networkIP.textContent = result.networkInfo.ip;
+            }
+        });
+
+        ipcRenderer.on('rank-check-error', (event, result) => {
+            addLog(`순위 체크 오류: ${result.error}`, 'error');
+        });
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshKeywords();
+            addLog('시스템이 준비되었습니다.', 'success');
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+

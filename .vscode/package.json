@@ -1,0 +1,40 @@
+{
+  "name": "coupang-rank-checker-test",
+  "version": "1.0.0",
+  "description": "쿠팡 순위체크 로직 테스트 with Playwright MCP",
+  "main": "rank_check_test_with_playwright.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:rank": "playwright test rank_check_test_with_playwright.js",
+    "test:headed": "playwright test rank_check_test_with_playwright.js --headed",
+    "test:debug": "playwright test rank_check_test_with_playwright.js --debug",
+    "test:coupang-rank": "playwright test test_coupang_rank_checker.spec.js",
+    "test:coupang-ranked": "playwright test test_coupang_rank_checker.spec.js --headed",
+    "check-coupean": "node run_coupang_rank_check.js check",
+    "setup": "node run_coupang_rank_check.js setup",
+    "install:browsers": "playwright install"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.40.0",
+    "commander": "^11.1.0",
+    "playwright": "^1.40.0",
+    "playwright-extra": "^4.3.6",
+    "proxy-agent": "^6.5.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "electron": "^38.2.1",
+    "electron-builder": "^26.0.12"
+  },
+  "keywords": [
+    "coupang",
+    "ranking",
+    "playwright",
+    "automation",
+    "testing"
+  ],
+  "author": "Coupang Rank Checker",
+  "license": "MIT"
+}

@@ -1,0 +1,82 @@
+{
+  "keyword": "keyboard",
+  "timestamp": "2025-10-02T14:02:11.929459",
+  "total_products": 8,
+  "products": [
+    {
+      "rank": 1,
+      "product_id": "extracted_1",
+      "title": "<| mousekeyboard| ®",
+      "price": "N/A",
+      "reviews": "0",
+      "timestamp": "2025-10-02T14:02:11.928458",
+      "confidence": 0.7999999999999999
+    },
+    {
+      "rank": 2,
+      "product_id": "extracted_2",
+      "title": "mouse keyboard",
+      "price": "N/A",
+      "reviews": "0",
+      "timestamp": "2025-10-02T14:02:11.929459",
+      "confidence": 0.7999999999999999
+    },
+    {
+      "rank": 3,
+      "product_id": "extracted_3",
+      "title": "mouse keyboard set",
+      "price": "N/A",
+      "reviews": "0",
+      "timestamp": "2025-10-02T14:02:11.929459",
+      "confidence": 0.7999999999999999
+    },
+    {
+      "rank": 4,
+      "product_id": "extracted_4",
+      "title": "bluetooth mouse keyboard set",
+      "price": "N/A",
+      "reviews": "0",
+      "timestamp": "2025-10-02T14:02:11.929459",
+      "confidence": 0.7999999999999999
+    },
+    {
+      "rank": 5,
+      "product_id": "extracted_5",
+      "title": "mouse keyboard gaming",
+      "price": "N/A",
+      "reviews": "0",
+      "timestamp": "2025-10-02T14:02:11.929459",
+      "confidence": 0.8999999999999999
+    },
+    {
+      "rank": 6,
+      "product_id": "extracted_6",
+      "title": "wireless mouse keyboard",
+      "price": "N/A",
+      "reviews": "0",
+      "timestamp": "2025-10-02T14:02:11.929459",
+      "confidence": 0.7999999999999999
+    },
+    {
+      "rank": 7,
+      "product_id": "extracted_7",
+      "title": "mouse keyboard logitech g 502",
+      "price": "N/A",
+      "reviews": "0",
+      "timestamp": "2025-10-02T14:02:11.929459",
+      "confidence": 0.8999999999999999
+    },
+    {
+      "rank": 8,
+      "product_id": "extracted_8",
+      "title": "CG) | mousekeyboard2",
+      "price": "N/A",
+      "reviews": "0",
+      "timestamp": "2025-10-02T14:02:11.929459",
+      "confidence": 0.7999999999999999
+    }
+  ],
+  "device_id": "ce01160190d0880405",
+  "coupang_package": "com.coupang.mobile",
+  "method": "ADB_OCR"
+}

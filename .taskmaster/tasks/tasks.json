@@ -1,0 +1,549 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "프로젝트 초기화 및 기본 구조 설정",
+        "description": "Next.js 14 프로젝트를 초기화하고 필요한 의존성을 설치하며 기본 폴더 구조를 설정합니다.",
+        "details": "1. Next.js 14 App Router 프로젝트 생성: `npx create-next-app@latest --typescript`\n2. 필요한 의존성 설치: `npm install @supabase/supabase-js tailwindcss @tailwindcss/forms`\n3. shadcn/ui 설치: `npx shadcn-ui@latest init`\n4. 기본 폴더 구조 설정:\n   - `/app` - 페이지 및 라우팅\n   - `/components` - 재사용 가능한 컴포넌트\n   - `/lib` - 유틸리티 함수 및 설정\n   - `/types` - TypeScript 타입 정의\n5. Tailwind CSS 설정: `npx tailwindcss init -p`\n6. 환경 변수 설정: `.env.local` 파일에 Supabase 연결 정보 추가",
+        "testStrategy": "1. 프로젝트가 오류 없이 빌드되는지 확인\n2. 개발 서버가 정상적으로 실행되는지 확인\n3. 환경 변수가 올바르게 로드되는지 확인\n4. 기본 페이지가 렌더링되는지 확인",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Next.js 14 프로젝트 생성 및 기본 설정",
+            "description": "Next.js 14 App Router 프로젝트를 생성하고 TypeScript 설정을 완료합니다.",
+            "dependencies": [],
+            "details": "1. 새 디렉토리 생성 및 이동\n2. Next.js 14 프로젝트 생성: `npx create-next-app@latest --typescript`\n3. 프로젝트 설정 중 App Router 선택 확인\n4. TypeScript 설정 확인 및 필요시 tsconfig.json 조정\n5. 개발 서버 실행하여 기본 설정 확인: `npm run dev`",
+            "status": "pending",
+            "testStrategy": "1. 프로젝트가 오류 없이 생성되는지 확인\n2. 개발 서버가 정상적으로 실행되는지 확인\n3. TypeScript 컴파일이 오류 없이 진행되는지 확인"
+          },
+          {
+            "id": 2,
+            "title": "필요한 의존성 및 UI 라이브러리 설치",
+            "description": "프로젝트에 필요한 Supabase, Tailwind CSS, shadcn/ui 등의 의존성을 설치합니다.",
+            "dependencies": [],
+            "details": "1. Supabase 클라이언트 설치: `npm install @supabase/supabase-js`\n2. Tailwind CSS 관련 패키지 설치: `npm install tailwindcss @tailwindcss/forms`\n3. shadcn/ui 설치 및 초기화: `npx shadcn-ui@latest init`\n4. shadcn/ui 설정 중 적절한 스타일 및 색상 테마 선택\n5. 기타 필요한 의존성 설치 (날짜 처리, 폼 관리 등)",
+            "status": "pending",
+            "testStrategy": "1. 모든 패키지가 오류 없이 설치되었는지 확인\n2. package.json에 의존성이 올바르게 등록되었는지 확인\n3. shadcn/ui 컴포넌트가 정상적으로 임포트되는지 테스트"
+          },
+          {
+            "id": 3,
+            "title": "Tailwind CSS 설정 및 스타일 기본 구성",
+            "description": "Tailwind CSS를 초기화하고 프로젝트에 맞게 구성합니다.",
+            "dependencies": [],
+            "details": "1. Tailwind CSS 초기화: `npx tailwindcss init -p`\n2. tailwind.config.js 파일 수정하여 콘텐츠 경로 설정\n3. globals.css 파일에 Tailwind 지시어 추가\n4. 테마 색상 및 폰트 설정 커스터마이징\n5. @tailwindcss/forms 플러그인 설정 추가",
+            "status": "pending",
+            "testStrategy": "1. Tailwind CSS가 정상적으로 적용되는지 확인\n2. 커스텀 테마 설정이 올바르게 적용되는지 확인\n3. 반응형 디자인이 예상대로 작동하는지 확인"
+          },
+          {
+            "id": 4,
+            "title": "기본 폴더 구조 설정",
+            "description": "프로젝트의 기본 폴더 구조를 생성하고 초기 파일을 설정합니다.",
+            "dependencies": [],
+            "details": "1. 다음 폴더 구조 생성:\n   - `/app` - 페이지 및 라우팅\n   - `/components` - 재사용 가능한 컴포넌트\n   - `/lib` - 유틸리티 함수 및 설정\n   - `/types` - TypeScript 타입 정의\n2. components 폴더 내부에 ui, layout, forms 등의 하위 폴더 구성\n3. lib 폴더에 utils.ts 파일 생성 및 기본 유틸리티 함수 추가\n4. types 폴더에 기본 타입 정의 파일 생성",
+            "status": "pending",
+            "testStrategy": "1. 모든 폴더가 올바르게 생성되었는지 확인\n2. 파일 구조가 Next.js 14 App Router 규칙을 따르는지 확인\n3. 기본 컴포넌트 및 유틸리티가 정상적으로 임포트되는지 테스트"
+          },
+          {
+            "id": 5,
+            "title": "환경 변수 설정 및 Supabase 연결 구성",
+            "description": "프로젝트에 필요한 환경 변수를 설정하고 Supabase 연결을 구성합니다.",
+            "dependencies": [],
+            "details": "1. .env.local 파일 생성\n2. Supabase 프로젝트 URL 및 API 키 환경 변수 추가:\n   - NEXT_PUBLIC_SUPABASE_URL\n   - NEXT_PUBLIC_SUPABASE_ANON_KEY\n3. .env.example 파일 생성하여 필요한 환경 변수 템플릿 제공\n4. lib 폴더에 supabase.ts 파일 생성하여 Supabase 클라이언트 초기화 코드 작성\n5. .gitignore 파일에 .env.local 추가 확인",
+            "status": "pending",
+            "testStrategy": "1. 환경 변수가 올바르게 로드되는지 확인\n2. Supabase 클라이언트가 오류 없이 초기화되는지 확인\n3. 개발 환경과 프로덕션 환경에서 환경 변수가 올바르게 작동하는지 테스트"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Supabase 데이터베이스 스키마 설계 및 구현",
+        "description": "고객 및 슬롯 관리를 위한 데이터베이스 스키마를 설계하고 Supabase에 구현합니다.",
+        "details": "1. Supabase 프로젝트 생성\n2. 다음 테이블 생성:\n   - `customers` 테이블:\n     - `id`: uuid, primary key\n     - `created_at`: timestamp with time zone\n     - `name`: text, not null\n     - `email`: text, unique\n     - `phone`: text\n     - `notes`: text\n     - `status`: text\n   - `slots` 테이블:\n     - `id`: uuid, primary key\n     - `created_at`: timestamp with time zone\n     - `customer_id`: uuid, foreign key references customers(id)\n     - `name`: text, not null\n     - `status`: text\n     - `data`: jsonb\n3. 외래 키 제약 조건 설정: `slots.customer_id` -> `customers.id`\n4. RLS(Row Level Security) 정책 설정\n5. TypeScript 타입 정의 생성: `supabase gen types typescript --project-id YOUR_PROJECT_ID > types/database.types.ts`",
+        "testStrategy": "1. 테이블이 올바르게 생성되었는지 SQL 쿼리로 확인\n2. 외래 키 제약 조건이 작동하는지 테스트 데이터로 확인\n3. RLS 정책이 올바르게 적용되는지 확인\n4. 생성된 TypeScript 타입이 스키마와 일치하는지 확인",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Supabase project and configure environment",
+            "description": "Set up a new Supabase project and configure the necessary environment variables for database connection",
+            "dependencies": [],
+            "details": "1. Create a new Supabase project through the Supabase dashboard\n2. Note the project URL and anon key for environment variables\n3. Create a .env.local file with NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY\n4. Configure database settings and region based on project requirements\n5. Enable necessary extensions for UUID generation",
+            "status": "pending",
+            "testStrategy": "1. Verify project creation in Supabase dashboard\n2. Test environment variable loading in the application\n3. Confirm database connection using the Supabase client"
+          },
+          {
+            "id": 2,
+            "title": "Create database tables and relationships",
+            "description": "Design and implement the customers and slots tables with proper relationships and constraints",
+            "dependencies": [
+              "2.1"
+            ],
+            "details": "1. Create the customers table with fields: id (uuid, PK), created_at, name, email (unique), phone, notes, status\n2. Create the slots table with fields: id (uuid, PK), created_at, customer_id (FK), name, status, data (jsonb)\n3. Set up foreign key constraint between slots.customer_id and customers.id\n4. Create appropriate indexes for performance optimization\n5. Add default values for created_at fields",
+            "status": "pending",
+            "testStrategy": "1. Verify table creation with SQL queries\n2. Test foreign key constraints by attempting invalid operations\n3. Confirm data types and constraints are correctly applied\n4. Test insertion of sample data to validate schema"
+          },
+          {
+            "id": 3,
+            "title": "Implement Row Level Security (RLS) policies",
+            "description": "Configure Row Level Security policies to control access to database tables",
+            "dependencies": [
+              "2.2"
+            ],
+            "details": "1. Enable RLS for both customers and slots tables\n2. Create policies for select, insert, update, and delete operations\n3. Configure policies to restrict access based on user authentication\n4. Set up appropriate role-based access control\n5. Test policies with different user contexts",
+            "status": "pending",
+            "testStrategy": "1. Test access to tables with and without authentication\n2. Verify that users can only access their own data\n3. Confirm that admin roles have appropriate access levels\n4. Test policy enforcement across different operations"
+          },
+          {
+            "id": 4,
+            "title": "Generate TypeScript type definitions",
+            "description": "Generate TypeScript types from the Supabase schema for type-safe database operations",
+            "dependencies": [
+              "2.2",
+              "2.3"
+            ],
+            "details": "1. Install Supabase CLI if not already installed\n2. Run the command: supabase gen types typescript --project-id YOUR_PROJECT_ID > types/database.types.ts\n3. Create the types directory if it doesn't exist\n4. Verify the generated types match the database schema\n5. Create additional custom type definitions as needed",
+            "status": "pending",
+            "testStrategy": "1. Verify that generated types accurately reflect the database schema\n2. Test type compatibility with Supabase client operations\n3. Confirm that type errors are caught during development"
+          },
+          {
+            "id": 5,
+            "title": "Create database migration scripts",
+            "description": "Develop migration scripts for version control and deployment of the database schema",
+            "dependencies": [
+              "2.2",
+              "2.3",
+              "2.4"
+            ],
+            "details": "1. Create SQL migration scripts for initial schema creation\n2. Set up version control for database schema changes\n3. Document the migration process for future schema updates\n4. Create seed data scripts for development and testing\n5. Implement rollback procedures for failed migrations",
+            "status": "pending",
+            "testStrategy": "1. Test migration scripts in development environment\n2. Verify that migrations can be applied and rolled back cleanly\n3. Confirm that seed data is correctly inserted\n4. Test migration process in a staging environment"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Supabase 클라이언트 설정 및 인증 구현",
+        "description": "Supabase 클라이언트를 설정하고 사용자 인증 기능을 구현합니다.",
+        "details": "1. Supabase 클라이언트 설정:\n```typescript\n// lib/supabase.ts\nimport { createClient } from '@supabase/supabase-js';\nimport { Database } from '../types/database.types';\n\nconst supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;\nconst supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;\n\nexport const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);\n```\n\n2. 인증 컨텍스트 생성:\n```typescript\n// contexts/AuthContext.tsx\nimport { createContext, useContext, useEffect, useState } from 'react';\nimport { supabase } from '../lib/supabase';\nimport { Session, User } from '@supabase/supabase-js';\n\ntype AuthContextType = {\n  user: User | null;\n  session: Session | null;\n  loading: boolean;\n};\n\nconst AuthContext = createContext<AuthContextType>({ user: null, session: null, loading: true });\n\nexport const AuthProvider = ({ children }: { children: React.ReactNode }) => {\n  // 구현 내용\n};\n\nexport const useAuth = () => useContext(AuthContext);\n```\n\n3. 로그인/로그아웃 기능 구현\n4. 인증 상태에 따른 라우팅 보호 구현",
+        "testStrategy": "1. 로그인 및 로그아웃 기능이 정상 작동하는지 확인\n2. 인증 상태가 올바르게 유지되는지 확인\n3. 보호된 라우트에 인증되지 않은 사용자가 접근할 수 없는지 확인\n4. 세션 만료 시 적절하게 처리되는지 확인",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Supabase 클라이언트 설정 완성",
+            "description": "Supabase 클라이언트 설정을 완성하고 환경 변수가 올바르게 로드되는지 확인합니다.",
+            "dependencies": [],
+            "details": "1. lib/supabase.ts 파일에 Supabase 클라이언트 설정 코드를 완성합니다.\n2. .env.local 파일에 NEXT_PUBLIC_SUPABASE_URL과 NEXT_PUBLIC_SUPABASE_ANON_KEY 환경 변수를 추가합니다.\n3. 환경 변수가 올바르게 로드되는지 확인하는 테스트 코드를 작성합니다.\n4. Database 타입을 types/database.types.ts 파일에 정의합니다.",
+            "status": "pending",
+            "testStrategy": "1. 환경 변수가 올바르게 로드되는지 확인합니다.\n2. Supabase 클라이언트가 성공적으로 초기화되는지 확인합니다.\n3. 간단한 쿼리를 실행하여 연결이 작동하는지 테스트합니다."
+          },
+          {
+            "id": 2,
+            "title": "인증 컨텍스트 구현",
+            "description": "AuthContext 컴포넌트를 완성하여 사용자 인증 상태를 관리합니다.",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "1. AuthContext.tsx 파일에서 AuthProvider 컴포넌트를 구현합니다.\n2. useState를 사용하여 user, session, loading 상태를 관리합니다.\n3. useEffect를 사용하여 초기 인증 상태를 확인하고 인증 상태 변경을 구독합니다.\n4. 인증 상태가 변경될 때 상태를 업데이트하는 로직을 구현합니다.\n5. AuthContext를 export하여 다른 컴포넌트에서 사용할 수 있도록 합니다.",
+            "status": "pending",
+            "testStrategy": "1. AuthProvider가 올바르게 렌더링되는지 확인합니다.\n2. 인증 상태 변경이 컨텍스트에 올바르게 반영되는지 확인합니다.\n3. useAuth 훅이 올바른 값을 반환하는지 확인합니다."
+          },
+          {
+            "id": 3,
+            "title": "로그인/로그아웃 기능 구현",
+            "description": "이메일/비밀번호, 소셜 로그인 및 로그아웃 기능을 구현합니다.",
+            "dependencies": [
+              "3.1",
+              "3.2"
+            ],
+            "details": "1. lib/auth.ts 파일을 생성하여 인증 관련 함수를 구현합니다.\n2. 이메일/비밀번호 로그인 함수를 구현합니다.\n3. 소셜 로그인(Google, GitHub 등) 함수를 구현합니다.\n4. 회원가입 함수를 구현합니다.\n5. 로그아웃 함수를 구현합니다.\n6. 비밀번호 재설정 함수를 구현합니다.",
+            "status": "pending",
+            "testStrategy": "1. 각 인증 함수가 예상대로 작동하는지 확인합니다.\n2. 오류 처리가 올바르게 구현되었는지 확인합니다.\n3. 로그인 후 사용자 정보가 올바르게 저장되는지 확인합니다.\n4. 로그아웃 후 사용자 정보가 올바르게 제거되는지 확인합니다."
+          },
+          {
+            "id": 4,
+            "title": "인증 UI 컴포넌트 구현",
+            "description": "로그인, 회원가입, 비밀번호 재설정 등의 인증 관련 UI 컴포넌트를 구현합니다.",
+            "dependencies": [
+              "3.3"
+            ],
+            "details": "1. components/auth 폴더를 생성합니다.\n2. LoginForm 컴포넌트를 구현합니다.\n3. SignupForm 컴포넌트를 구현합니다.\n4. ResetPasswordForm 컴포넌트를 구현합니다.\n5. SocialLoginButtons 컴포넌트를 구현합니다.\n6. 각 폼에 유효성 검사를 추가합니다.",
+            "status": "pending",
+            "testStrategy": "1. 각 폼이 올바르게 렌더링되는지 확인합니다.\n2. 유효성 검사가 올바르게 작동하는지 확인합니다.\n3. 폼 제출 시 적절한 함수가 호출되는지 확인합니다.\n4. 오류 메시지가 올바르게 표시되는지 확인합니다."
+          },
+          {
+            "id": 5,
+            "title": "인증 상태에 따른 라우팅 보호 구현",
+            "description": "인증이 필요한 페이지에 대한 접근을 제한하는 라우팅 보호 기능을 구현합니다.",
+            "dependencies": [
+              "3.2",
+              "3.3"
+            ],
+            "details": "1. components/auth/ProtectedRoute.tsx 컴포넌트를 생성합니다.\n2. useAuth 훅을 사용하여 현재 인증 상태를 확인합니다.\n3. 인증되지 않은 사용자가 보호된 라우트에 접근할 경우 로그인 페이지로 리디렉션합니다.\n4. 인증 상태 로딩 중일 때 로딩 UI를 표시합니다.\n5. app 디렉토리의 레이아웃 파일에 인증 상태 확인 로직을 추가합니다.",
+            "status": "pending",
+            "testStrategy": "1. 인증되지 않은 사용자가 보호된 라우트에 접근할 때 로그인 페이지로 리디렉션되는지 확인합니다.\n2. 인증된 사용자가 보호된 라우트에 접근할 때 정상적으로 페이지가 표시되는지 확인합니다.\n3. 세션이 만료된 경우 적절하게 처리되는지 확인합니다.\n4. 로딩 상태가 올바르게 표시되는지 확인합니다."
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "공통 UI 컴포넌트 구현",
+        "description": "고객관리 및 슬롯 기능에 필요한 공통 UI 컴포넌트를 shadcn/ui를 활용하여 구현합니다.",
+        "details": "1. shadcn/ui 컴포넌트 추가:\n```bash\nnpx shadcn-ui@latest add button\nnpx shadcn-ui@latest add input\nnpx shadcn-ui@latest add form\nnpx shadcn-ui@latest add dialog\nnpx shadcn-ui@latest add card\nnpx shadcn-ui@latest add table\nnpx shadcn-ui@latest add select\nnpx shadcn-ui@latest add toast\n```\n\n2. 레이아웃 컴포넌트 구현:\n```typescript\n// components/layout/MainLayout.tsx\nimport { Header } from './Header';\nimport { Sidebar } from './Sidebar';\n\nexport function MainLayout({ children }: { children: React.ReactNode }) {\n  return (\n    <div className=\"min-h-screen flex flex-col\">\n      <Header />\n      <div className=\"flex flex-1\">\n        <Sidebar />\n        <main className=\"flex-1 p-6\">{children}</main>\n      </div>\n    </div>\n  );\n}\n```\n\n3. 헤더 및 사이드바 컴포넌트 구현\n4. 데이터 테이블 컴포넌트 구현\n5. 폼 컴포넌트 구현\n6. 모달 다이얼로그 컴포넌트 구현\n7. 알림 토스트 컴포넌트 구현",
+        "testStrategy": "1. 각 컴포넌트가 다양한 화면 크기에서 올바르게 렌더링되는지 확인\n2. 컴포넌트 간 상호작용이 예상대로 작동하는지 확인\n3. 접근성 표준을 준수하는지 확인\n4. 다양한 브라우저에서 일관되게 표시되는지 확인",
+        "priority": "medium",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "헤더 및 사이드바 컴포넌트 구현",
+            "description": "메인 레이아웃을 위한 헤더와 사이드바 컴포넌트를 구현합니다.",
+            "dependencies": [],
+            "details": "1. Header 컴포넌트 구현:\n```typescript\n// components/layout/Header.tsx\nexport function Header() {\n  return (\n    <header className=\"bg-primary text-white p-4 shadow-md\">\n      <div className=\"container mx-auto flex justify-between items-center\">\n        <h1 className=\"text-xl font-bold\">쿠팡 랭킹 체커</h1>\n        <nav>\n          <ul className=\"flex space-x-4\">\n            <li>대시보드</li>\n            <li>고객 관리</li>\n            <li>설정</li>\n          </ul>\n        </nav>\n      </div>\n    </header>\n  );\n}\n```\n\n2. Sidebar 컴포넌트 구현:\n```typescript\n// components/layout/Sidebar.tsx\nimport { Button } from '../ui/button';\n\nexport function Sidebar() {\n  return (\n    <aside className=\"w-64 bg-gray-100 p-4 h-full\">\n      <nav>\n        <ul className=\"space-y-2\">\n          <li>\n            <Button variant=\"ghost\" className=\"w-full justify-start\">\n              대시보드\n            </Button>\n          </li>\n          <li>\n            <Button variant=\"ghost\" className=\"w-full justify-start\">\n              고객 관리\n            </Button>\n          </li>\n          <li>\n            <Button variant=\"ghost\" className=\"w-full justify-start\">\n              슬롯 관리\n            </Button>\n          </li>\n        </ul>\n      </nav>\n    </aside>\n  );\n}\n```",
+            "status": "pending",
+            "testStrategy": "1. 헤더와 사이드바가 모든 화면 크기에서 올바르게 렌더링되는지 확인\n2. 반응형 디자인이 적절하게 적용되는지 확인\n3. 네비게이션 링크가 올바르게 작동하는지 확인\n4. 다크 모드 및 라이트 모드에서 일관되게 표시되는지 확인"
+          },
+          {
+            "id": 2,
+            "title": "데이터 테이블 컴포넌트 구현",
+            "description": "고객 및 슬롯 데이터를 표시하기 위한 재사용 가능한 데이터 테이블 컴포넌트를 구현합니다.",
+            "dependencies": [],
+            "details": "1. 기본 데이터 테이블 컴포넌트 구현:\n```typescript\n// components/ui/data-table/DataTable.tsx\n'use client';\n\nimport { useState } from 'react';\nimport { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../table';\nimport { Button } from '../button';\nimport { Input } from '../input';\n\ninterface DataTableProps<T> {\n  data: T[];\n  columns: {\n    key: string;\n    title: string;\n    render?: (item: T) => React.ReactNode;\n  }[];\n  onRowClick?: (item: T) => void;\n}\n\nexport function DataTable<T extends { id: string }>({ data, columns, onRowClick }: DataTableProps<T>) {\n  const [searchTerm, setSearchTerm] = useState('');\n  const [currentPage, setCurrentPage] = useState(1);\n  const itemsPerPage = 10;\n\n  // 검색 및 페이지네이션 로직 구현\n  const filteredData = data.filter(item =>\n    Object.values(item).some(\n      value => value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())\n    )\n  );\n\n  const paginatedData = filteredData.slice(\n    (currentPage - 1) * itemsPerPage,\n    currentPage * itemsPerPage\n  );\n\n  return (\n    <div className=\"space-y-4\">\n      <Input\n        placeholder=\"검색...\"\n        value={searchTerm}\n        onChange={(e) => setSearchTerm(e.target.value)}\n        className=\"max-w-sm\"\n      />\n      \n      <Table>\n        <TableHeader>\n          <TableRow>\n            {columns.map((column) => (\n              <TableHead key={column.key}>{column.title}</TableHead>\n            ))}\n          </TableRow>\n        </TableHeader>\n        <TableBody>\n          {paginatedData.length > 0 ? (\n            paginatedData.map((item) => (\n              <TableRow \n                key={item.id} \n                onClick={() => onRowClick && onRowClick(item)}\n                className={onRowClick ? 'cursor-pointer hover:bg-gray-100' : ''}\n              >\n                {columns.map((column) => (\n                  <TableCell key={`${item.id}-${column.key}`}>\n                    {column.render\n                      ? column.render(item)\n                      : (item as any)[column.key]}\n                  </TableCell>\n                ))}\n              </TableRow>\n            ))\n          ) : (\n            <TableRow>\n              <TableCell colSpan={columns.length} className=\"text-center py-8\">\n                데이터가 없습니다.\n              </TableCell>\n            </TableRow>\n          )}\n        </TableBody>\n      </Table>\n      \n      {/* 페이지네이션 컨트롤 */}\n      <div className=\"flex justify-between items-center\">\n        <div>\n          총 {filteredData.length}개 항목 중 {(currentPage - 1) * itemsPerPage + 1}-\n          {Math.min(currentPage * itemsPerPage, filteredData.length)}개 표시\n        </div>\n        <div className=\"flex space-x-2\">\n          <Button\n            variant=\"outline\"\n            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}\n            disabled={currentPage === 1}\n          >\n            이전\n          </Button>\n          <Button\n            variant=\"outline\"\n            onClick={() => setCurrentPage(p => p + 1)}\n            disabled={currentPage * itemsPerPage >= filteredData.length}\n          >\n            다음\n          </Button>\n        </div>\n      </div>\n    </div>\n  );\n}\n```",
+            "status": "pending",
+            "testStrategy": "1. 테이블이 다양한 데이터 세트로 올바르게 렌더링되는지 확인\n2. 검색 기능이 예상대로 작동하는지 확인\n3. 페이지네이션이 올바르게 작동하는지 확인\n4. 행 클릭 이벤트가 올바르게 트리거되는지 확인\n5. 데이터가 없을 때 적절한 메시지가 표시되는지 확인"
+          },
+          {
+            "id": 3,
+            "title": "폼 컴포넌트 구현",
+            "description": "고객 및 슬롯 데이터 입력을 위한 재사용 가능한 폼 컴포넌트를 구현합니다.",
+            "dependencies": [],
+            "details": "1. 기본 폼 컴포넌트 구현:\n```typescript\n// components/ui/form/FormField.tsx\n'use client';\n\nimport { useId } from 'react';\nimport { Label } from '../label';\nimport { Input } from '../input';\n\ninterface FormFieldProps {\n  label: string;\n  name: string;\n  type?: string;\n  placeholder?: string;\n  value: string;\n  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;\n  error?: string;\n  required?: boolean;\n}\n\nexport function FormField({\n  label,\n  name,\n  type = 'text',\n  placeholder,\n  value,\n  onChange,\n  error,\n  required,\n}: FormFieldProps) {\n  const id = useId();\n  \n  return (\n    <div className=\"space-y-2\">\n      <Label htmlFor={id} className=\"flex items-center\">\n        {label}\n        {required && <span className=\"text-red-500 ml-1\">*</span>}\n      </Label>\n      <Input\n        id={id}\n        name={name}\n        type={type}\n        placeholder={placeholder}\n        value={value}\n        onChange={onChange}\n        className={error ? 'border-red-500' : ''}\n        required={required}\n      />\n      {error && <p className=\"text-red-500 text-sm\">{error}</p>}\n    </div>\n  );\n}\n```\n\n2. 폼 컨테이너 컴포넌트 구현:\n```typescript\n// components/ui/form/Form.tsx\n'use client';\n\nimport { Button } from '../button';\n\ninterface FormProps {\n  children: React.ReactNode;\n  onSubmit: (e: React.FormEvent) => void;\n  submitText?: string;\n  isSubmitting?: boolean;\n  resetText?: string;\n  onReset?: () => void;\n}\n\nexport function Form({\n  children,\n  onSubmit,\n  submitText = '저장',\n  isSubmitting = false,\n  resetText = '취소',\n  onReset,\n}: FormProps) {\n  return (\n    <form onSubmit={onSubmit} className=\"space-y-6\">\n      <div className=\"space-y-4\">{children}</div>\n      \n      <div className=\"flex space-x-2 justify-end\">\n        {onReset && (\n          <Button type=\"button\" variant=\"outline\" onClick={onReset}>\n            {resetText}\n          </Button>\n        )}\n        <Button type=\"submit\" disabled={isSubmitting}>\n          {isSubmitting ? '처리 중...' : submitText}\n        </Button>\n      </div>\n    </form>\n  );\n}\n```\n\n3. 폼 유틸리티 함수 구현:\n```typescript\n// lib/form-utils.ts\nexport function validateRequired(value: string, fieldName: string): string | null {\n  return value.trim() ? null : `${fieldName}은(는) 필수 항목입니다.`;\n}\n\nexport function validateEmail(value: string): string | null {\n  if (!value) return null;\n  const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n  return emailRegex.test(value) ? null : '유효한 이메일 주소를 입력하세요.';\n}\n\nexport function validatePhone(value: string): string | null {\n  if (!value) return null;\n  const phoneRegex = /^\\d{2,3}-\\d{3,4}-\\d{4}$/;\n  return phoneRegex.test(value) ? null : '유효한 전화번호 형식을 입력하세요. (예: 010-1234-5678)';\n}\n```",
+            "status": "pending",
+            "testStrategy": "1. 폼 필드가 다양한 입력 유형으로 올바르게 렌더링되는지 확인\n2. 유효성 검사 함수가 예상대로 작동하는지 확인\n3. 필수 필드 표시가 올바르게 작동하는지 확인\n4. 오류 메시지가 적절하게 표시되는지 확인\n5. 폼 제출 및 재설정 기능이 올바르게 작동하는지 확인"
+          },
+          {
+            "id": 4,
+            "title": "모달 다이얼로그 컴포넌트 구현",
+            "description": "고객 및 슬롯 데이터 편집을 위한 모달 다이얼로그 컴포넌트를 구현합니다.",
+            "dependencies": [
+              "4.3"
+            ],
+            "details": "1. 기본 모달 다이얼로그 컴포넌트 구현:\n```typescript\n// components/ui/modal/Modal.tsx\n'use client';\n\nimport { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../dialog';\nimport { Button } from '../button';\n\ninterface ModalProps {\n  isOpen: boolean;\n  onClose: () => void;\n  title: string;\n  description?: string;\n  children: React.ReactNode;\n  footer?: React.ReactNode;\n  size?: 'sm' | 'md' | 'lg' | 'xl';\n}\n\nexport function Modal({\n  isOpen,\n  onClose,\n  title,\n  description,\n  children,\n  footer,\n  size = 'md',\n}: ModalProps) {\n  const sizeClasses = {\n    sm: 'max-w-sm',\n    md: 'max-w-md',\n    lg: 'max-w-lg',\n    xl: 'max-w-xl',\n  };\n\n  return (\n    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>\n      <DialogContent className={`${sizeClasses[size]}`}>\n        <DialogHeader>\n          <DialogTitle>{title}</DialogTitle>\n          {description && <DialogDescription>{description}</DialogDescription>}\n        </DialogHeader>\n        <div className=\"py-4\">{children}</div>\n        {footer && <DialogFooter>{footer}</DialogFooter>}\n      </DialogContent>\n    </Dialog>\n  );\n}\n```\n\n2. 확인 다이얼로그 컴포넌트 구현:\n```typescript\n// components/ui/modal/ConfirmDialog.tsx\n'use client';\n\nimport { Modal } from './Modal';\nimport { Button } from '../button';\n\ninterface ConfirmDialogProps {\n  isOpen: boolean;\n  onClose: () => void;\n  onConfirm: () => void;\n  title: string;\n  message: string;\n  confirmText?: string;\n  cancelText?: string;\n  isDestructive?: boolean;\n}\n\nexport function ConfirmDialog({\n  isOpen,\n  onClose,\n  onConfirm,\n  title,\n  message,\n  confirmText = '확인',\n  cancelText = '취소',\n  isDestructive = false,\n}: ConfirmDialogProps) {\n  return (\n    <Modal\n      isOpen={isOpen}\n      onClose={onClose}\n      title={title}\n      size=\"sm\"\n      footer={\n        <div className=\"flex space-x-2 justify-end w-full\">\n          <Button variant=\"outline\" onClick={onClose}>\n            {cancelText}\n          </Button>\n          <Button\n            variant={isDestructive ? 'destructive' : 'default'}\n            onClick={() => {\n              onConfirm();\n              onClose();\n            }}\n          >\n            {confirmText}\n          </Button>\n        </div>\n      }\n    >\n      <p>{message}</p>\n    </Modal>\n  );\n}\n```\n\n3. 폼 다이얼로그 컴포넌트 구현:\n```typescript\n// components/ui/modal/FormDialog.tsx\n'use client';\n\nimport { Modal } from './Modal';\nimport { Form } from '../form/Form';\n\ninterface FormDialogProps {\n  isOpen: boolean;\n  onClose: () => void;\n  onSubmit: (e: React.FormEvent) => void;\n  title: string;\n  description?: string;\n  children: React.ReactNode;\n  submitText?: string;\n  isSubmitting?: boolean;\n  size?: 'sm' | 'md' | 'lg' | 'xl';\n}\n\nexport function FormDialog({\n  isOpen,\n  onClose,\n  onSubmit,\n  title,\n  description,\n  children,\n  submitText,\n  isSubmitting,\n  size,\n}: FormDialogProps) {\n  return (\n    <Modal\n      isOpen={isOpen}\n      onClose={onClose}\n      title={title}\n      description={description}\n      size={size}\n    >\n      <Form\n        onSubmit={onSubmit}\n        submitText={submitText}\n        isSubmitting={isSubmitting}\n        onReset={onClose}\n        resetText=\"취소\"\n      >\n        {children}\n      </Form>\n    </Modal>\n  );\n}\n```",
+            "status": "pending",
+            "testStrategy": "1. 모달이 열리고 닫히는 기능이 올바르게 작동하는지 확인\n2. 다양한 크기 옵션이 올바르게 적용되는지 확인\n3. 확인 다이얼로그의 확인 및 취소 기능이 예상대로 작동하는지 확인\n4. 폼 다이얼로그에서 폼 제출이 올바르게 작동하는지 확인\n5. 모달이 열려 있을 때 배경 스크롤이 비활성화되는지 확인"
+          },
+          {
+            "id": 5,
+            "title": "알림 토스트 컴포넌트 구현",
+            "description": "사용자에게 작업 결과를 알리기 위한 토스트 알림 컴포넌트를 구현합니다.",
+            "dependencies": [],
+            "details": "1. 토스트 컨텍스트 및 프로바이더 구현:\n```typescript\n// components/ui/toast/ToastContext.tsx\n'use client';\n\nimport { createContext, useContext, useState, useCallback } from 'react';\nimport { Toast, ToastProps } from './Toast';\n\ntype ToastType = 'success' | 'error' | 'info' | 'warning';\n\ninterface ToastOptions {\n  type?: ToastType;\n  duration?: number;\n}\n\ninterface ToastContextType {\n  showToast: (message: string, options?: ToastOptions) => void;\n}\n\nconst ToastContext = createContext<ToastContextType | undefined>(undefined);\n\nexport function ToastProvider({ children }: { children: React.ReactNode }) {\n  const [toasts, setToasts] = useState<(ToastProps & { id: number })[]>([]);\n  const [counter, setCounter] = useState(0);\n\n  const showToast = useCallback((message: string, options: ToastOptions = {}) => {\n    const { type = 'info', duration = 5000 } = options;\n    const id = counter;\n    \n    setToasts(prev => [...prev, { id, message, type, duration }]);\n    setCounter(prev => prev + 1);\n    \n    setTimeout(() => {\n      setToasts(prev => prev.filter(toast => toast.id !== id));\n    }, duration);\n  }, [counter]);\n\n  const handleClose = useCallback((id: number) => {\n    setToasts(prev => prev.filter(toast => toast.id !== id));\n  }, []);\n\n  return (\n    <ToastContext.Provider value={{ showToast }}>\n      {children}\n      <div className=\"fixed bottom-4 right-4 z-50 flex flex-col space-y-2\">\n        {toasts.map(toast => (\n          <Toast\n            key={toast.id}\n            message={toast.message}\n            type={toast.type}\n            onClose={() => handleClose(toast.id)}\n          />\n        ))}\n      </div>\n    </ToastContext.Provider>\n  );\n}\n\nexport function useToast() {\n  const context = useContext(ToastContext);\n  if (context === undefined) {\n    throw new Error('useToast must be used within a ToastProvider');\n  }\n  return context;\n}\n```\n\n2. 토스트 컴포넌트 구현:\n```typescript\n// components/ui/toast/Toast.tsx\n'use client';\n\nimport { useEffect, useState } from 'react';\nimport { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';\n\nexport interface ToastProps {\n  message: string;\n  type?: 'success' | 'error' | 'info' | 'warning';\n  duration?: number;\n  onClose: () => void;\n}\n\nexport function Toast({ message, type = 'info', onClose }: ToastProps) {\n  const [isVisible, setIsVisible] = useState(false);\n  \n  useEffect(() => {\n    // 애니메이션을 위한 지연 표시\n    const timer = setTimeout(() => setIsVisible(true), 10);\n    return () => clearTimeout(timer);\n  }, []);\n\n  const bgColor = {\n    success: 'bg-green-100 border-green-500',\n    error: 'bg-red-100 border-red-500',\n    info: 'bg-blue-100 border-blue-500',\n    warning: 'bg-yellow-100 border-yellow-500',\n  }[type];\n\n  const Icon = {\n    success: CheckCircle,\n    error: AlertCircle,\n    info: Info,\n    warning: AlertTriangle,\n  }[type];\n\n  const iconColor = {\n    success: 'text-green-500',\n    error: 'text-red-500',\n    info: 'text-blue-500',\n    warning: 'text-yellow-500',\n  }[type];\n\n  return (\n    <div\n      className={`${bgColor} border rounded-md p-4 shadow-md flex items-start space-x-3 transition-all duration-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}\n      role=\"alert\"\n    >\n      <Icon className={`${iconColor} h-5 w-5 mt-0.5`} />\n      <div className=\"flex-1\">{message}</div>\n      <button\n        onClick={onClose}\n        className=\"text-gray-500 hover:text-gray-700 focus:outline-none\"\n        aria-label=\"닫기\"\n      >\n        <X className=\"h-5 w-5\" />\n      </button>\n    </div>\n  );\n}\n```\n\n3. 토스트 프로바이더를 레이아웃에 추가:\n```typescript\n// app/layout.tsx\nimport { ToastProvider } from '../components/ui/toast/ToastContext';\n\nexport default function RootLayout({ children }: { children: React.ReactNode }) {\n  return (\n    <html lang=\"ko\">\n      <body>\n        <ToastProvider>\n          {children}\n        </ToastProvider>\n      </body>\n    </html>\n  );\n}\n```\n\n4. 토스트 사용 예시:\n```typescript\n// 컴포넌트에서 사용 예시\n'use client';\n\nimport { useToast } from '../components/ui/toast/ToastContext';\nimport { Button } from '../components/ui/button';\n\nexport function ToastDemo() {\n  const { showToast } = useToast();\n  \n  return (\n    <div className=\"space-y-2\">\n      <Button onClick={() => showToast('성공적으로 저장되었습니다.', { type: 'success' })}>\n        성공 토스트\n      </Button>\n      <Button onClick={() => showToast('오류가 발생했습니다.', { type: 'error' })}>\n        오류 토스트\n      </Button>\n      <Button onClick={() => showToast('정보 메시지입니다.', { type: 'info' })}>\n        정보 토스트\n      </Button>\n      <Button onClick={() => showToast('주의가 필요합니다.', { type: 'warning' })}>\n        경고 토스트\n      </Button>\n    </div>\n  );\n}\n```",
+            "status": "pending",
+            "testStrategy": "1. 다양한 유형의 토스트가 올바르게 표시되는지 확인\n2. 토스트가 지정된 시간 후에 자동으로 사라지는지 확인\n3. 여러 토스트가 동시에 표시될 때 올바르게 스택되는지 확인\n4. 토스트 닫기 버튼이 올바르게 작동하는지 확인\n5. 애니메이션이 부드럽게 작동하는지 확인\n6. 토스트가 접근성 표준을 준수하는지 확인"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "고객 관리 CRUD 기능 구현",
+        "description": "고객 정보를 등록, 조회, 수정, 삭제할 수 있는 기능을 구현합니다.",
+        "details": "1. 고객 데이터 타입 정의:\n```typescript\n// types/customer.ts\nexport type Customer = {\n  id: string;\n  name: string;\n  email: string;\n  phone: string;\n  notes: string;\n  status: 'active' | 'inactive';\n  created_at: string;\n};\n```\n\n2. 고객 API 함수 구현:\n```typescript\n// lib/api/customers.ts\nimport { supabase } from '../supabase';\nimport { Customer } from '../../types/customer';\n\nexport async function getCustomers() {\n  const { data, error } = await supabase\n    .from('customers')\n    .select('*')\n    .order('created_at', { ascending: false });\n  \n  if (error) throw error;\n  return data as Customer[];\n}\n\nexport async function getCustomer(id: string) {\n  const { data, error } = await supabase\n    .from('customers')\n    .select('*')\n    .eq('id', id)\n    .single();\n  \n  if (error) throw error;\n  return data as Customer;\n}\n\nexport async function createCustomer(customer: Omit<Customer, 'id' | 'created_at'>) {\n  const { data, error } = await supabase\n    .from('customers')\n    .insert([customer])\n    .select()\n    .single();\n  \n  if (error) throw error;\n  return data as Customer;\n}\n\n// updateCustomer 및 deleteCustomer 함수 구현\n```\n\n3. 고객 목록 페이지 구현\n4. 고객 상세 페이지 구현\n5. 고객 생성/수정 폼 구현\n6. 고객 삭제 확인 다이얼로그 구현",
+        "testStrategy": "1. 모든 CRUD 작업이 데이터베이스에 올바르게 반영되는지 확인\n2. 유효성 검사가 올바르게 작동하는지 확인\n3. 오류 처리가 적절하게 구현되었는지 확인\n4. 페이지 간 이동 시 상태가 올바르게 유지되는지 확인\n5. 동시성 문제가 발생하지 않는지 확인",
+        "priority": "high",
+        "dependencies": [
+          2,
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "완성 및 테스트 updateCustomer 함수",
+            "description": "고객 정보 업데이트를 위한 API 함수를 구현하고 테스트합니다.",
+            "dependencies": [],
+            "details": "lib/api/customers.ts 파일에 updateCustomer 함수를 구현합니다:\n```typescript\nexport async function updateCustomer(id: string, customer: Partial<Omit<Customer, 'id' | 'created_at'>>) {\n  const { data, error } = await supabase\n    .from('customers')\n    .update(customer)\n    .eq('id', id)\n    .select()\n    .single();\n  \n  if (error) throw error;\n  return data as Customer;\n}\n```",
+            "status": "pending",
+            "testStrategy": "1. 유효한 고객 ID와 업데이트 데이터로 함수를 호출하여 성공적으로 업데이트되는지 확인\n2. 존재하지 않는 ID로 호출 시 적절한 오류가 발생하는지 확인\n3. 유효하지 않은 데이터 형식으로 호출 시 오류 처리가 올바르게 되는지 확인"
+          },
+          {
+            "id": 2,
+            "title": "완성 및 테스트 deleteCustomer 함수",
+            "description": "고객 정보 삭제를 위한 API 함수를 구현하고 테스트합니다.",
+            "dependencies": [],
+            "details": "lib/api/customers.ts 파일에 deleteCustomer 함수를 구현합니다:\n```typescript\nexport async function deleteCustomer(id: string) {\n  const { error } = await supabase\n    .from('customers')\n    .delete()\n    .eq('id', id);\n  \n  if (error) throw error;\n  return true;\n}\n```",
+            "status": "pending",
+            "testStrategy": "1. 유효한 고객 ID로 함수를 호출하여 성공적으로 삭제되는지 확인\n2. 존재하지 않는 ID로 호출 시 적절한 오류가 발생하는지 확인\n3. 삭제 후 해당 고객 정보를 조회했을 때 결과가 없는지 확인\n4. 관련 슬롯 데이터가 있는 경우 처리 방식 확인"
+          },
+          {
+            "id": 3,
+            "title": "고객 목록 및 상세 페이지 구현",
+            "description": "고객 목록을 표시하는 페이지와 개별 고객 상세 정보를 보여주는 페이지를 구현합니다.",
+            "dependencies": [
+              "5.1",
+              "5.2"
+            ],
+            "details": "1. 고객 목록 페이지(app/customers/page.tsx):\n```typescript\nimport { Suspense } from 'react';\nimport { CustomersList } from '../../components/customers/CustomersList';\nimport { Button } from '../../components/ui/button';\nimport Link from 'next/link';\n\nexport default function CustomersPage() {\n  return (\n    <div className=\"space-y-4\">\n      <div className=\"flex justify-between items-center\">\n        <h1 className=\"text-2xl font-bold\">고객 관리</h1>\n        <Link href=\"/customers/new\">\n          <Button>새 고객 추가</Button>\n        </Link>\n      </div>\n      <Suspense fallback={<div>고객 목록 로딩 중...</div>}>\n        <CustomersList />\n      </Suspense>\n    </div>\n  );\n}\n```\n\n2. 고객 상세 페이지(app/customers/[id]/page.tsx):\n```typescript\nimport { notFound } from 'next/navigation';\nimport { getCustomer } from '../../../lib/api/customers';\nimport { CustomerDetail } from '../../../components/customers/CustomerDetail';\n\nexport default async function CustomerPage({ params }: { params: { id: string } }) {\n  try {\n    const customer = await getCustomer(params.id);\n    return <CustomerDetail customer={customer} />;\n  } catch (error) {\n    notFound();\n  }\n}\n```",
+            "status": "pending",
+            "testStrategy": "1. 고객 목록이 올바르게 표시되는지 확인\n2. 페이지네이션이 있는 경우 올바르게 작동하는지 확인\n3. 고객 상세 페이지로 이동하는 링크가 올바르게 작동하는지 확인\n4. 존재하지 않는 고객 ID로 접근 시 404 페이지가 표시되는지 확인\n5. 고객 정보가 로딩 중일 때 로딩 상태가 올바르게 표시되는지 확인"
+          },
+          {
+            "id": 4,
+            "title": "고객 생성/수정 폼 구현",
+            "description": "새 고객을 추가하거나 기존 고객 정보를 수정할 수 있는 폼 컴포넌트를 구현합니다.",
+            "dependencies": [
+              "5.1",
+              "5.2"
+            ],
+            "details": "1. 고객 폼 컴포넌트(components/customers/CustomerForm.tsx):\n```typescript\n'use client';\n\nimport { useState } from 'react';\nimport { useRouter } from 'next/navigation';\nimport { Customer } from '../../types/customer';\nimport { createCustomer, updateCustomer } from '../../lib/api/customers';\nimport { Button } from '../ui/button';\nimport { Input } from '../ui/input';\nimport { Textarea } from '../ui/textarea';\nimport { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';\n\ntype CustomerFormProps = {\n  customer?: Customer;\n  isEditing?: boolean;\n};\n\nexport function CustomerForm({ customer, isEditing = false }: CustomerFormProps) {\n  const router = useRouter();\n  const [formData, setFormData] = useState({\n    name: customer?.name || '',\n    email: customer?.email || '',\n    phone: customer?.phone || '',\n    notes: customer?.notes || '',\n    status: customer?.status || 'active',\n  });\n  const [isSubmitting, setIsSubmitting] = useState(false);\n  const [error, setError] = useState('');\n\n  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {\n    const { name, value } = e.target;\n    setFormData(prev => ({ ...prev, [name]: value }));\n  };\n\n  const handleStatusChange = (value: string) => {\n    setFormData(prev => ({ ...prev, status: value as 'active' | 'inactive' }));\n  };\n\n  const handleSubmit = async (e: React.FormEvent) => {\n    e.preventDefault();\n    setIsSubmitting(true);\n    setError('');\n\n    try {\n      if (isEditing && customer) {\n        await updateCustomer(customer.id, formData);\n      } else {\n        await createCustomer(formData as Omit<Customer, 'id' | 'created_at'>);\n      }\n      router.refresh();\n      router.push('/customers');\n    } catch (err) {\n      setError('고객 정보 저장 중 오류가 발생했습니다.');\n      console.error(err);\n    } finally {\n      setIsSubmitting(false);\n    }\n  };\n\n  return (\n    <form onSubmit={handleSubmit} className=\"space-y-4\">\n      {error && <div className=\"p-3 bg-red-100 text-red-800 rounded\">{error}</div>}\n      \n      <div className=\"space-y-2\">\n        <label htmlFor=\"name\" className=\"block font-medium\">이름 *</label>\n        <Input\n          id=\"name\"\n          name=\"name\"\n          value={formData.name}\n          onChange={handleChange}\n          required\n        />\n      </div>\n      \n      <div className=\"space-y-2\">\n        <label htmlFor=\"email\" className=\"block font-medium\">이메일</label>\n        <Input\n          id=\"email\"\n          name=\"email\"\n          type=\"email\"\n          value={formData.email}\n          onChange={handleChange}\n        />\n      </div>\n      \n      <div className=\"space-y-2\">\n        <label htmlFor=\"phone\" className=\"block font-medium\">전화번호</label>\n        <Input\n          id=\"phone\"\n          name=\"phone\"\n          value={formData.phone}\n          onChange={handleChange}\n        />\n      </div>\n      \n      <div className=\"space-y-2\">\n        <label htmlFor=\"notes\" className=\"block font-medium\">메모</label>\n        <Textarea\n          id=\"notes\"\n          name=\"notes\"\n          value={formData.notes}\n          onChange={handleChange}\n          rows={4}\n        />\n      </div>\n      \n      <div className=\"space-y-2\">\n        <label htmlFor=\"status\" className=\"block font-medium\">상태</label>\n        <Select\n          value={formData.status}\n          onValueChange={handleStatusChange}\n        >\n          <SelectTrigger>\n            <SelectValue placeholder=\"상태 선택\" />\n          </SelectTrigger>\n          <SelectContent>\n            <SelectItem value=\"active\">활성</SelectItem>\n            <SelectItem value=\"inactive\">비활성</SelectItem>\n          </SelectContent>\n        </Select>\n      </div>\n      \n      <div className=\"flex justify-end space-x-2\">\n        <Button\n          type=\"button\"\n          variant=\"outline\"\n          onClick={() => router.back()}\n          disabled={isSubmitting}\n        >\n          취소\n        </Button>\n        <Button type=\"submit\" disabled={isSubmitting}>\n          {isSubmitting ? '저장 중...' : isEditing ? '수정' : '추가'}\n        </Button>\n      </div>\n    </form>\n  );\n}\n```\n\n2. 새 고객 페이지(app/customers/new/page.tsx):\n```typescript\nimport { CustomerForm } from '../../../components/customers/CustomerForm';\n\nexport default function NewCustomerPage() {\n  return (\n    <div className=\"space-y-4\">\n      <h1 className=\"text-2xl font-bold\">새 고객 추가</h1>\n      <CustomerForm />\n    </div>\n  );\n}\n```\n\n3. 고객 수정 페이지(app/customers/[id]/edit/page.tsx):\n```typescript\nimport { notFound } from 'next/navigation';\nimport { getCustomer } from '../../../../lib/api/customers';\nimport { CustomerForm } from '../../../../components/customers/CustomerForm';\n\nexport default async function EditCustomerPage({ params }: { params: { id: string } }) {\n  try {\n    const customer = await getCustomer(params.id);\n    return (\n      <div className=\"space-y-4\">\n        <h1 className=\"text-2xl font-bold\">고객 정보 수정</h1>\n        <CustomerForm customer={customer} isEditing={true} />\n      </div>\n    );\n  } catch (error) {\n    notFound();\n  }\n}\n```",
+            "status": "pending",
+            "testStrategy": "1. 폼 필드의 유효성 검사가 올바르게 작동하는지 확인\n2. 필수 필드를 비워두고 제출 시 적절한 오류 메시지가 표시되는지 확인\n3. 이메일 형식 검증이 올바르게 작동하는지 확인\n4. 수정 모드에서 기존 고객 정보가 폼에 올바르게 로드되는지 확인\n5. 폼 제출 시 API 호출이 올바르게 이루어지는지 확인\n6. 성공 및 오류 상태가 사용자에게 명확하게 표시되는지 확인"
+          },
+          {
+            "id": 5,
+            "title": "고객 삭제 확인 다이얼로그 구현",
+            "description": "고객 정보 삭제 전 사용자에게 확인을 요청하는 다이얼로그를 구현합니다.",
+            "dependencies": [
+              "5.2"
+            ],
+            "details": "1. 삭제 확인 다이얼로그 컴포넌트(components/customers/DeleteCustomerDialog.tsx):\n```typescript\n'use client';\n\nimport { useState } from 'react';\nimport { useRouter } from 'next/navigation';\nimport { deleteCustomer } from '../../lib/api/customers';\nimport {\n  Dialog,\n  DialogContent,\n  DialogDescription,\n  DialogFooter,\n  DialogHeader,\n  DialogTitle,\n  DialogTrigger,\n} from '../ui/dialog';\nimport { Button } from '../ui/button';\n\ntype DeleteCustomerDialogProps = {\n  customerId: string;\n  customerName: string;\n};\n\nexport function DeleteCustomerDialog({ customerId, customerName }: DeleteCustomerDialogProps) {\n  const router = useRouter();\n  const [isOpen, setIsOpen] = useState(false);\n  const [isDeleting, setIsDeleting] = useState(false);\n  const [error, setError] = useState('');\n\n  const handleDelete = async () => {\n    setIsDeleting(true);\n    setError('');\n    \n    try {\n      await deleteCustomer(customerId);\n      setIsOpen(false);\n      router.refresh();\n      router.push('/customers');\n    } catch (err) {\n      setError('고객 삭제 중 오류가 발생했습니다.');\n      console.error(err);\n    } finally {\n      setIsDeleting(false);\n    }\n  };\n\n  return (\n    <Dialog open={isOpen} onOpenChange={setIsOpen}>\n      <DialogTrigger asChild>\n        <Button variant=\"destructive\">삭제</Button>\n      </DialogTrigger>\n      <DialogContent>\n        <DialogHeader>\n          <DialogTitle>고객 삭제 확인</DialogTitle>\n          <DialogDescription>\n            정말로 {customerName} 고객을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.\n          </DialogDescription>\n        </DialogHeader>\n        \n        {error && <div className=\"p-3 bg-red-100 text-red-800 rounded\">{error}</div>}\n        \n        <DialogFooter>\n          <Button\n            variant=\"outline\"\n            onClick={() => setIsOpen(false)}\n            disabled={isDeleting}\n          >\n            취소\n          </Button>\n          <Button\n            variant=\"destructive\"\n            onClick={handleDelete}\n            disabled={isDeleting}\n          >\n            {isDeleting ? '삭제 중...' : '삭제'}\n          </Button>\n        </DialogFooter>\n      </DialogContent>\n    </Dialog>\n  );\n}\n```\n\n2. 고객 상세 컴포넌트에 삭제 버튼 추가(components/customers/CustomerDetail.tsx):\n```typescript\n'use client';\n\nimport { Customer } from '../../types/customer';\nimport { Button } from '../ui/button';\nimport { DeleteCustomerDialog } from './DeleteCustomerDialog';\nimport Link from 'next/link';\n\ntype CustomerDetailProps = {\n  customer: Customer;\n};\n\nexport function CustomerDetail({ customer }: CustomerDetailProps) {\n  return (\n    <div className=\"space-y-6\">\n      <div className=\"flex justify-between items-center\">\n        <h1 className=\"text-2xl font-bold\">{customer.name}</h1>\n        <div className=\"space-x-2\">\n          <Link href={`/customers/${customer.id}/edit`}>\n            <Button variant=\"outline\">수정</Button>\n          </Link>\n          <DeleteCustomerDialog\n            customerId={customer.id}\n            customerName={customer.name}\n          />\n        </div>\n      </div>\n      \n      <div className=\"grid grid-cols-1 md:grid-cols-2 gap-4\">\n        <div>\n          <h2 className=\"text-lg font-semibold mb-2\">기본 정보</h2>\n          <dl className=\"space-y-2\">\n            <div>\n              <dt className=\"text-sm font-medium text-gray-500\">이메일</dt>\n              <dd>{customer.email || '-'}</dd>\n            </div>\n            <div>\n              <dt className=\"text-sm font-medium text-gray-500\">전화번호</dt>\n              <dd>{customer.phone || '-'}</dd>\n            </div>\n            <div>\n              <dt className=\"text-sm font-medium text-gray-500\">상태</dt>\n              <dd>\n                <span className={`inline-block px-2 py-1 text-xs rounded ${customer.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>\n                  {customer.status === 'active' ? '활성' : '비활성'}\n                </span>\n              </dd>\n            </div>\n            <div>\n              <dt className=\"text-sm font-medium text-gray-500\">등록일</dt>\n              <dd>{new Date(customer.created_at).toLocaleDateString()}</dd>\n            </div>\n          </dl>\n        </div>\n        \n        <div>\n          <h2 className=\"text-lg font-semibold mb-2\">메모</h2>\n          <div className=\"p-3 bg-gray-50 rounded min-h-[100px]\">\n            {customer.notes || '메모가 없습니다.'}\n          </div>\n        </div>\n      </div>\n    </div>\n  );\n}\n```",
+            "status": "pending",
+            "testStrategy": "1. 삭제 버튼 클릭 시 확인 다이얼로그가 올바르게 표시되는지 확인\n2. 다이얼로그에서 '취소' 버튼 클릭 시 다이얼로그가 닫히고 삭제가 취소되는지 확인\n3. 다이얼로그에서 '삭제' 버튼 클릭 시 deleteCustomer API가 호출되는지 확인\n4. 삭제 성공 시 고객 목록 페이지로 리디렉션되는지 확인\n5. 삭제 실패 시 적절한 오류 메시지가 표시되는지 확인\n6. 삭제 중 상태가 UI에 올바르게 반영되는지 확인"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "슬롯 관리 기능 구현",
+        "description": "고객별 슬롯을 추가, 조회, 수정, 삭제할 수 있는 기능을 구현합니다.",
+        "details": "1. 슬롯 데이터 타입 정의:\n```typescript\n// types/slot.ts\nexport type Slot = {\n  id: string;\n  customer_id: string;\n  name: string;\n  status: 'active' | 'inactive' | 'pending';\n  data: Record<string, any>;\n  created_at: string;\n};\n```\n\n2. 슬롯 API 함수 구현:\n```typescript\n// lib/api/slots.ts\nimport { supabase } from '../supabase';\nimport { Slot } from '../../types/slot';\n\nexport async function getSlotsByCustomer(customerId: string) {\n  const { data, error } = await supabase\n    .from('slots')\n    .select('*')\n    .eq('customer_id', customerId)\n    .order('created_at', { ascending: false });\n  \n  if (error) throw error;\n  return data as Slot[];\n}\n\nexport async function createSlot(slot: Omit<Slot, 'id' | 'created_at'>) {\n  const { data, error } = await supabase\n    .from('slots')\n    .insert([slot])\n    .select()\n    .single();\n  \n  if (error) throw error;\n  return data as Slot;\n}\n\n// getSlot, updateSlot, deleteSlot 함수 구현\n```\n\n3. 고객 상세 페이지에 슬롯 목록 표시 기능 구현\n4. 슬롯 추가 버튼 및 모달 구현:\n```typescript\n// components/slots/AddSlotButton.tsx\nimport { useState } from 'react';\nimport { Button } from '../ui/button';\nimport { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';\nimport { AddSlotForm } from './AddSlotForm';\n\nexport function AddSlotButton({ customerId }: { customerId: string }) {\n  const [open, setOpen] = useState(false);\n  \n  return (\n    <>\n      <Button onClick={() => setOpen(true)}>슬롯 추가</Button>\n      <Dialog open={open} onOpenChange={setOpen}>\n        <DialogContent>\n          <DialogHeader>\n            <DialogTitle>새 슬롯 추가</DialogTitle>\n          </DialogHeader>\n          <AddSlotForm customerId={customerId} onSuccess={() => setOpen(false)} />\n        </DialogContent>\n      </Dialog>\n    </>\n  );\n}\n```\n\n5. 슬롯 상세 정보 표시 및 수정 기능 구현\n6. 슬롯 상태 관리 기능 구현",
+        "testStrategy": "1. 슬롯 추가 버튼이 UI에 올바르게 표시되는지 확인\n2. 슬롯 추가 시 데이터베이스에 올바르게 저장되는지 확인\n3. 고객별 슬롯 목록이 올바르게 표시되는지 확인\n4. 슬롯 상태 변경이 올바르게 작동하는지 확인\n5. 슬롯 데이터가 올바른 형식으로 저장되는지 확인\n6. 슬롯 삭제 시 관련 데이터가 올바르게 처리되는지 확인",
+        "priority": "high",
+        "dependencies": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "슬롯 API 함수 완성",
+            "description": "getSlot, updateSlot, deleteSlot 함수를 구현하여 슬롯 API 기능을 완성합니다.",
+            "dependencies": [],
+            "details": "lib/api/slots.ts 파일에 다음 함수들을 구현합니다:\n1. getSlot(id: string): 특정 ID의 슬롯을 조회하는 함수\n2. updateSlot(id: string, data: Partial<Omit<Slot, 'id' | 'created_at'>>): 슬롯 정보를 업데이트하는 함수\n3. deleteSlot(id: string): 슬롯을 삭제하는 함수\n\n각 함수는 Supabase 클라이언트를 사용하여 데이터베이스와 통신하고, 적절한 에러 처리를 포함해야 합니다.",
+            "status": "pending",
+            "testStrategy": "1. 각 API 함수가 올바른 Supabase 쿼리를 생성하는지 확인\n2. 성공 및 실패 시나리오에 대한 단위 테스트 작성\n3. 실제 데이터베이스와의 통합 테스트 수행\n4. 에러 처리가 적절히 구현되었는지 확인"
+          },
+          {
+            "id": 2,
+            "title": "슬롯 목록 컴포넌트 구현",
+            "description": "고객별 슬롯 목록을 표시하는 컴포넌트를 구현합니다.",
+            "dependencies": [
+              "6.1"
+            ],
+            "details": "components/slots/SlotsList.tsx 파일을 생성하고 다음 기능을 구현합니다:\n1. 특정 고객의 모든 슬롯을 표시하는 목록 컴포넌트\n2. 각 슬롯의 이름, 상태, 생성일 등 주요 정보 표시\n3. 페이지네이션 또는 무한 스크롤 구현\n4. 슬롯 상태에 따른 시각적 표시(색상 등)\n5. 슬롯 항목 클릭 시 상세 정보 표시 기능",
+            "status": "pending",
+            "testStrategy": "1. 다양한 데이터 세트로 컴포넌트 렌더링 테스트\n2. 빈 데이터, 로딩 상태, 에러 상태 처리 확인\n3. 반응형 디자인 테스트\n4. 사용자 상호작용(클릭, 호버 등) 테스트"
+          },
+          {
+            "id": 3,
+            "title": "슬롯 추가 폼 구현",
+            "description": "새로운 슬롯을 추가하기 위한 폼 컴포넌트를 구현합니다.",
+            "dependencies": [
+              "6.1"
+            ],
+            "details": "components/slots/AddSlotForm.tsx 파일을 생성하고 다음 기능을 구현합니다:\n1. 슬롯 이름, 상태 등 필수 정보 입력 필드\n2. 커스텀 데이터(data 필드)를 위한 동적 폼 필드\n3. 폼 유효성 검사 및 에러 메시지 표시\n4. 제출 시 createSlot API 함수 호출\n5. 성공/실패 상태 처리 및 사용자 피드백\n6. 폼 초기화 및 취소 기능",
+            "status": "pending",
+            "testStrategy": "1. 모든 폼 필드의 유효성 검사 테스트\n2. 제출 프로세스 및 API 호출 테스트\n3. 에러 상태 및 사용자 피드백 테스트\n4. 다양한 입력 시나리오에 대한 테스트"
+          },
+          {
+            "id": 4,
+            "title": "슬롯 상세 및 수정 기능 구현",
+            "description": "슬롯 상세 정보를 표시하고 수정할 수 있는 기능을 구현합니다.",
+            "dependencies": [
+              "6.1",
+              "6.2"
+            ],
+            "details": "components/slots/SlotDetail.tsx 및 EditSlotForm.tsx 파일을 생성하고 다음 기능을 구현합니다:\n1. 슬롯 상세 정보를 모달 또는 별도 페이지로 표시\n2. 슬롯 정보 수정을 위한 폼 구현\n3. 기존 데이터를 폼에 미리 채우기\n4. updateSlot API 함수를 사용한 데이터 업데이트\n5. 수정 성공/실패에 대한 사용자 피드백\n6. 슬롯 삭제 기능 추가",
+            "status": "pending",
+            "testStrategy": "1. 상세 정보 표시 정확성 테스트\n2. 수정 폼의 데이터 바인딩 테스트\n3. 업데이트 및 삭제 기능 테스트\n4. 사용자 인터페이스 사용성 테스트"
+          },
+          {
+            "id": 5,
+            "title": "슬롯 상태 관리 기능 구현",
+            "description": "슬롯의 상태(active, inactive, pending)를 관리하고 변경할 수 있는 기능을 구현합니다.",
+            "dependencies": [
+              "6.1",
+              "6.4"
+            ],
+            "details": "components/slots/SlotStatusControl.tsx 파일을 생성하고 다음 기능을 구현합니다:\n1. 슬롯 상태를 시각적으로 표시하는 컴포넌트\n2. 드롭다운 또는 버튼을 통한 상태 변경 UI\n3. 상태 변경 시 updateSlot API 호출\n4. 상태 변경에 대한 확인 대화상자 구현\n5. 상태별 권한 및 제약 조건 적용\n6. 상태 변경 히스토리 추적(선택적)",
+            "status": "pending",
+            "testStrategy": "1. 상태 표시 및 변경 UI 테스트\n2. 상태 변경 로직 및 API 호출 테스트\n3. 상태 변경 시 사용자 피드백 테스트\n4. 다양한 상태 전환 시나리오 테스트"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "고객-슬롯 통합 인터페이스 구현",
+        "description": "고객 정보와 슬롯 관리를 통합한 사용자 인터페이스를 구현합니다.",
+        "details": "1. 고객 대시보드 페이지 구현:\n```typescript\n// app/dashboard/page.tsx\nimport { Suspense } from 'react';\nimport { CustomersList } from '../../components/customers/CustomersList';\nimport { DashboardStats } from '../../components/dashboard/DashboardStats';\n\nexport default function DashboardPage() {\n  return (\n    <div className=\"space-y-6\">\n      <h1 className=\"text-3xl font-bold\">대시보드</h1>\n      <Suspense fallback={<div>통계 로딩 중...</div>}>\n        <DashboardStats />\n      </Suspense>\n      <h2 className=\"text-2xl font-semibold\">고객 목록</h2>\n      <Suspense fallback={<div>고객 목록 로딩 중...</div>}>\n        <CustomersList />\n      </Suspense>\n    </div>\n  );\n}\n```\n\n2. 고객 상세 페이지에 슬롯 섹션 통합:\n```typescript\n// app/customers/[id]/page.tsx\nimport { Suspense } from 'react';\nimport { CustomerDetails } from '../../../components/customers/CustomerDetails';\nimport { SlotsList } from '../../../components/slots/SlotsList';\nimport { AddSlotButton } from '../../../components/slots/AddSlotButton';\n\nexport default function CustomerPage({ params }: { params: { id: string } }) {\n  return (\n    <div className=\"space-y-6\">\n      <Suspense fallback={<div>고객 정보 로딩 중...</div>}>\n        <CustomerDetails id={params.id} />\n      </Suspense>\n      \n      <div className=\"flex justify-between items-center\">\n        <h2 className=\"text-2xl font-semibold\">슬롯</h2>\n        <AddSlotButton customerId={params.id} />\n      </div>\n      \n      <Suspense fallback={<div>슬롯 목록 로딩 중...</div>}>\n        <SlotsList customerId={params.id} />\n      </Suspense>\n    </div>\n  );\n}\n```\n\n3. 검색 및 필터링 기능 구현\n4. 페이지네이션 구현\n5. 반응형 레이아웃 최적화\n6. 데이터 로딩 상태 및 오류 처리 개선",
+        "testStrategy": "1. 통합 인터페이스가 모든 화면 크기에서 올바르게 작동하는지 확인\n2. 고객과 슬롯 데이터가 올바르게 연결되어 표시되는지 확인\n3. 검색 및 필터링 기능이 예상대로 작동하는지 확인\n4. 페이지네이션이 올바르게 작동하는지 확인\n5. 데이터 로딩 및 오류 상태가 사용자에게 명확하게 표시되는지 확인\n6. 전체 사용자 경험이 직관적이고 효율적인지 확인",
+        "priority": "medium",
+        "dependencies": [
+          5,
+          6
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "검색 및 필터링 기능 구현",
+            "description": "고객 목록과 슬롯 목록에서 검색 및 필터링 기능을 구현합니다.",
+            "dependencies": [],
+            "details": "1. 고객 목록 검색 컴포넌트 구현: 이름, 이메일, 상태 등으로 검색 가능\n2. 슬롯 목록 필터링 컴포넌트 구현: 상태, 이름 등으로 필터링 가능\n3. 서버 컴포넌트에서 검색 파라미터 처리 로직 구현\n4. URL 쿼리 파라미터와 연동하여 상태 유지\n5. 실시간 검색 결과 표시 기능 구현",
+            "status": "pending",
+            "testStrategy": "1. 다양한 검색어로 검색 결과가 정확히 표시되는지 확인\n2. 필터링 옵션이 올바르게 적용되는지 확인\n3. URL 쿼리 파라미터가 올바르게 업데이트되는지 확인\n4. 검색 상태가 페이지 새로고침 후에도 유지되는지 확인"
+          },
+          {
+            "id": 2,
+            "title": "페이지네이션 구현",
+            "description": "고객 목록과 슬롯 목록에 페이지네이션 기능을 구현합니다.",
+            "dependencies": [
+              "7.1"
+            ],
+            "details": "1. 페이지네이션 UI 컴포넌트 구현\n2. 서버 컴포넌트에서 페이지네이션 로직 구현\n3. 페이지 크기 조절 기능 추가\n4. URL 쿼리 파라미터와 연동하여 페이지 상태 유지\n5. 검색 및 필터링과 함께 작동하도록 통합",
+            "status": "pending",
+            "testStrategy": "1. 페이지 이동이 올바르게 작동하는지 확인\n2. 페이지 크기 변경이 올바르게 적용되는지 확인\n3. 검색 및 필터링과 함께 사용 시 정확한 결과가 표시되는지 확인\n4. 페이지 상태가 URL에 올바르게 반영되는지 확인"
+          },
+          {
+            "id": 3,
+            "title": "반응형 레이아웃 최적화",
+            "description": "다양한 화면 크기에서 최적의 사용자 경험을 제공하도록 레이아웃을 최적화합니다.",
+            "dependencies": [],
+            "details": "1. 모바일, 태블릿, 데스크톱 뷰포트에 맞는 반응형 디자인 구현\n2. 테이블 레이아웃의 모바일 최적화 (카드 형태로 변환)\n3. 사이드바 및 네비게이션 메뉴의 반응형 처리\n4. 터치 인터페이스 최적화\n5. 미디어 쿼리 및 Tailwind 반응형 클래스 활용",
+            "status": "pending",
+            "testStrategy": "1. 다양한 화면 크기에서 UI가 올바르게 표시되는지 확인\n2. 모바일 기기에서 사용성 테스트 수행\n3. 브라우저 개발자 도구의 반응형 모드에서 테스트\n4. 실제 모바일 기기에서 테스트"
+          },
+          {
+            "id": 4,
+            "title": "데이터 로딩 상태 및 오류 처리 개선",
+            "description": "사용자 경험을 향상시키기 위한 데이터 로딩 상태 표시 및 오류 처리 메커니즘을 개선합니다.",
+            "dependencies": [],
+            "details": "1. 스켈레톤 로딩 UI 컴포넌트 구현\n2. 오류 메시지 표시 컴포넌트 구현\n3. 재시도 메커니즘 구현\n4. 전역 오류 처리 시스템 구축\n5. 사용자 친화적인 오류 메시지 작성",
+            "status": "pending",
+            "testStrategy": "1. 다양한 네트워크 상태에서 로딩 UI가 올바르게 표시되는지 확인\n2. 다양한 오류 시나리오에서 오류 메시지가 명확하게 표시되는지 확인\n3. 재시도 기능이 올바르게 작동하는지 확인\n4. 오류 발생 시 사용자 경험이 방해받지 않는지 확인"
+          },
+          {
+            "id": 5,
+            "title": "고객-슬롯 연결 인터페이스 개선",
+            "description": "고객과 슬롯 간의 관계를 더 직관적으로 표시하고 관리할 수 있는 인터페이스를 개선합니다.",
+            "dependencies": [
+              "7.1",
+              "7.2",
+              "7.3",
+              "7.4"
+            ],
+            "details": "1. 고객 상세 페이지에서 슬롯 요약 정보 표시 개선\n2. 슬롯 추가/편집 모달에서 고객 정보 참조 기능 추가\n3. 고객별 슬롯 통계 시각화 구현\n4. 드래그 앤 드롭으로 슬롯 순서 변경 기능 구현\n5. 슬롯 상태 변경 시 시각적 피드백 개선",
+            "status": "pending",
+            "testStrategy": "1. 고객-슬롯 관계가 명확하게 표시되는지 확인\n2. 슬롯 관리 작업 흐름이 직관적인지 사용성 테스트\n3. 통계 시각화가 정확한 데이터를 표시하는지 확인\n4. 드래그 앤 드롭 기능이 모든 지원 브라우저에서 작동하는지 확인"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "최적화 및 배포 준비",
+        "description": "애플리케이션 성능을 최적화하고 배포를 위한 준비를 완료합니다.",
+        "details": "1. 코드 최적화:\n   - 불필요한 리렌더링 방지\n   - 메모이제이션 적용 (useMemo, useCallback)\n   - 이미지 최적화\n\n2. 성능 최적화:\n   - 서버 컴포넌트와 클라이언트 컴포넌트 분리 최적화\n   - 데이터 페칭 전략 개선\n   - 번들 크기 최적화\n\n3. SEO 최적화:\n```typescript\n// app/layout.tsx\nexport const metadata = {\n  title: '쿠팡 랭킹 체커 - 고객관리',\n  description: '쿠팡 랭킹 체커 애플리케이션의 고객관리 시스템',\n};\n```\n\n4. 에러 바운더리 구현:\n```typescript\n// components/ErrorBoundary.tsx\n'use client';\n\nimport { useEffect } from 'react';\nimport { Button } from './ui/button';\n\nexport default function ErrorBoundary({\n  error,\n  reset,\n}: {\n  error: Error & { digest?: string };\n  reset: () => void;\n}) {\n  useEffect(() => {\n    // 에러 로깅 서비스에 오류 보고\n    console.error(error);\n  }, [error]);\n\n  return (\n    <div className=\"flex flex-col items-center justify-center min-h-[400px] space-y-4\">\n      <h2 className=\"text-xl font-bold\">문제가 발생했습니다</h2>\n      <p className=\"text-gray-600\">{error.message}</p>\n      <Button onClick={reset}>다시 시도</Button>\n    </div>\n  );\n}\n```\n\n5. 환경별 설정 분리:\n   - 개발, 테스트, 프로덕션 환경 설정\n   - 환경 변수 관리\n\n6. 배포 스크립트 작성:\n   - CI/CD 파이프라인 설정\n   - 배포 자동화",
+        "testStrategy": "1. Lighthouse 성능 점수 측정 및 개선\n2. 로드 시간 및 TTI(Time to Interactive) 측정\n3. 메모리 사용량 및 CPU 사용량 모니터링\n4. 다양한 네트워크 조건에서 테스트\n5. 크로스 브라우저 호환성 테스트\n6. 배포 프로세스 테스트 및 롤백 전략 검증",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "코드 및 성능 최적화 구현",
+            "description": "React 컴포넌트 최적화 및 Next.js 성능 개선 작업 수행",
+            "dependencies": [],
+            "details": "1. 불필요한 리렌더링 방지를 위한 React.memo 적용\n2. useMemo와 useCallback을 사용한 메모이제이션 구현\n3. Next/Image를 활용한 이미지 최적화\n4. 서버 컴포넌트와 클라이언트 컴포넌트 분리 최적화\n5. 데이터 페칭 전략 개선(SWR 또는 React Query 활용)",
+            "status": "pending",
+            "testStrategy": "1. Lighthouse를 사용한 성능 점수 측정(목표: 90점 이상)\n2. Chrome DevTools Performance 탭으로 렌더링 성능 분석\n3. 메모리 누수 검사\n4. 다양한 네트워크 조건에서 로딩 시간 측정"
+          },
+          {
+            "id": 2,
+            "title": "번들 최적화 및 코드 분할",
+            "description": "애플리케이션 번들 크기 최적화 및 효율적인 코드 분할 구현",
+            "dependencies": [
+              "8.1"
+            ],
+            "details": "1. 번들 분석기(webpack-bundle-analyzer) 설정 및 분석\n2. 동적 임포트를 사용한 코드 분할 구현\n3. Tree shaking 최적화\n4. 외부 라이브러리 최적화(필요한 부분만 임포트)\n5. CSS 최적화(사용하지 않는 스타일 제거)",
+            "status": "pending",
+            "testStrategy": "1. 번들 크기 측정 및 기준선 대비 개선 확인\n2. 초기 로드 시간 측정\n3. Time to Interactive(TTI) 측정\n4. 코드 분할이 올바르게 작동하는지 네트워크 탭에서 확인"
+          },
+          {
+            "id": 3,
+            "title": "SEO 및 메타데이터 최적화",
+            "description": "검색 엔진 최적화 및 메타데이터 구현으로 검색 가능성 향상",
+            "dependencies": [],
+            "details": "1. 모든 페이지에 대한 메타데이터 구현\n2. Open Graph 태그 추가\n3. 구조화된 데이터(JSON-LD) 구현\n4. robots.txt 및 sitemap.xml 생성\n5. 페이지별 고유한 title과 description 설정",
+            "status": "pending",
+            "testStrategy": "1. Google Search Console 검증\n2. 메타 태그 검사 도구로 모든 페이지 검증\n3. 모바일 친화성 테스트\n4. 페이지 로드 속도 확인"
+          },
+          {
+            "id": 4,
+            "title": "에러 처리 및 로깅 시스템 구축",
+            "description": "애플리케이션 전반의 에러 처리 전략 및 로깅 시스템 구현",
+            "dependencies": [],
+            "details": "1. 글로벌 에러 바운더리 구현 및 적용\n2. 페이지별/컴포넌트별 에러 바운더리 설정\n3. 서버 에러 처리 미들웨어 구현\n4. 클라이언트 사이드 에러 로깅 시스템 연동(Sentry 등)\n5. 사용자 친화적인 에러 메시지 및 복구 UI 구현",
+            "status": "pending",
+            "testStrategy": "1. 다양한 에러 시나리오 테스트\n2. 에러 발생 시 로깅 시스템 작동 확인\n3. 에러 바운더리가 UI를 보호하는지 확인\n4. 사용자 관점에서 에러 복구 경험 테스트"
+          },
+          {
+            "id": 5,
+            "title": "배포 파이프라인 및 환경 설정",
+            "description": "CI/CD 파이프라인 구축 및 환경별 설정 관리 시스템 구현",
+            "dependencies": [
+              "8.1",
+              "8.2",
+              "8.3",
+              "8.4"
+            ],
+            "details": "1. 개발, 테스트, 프로덕션 환경 설정 분리\n2. 환경 변수 관리 시스템 구축(.env.development, .env.production 등)\n3. GitHub Actions 또는 Vercel을 사용한 CI/CD 파이프라인 구축\n4. 자동화된 테스트 및 빌드 프로세스 설정\n5. 롤백 전략 및 블루/그린 배포 설정",
+            "status": "pending",
+            "testStrategy": "1. 각 환경에서 배포 프로세스 테스트\n2. 환경 변수가 올바르게 로드되는지 확인\n3. 배포 후 자동화된 스모크 테스트 실행\n4. 롤백 프로세스 테스트\n5. 보안 스캔 및 성능 테스트 자동화 확인"
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-08-28T14:57:40.276Z",
+      "updated": "2025-08-28T14:57:40.277Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

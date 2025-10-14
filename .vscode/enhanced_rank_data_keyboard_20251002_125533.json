@@ -1,0 +1,19 @@
+{
+  "keyword": "keyboard",
+  "timestamp": "2025-10-02T12:55:33.365246",
+  "total_products": 1,
+  "products": [
+    {
+      "rank": 1,
+      "product_id": "extracted_1",
+      "title": "<| mousekeyboard (3)",
+      "price": "N/A",
+      "reviews": "3",
+      "timestamp": "2025-10-02T12:55:33.364246",
+      "confidence": 0.8999999999999999
+    }
+  ],
+  "device_id": "ce01160190d0880405",
+  "coupang_package": "com.coupang.mobile",
+  "method": "ADB_OCR"
+}

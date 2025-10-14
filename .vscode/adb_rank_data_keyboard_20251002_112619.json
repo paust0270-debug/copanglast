@@ -1,0 +1,25 @@
+{
+  "keyword": "keyboard",
+  "timestamp": "2025-10-02T11:26:19.121409",
+  "total_products": 2,
+  "products": [
+    {
+      "rank": 1,
+      "product_id": "1234567890",
+      "title": "keyboard 상품 1",
+      "price": "29,900원",
+      "reviews": "1,234",
+      "timestamp": "2025-10-02T11:26:19.121409"
+    },
+    {
+      "rank": 2,
+      "product_id": "1234567891",
+      "title": "keyboard 상품 2",
+      "price": "39,900원",
+      "reviews": "2,345",
+      "timestamp": "2025-10-02T11:26:19.121409"
+    }
+  ],
+  "device_id": "ce01160190d0880405",
+  "coupang_package": "com.coupang.mobile"
+}
