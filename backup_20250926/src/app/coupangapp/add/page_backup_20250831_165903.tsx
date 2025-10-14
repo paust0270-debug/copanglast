@@ -339,6 +339,7 @@ export default function SlotAddPage() {
       // Supabase에 저장할 데이터 준비
       const customerData = {
         name: `_PD_${form.keyword.substring(0, 8)}`,
+        username: `_PD_${form.keyword.substring(0, 8)}`, // username 속성 추가
         keyword: form.keyword,
         link_url: form.linkUrl,
         slot_count: form.slotCount,
