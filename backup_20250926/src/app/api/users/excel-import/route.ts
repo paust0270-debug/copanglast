@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     // 각 행을 순차적으로 처리
     for (let i = 0; i < dataRows.length; i++) {
-      const row = dataRows[i];
+      const row = dataRows[i] as any[];
       const rowNumber = i + 2;
       
       try {
