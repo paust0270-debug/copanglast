@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     const rankFormat = `${current_rank} [0]`; // 기존 포맷 유지
     
     // 이전 순위 추출 (숫자만)
-    const extractRankNumber = (rankStr) => {
+    const extractRankNumber = (rankStr: string) => {
       if (!rankStr) return null;
       const match = rankStr.match(/(\d+)/);
       return match ? parseInt(match[1]) : null;
