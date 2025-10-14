@@ -171,7 +171,18 @@ export async function POST(request: NextRequest) {
         // 2단계: 새 사용자 생성 (ID 자동 생성)
         console.log(`새 사용자 ${cleanUsername} 생성 중...`);
 
-        const profileData: any = {
+        const profileData: {
+          username: string;
+          password: string;
+          name: string;
+          phone: string;
+          status: string;
+          grade?: string;
+          distributor?: string;
+          email?: string;
+          address?: string;
+          registration_date?: string;
+        } = {
           username: cleanUsername,
           password: password,
           name: cleanName,

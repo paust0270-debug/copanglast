@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true, // 빌드 중 TypeScript 오류 무시
   },
+  experimental: {
+    // Turbopack 설정 제거 (Next.js 15에서 문제 발생)
+  },
+  // swcMinify 제거 (Next.js 15에서 더 이상 필요하지 않음)
 };
 
 export default nextConfig;

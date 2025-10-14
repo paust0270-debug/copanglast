@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     
     // 로그인 유지 관련 쿠키 삭제
     cookieStore.delete('rememberMe');

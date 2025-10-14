@@ -1,13 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    // Turbopack을 프로덕션에서 비활성화
-    turbo: false,
-  },
   // Vercel 배포를 위한 설정
   output: 'standalone',
-  // 빌드 최적화
-  swcMinify: true,
   // 이미지 최적화
   images: {
     domains: [],
@@ -42,3 +36,4 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+

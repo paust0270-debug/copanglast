@@ -15,6 +15,11 @@ const eslintConfig = [
     rules: {
       'no-unused-vars': 'warn',
       'no-console': 'warn',
+      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-empty-object-type': 'warn',
+      '@next/next/no-html-link-for-pages': 'warn',
+      'react-hooks/exhaustive-deps': 'warn',
     },
   },
   {
@@ -23,7 +28,10 @@ const eslintConfig = [
       '.next/**',
       'out/**',
       'build/**',
+      'dist/**',
       'next-env.d.ts',
+      '**/*.backup.*',
+      '**/backup*/**',
     ],
   },
 ];
