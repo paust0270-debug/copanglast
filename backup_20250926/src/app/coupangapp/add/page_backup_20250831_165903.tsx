@@ -438,6 +438,7 @@ export default function SlotAddPage() {
       const promises = parsedData.map(async (data) => {
         const customerData = {
           name: `_PD_${data.keyword.substring(0, 8)}`,
+          username: `_PD_${data.keyword.substring(0, 8)}`, // username 속성 추가
           keyword: data.keyword,
           link_url: data.linkUrl,
           slot_count: data.slotCount,
