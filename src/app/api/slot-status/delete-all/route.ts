@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { getTimestampWithoutMs } from '@/lib/utils';
 
 // 고객의 모든 슬롯 전체 삭제 (날짜 정보 보존)
 export async function DELETE(request: NextRequest) {
@@ -51,8 +52,9 @@ export async function DELETE(request: NextRequest) {
       equipment_group: '지정안함',
       status: '작동중',
       memo: '',
-      slot_type: '쿠팡'
-      // usage_days, created_at, updated_at, expiry_date는 보존 (변경하지 않음)
+      slot_type: '쿠팡',
+      updated_at: getTimestampWithoutMs() // 초기화 시 업데이트 시간 갱신
+      // usage_days, created_at, expiry_date는 보존 (변경하지 않음)
     };
 
     console.log('🔄 모든 슬롯 초기화 중 (날짜 정보 보존)...');

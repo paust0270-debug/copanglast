@@ -9,6 +9,8 @@ export async function GET() {
       .select('*')
       .order('created_at', { ascending: false });
 
+    console.log('Customers 데이터:', data?.length || 0, '개');
+
     if (error) {
       console.error('Error fetching customers:', error);
       return NextResponse.json(
@@ -17,7 +19,13 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json(data || []);
+    // distributor_name 매핑 (간단한 방식)
+    const mappedData = (data || []).map(customer => ({
+      ...customer,
+      distributor_name: customer.distributor || '-',
+    }));
+
+    return NextResponse.json(mappedData);
   } catch (error) {
     console.error('Unexpected error:', error);
     return NextResponse.json(

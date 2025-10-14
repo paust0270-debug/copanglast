@@ -1,4 +1,5 @@
 import { createClient as _createClient } from '@supabase/supabase-js';
+import { getTimestampWithoutMs } from './utils';
 
 const supabaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co';
@@ -400,7 +401,7 @@ export async function updateSlotStatus(
 ) {
   const { data, error } = await supabase
     .from('slots')
-    .update({ status, updated_at: new Date().toISOString() })
+    .update({ status, updated_at: getTimestampWithoutMs() })
     .eq('id', slotId)
     .select();
 
@@ -415,7 +416,7 @@ export async function updateSlotsStatusByCustomerId(
 ) {
   const { data, error } = await supabase
     .from('slots')
-    .update({ status, updated_at: new Date().toISOString() })
+    .update({ status, updated_at: getTimestampWithoutMs() })
     .eq('customer_id', customerId)
     .select();
 

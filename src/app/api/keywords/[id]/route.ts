@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { getTimestampWithoutMs } from '@/lib/utils';
 
 // 키워드 수정
 export async function PUT(
@@ -29,7 +30,7 @@ export async function PUT(
         link_url,
         slot_count: slot_count || 1,
         current_rank: current_rank || null,
-        updated_at: new Date().toISOString()
+        updated_at: getTimestampWithoutMs()
       })
       .eq('id', keywordId)
       .select()

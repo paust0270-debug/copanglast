@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getTimestampWithoutMs } from '@/lib/utils';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
       .update({
         current_rank: rankFormat,
         start_rank: isFirstCheck ? rankFormat : slotStatus.start_rank,
-        updated_at: new Date().toISOString()
+        updated_at: getTimestampWithoutMs()
       })
       .eq('customer_id', keywordData.customer_id)
       .eq('slot_sequence', keywordData.slot_sequence);

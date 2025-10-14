@@ -42,7 +42,9 @@ export function CustomerPageContent() {
   const [isExcelImportModalOpen, setIsExcelImportModalOpen] = useState(false);
   const [excelImportFile, setExcelImportFile] = useState<File | null>(null);
   const [excelImportLoading, setExcelImportLoading] = useState(false);
-  const [selectedCustomers, setSelectedCustomers] = useState<Set<string>>(new Set());
+  const [selectedCustomers, setSelectedCustomers] = useState<Set<string>>(
+    new Set()
+  );
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [distributors, setDistributors] = useState<Distributor[]>([]);
 
@@ -51,12 +53,12 @@ export function CustomerPageContent() {
     try {
       setLoading(true);
       console.log('고객 목록 조회 시작...');
-      
+
       const response = await fetch('/api/users');
       const result = await response.json();
-      
+
       console.log('API 응답:', result);
-      
+
       if (response.ok) {
         setCustomers(result.users || []);
         console.log('고객 목록 조회 성공:', result.users?.length || 0, '명');
@@ -66,7 +68,9 @@ export function CustomerPageContent() {
       }
     } catch (error) {
       console.error('고객 목록 조회 오류:', error);
-      alert('고객 목록을 가져오는 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.');
+      alert(
+        '고객 목록을 가져오는 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.'
+      );
     } finally {
       setLoading(false);
     }
@@ -125,7 +129,7 @@ export function CustomerPageContent() {
       kakaoId: customer.kakaoId,
       memo: customer.memo,
       grade: customer.grade,
-      distributor: customer.distributor
+      distributor: customer.distributor,
     });
     setEditPasswordConfirm('');
     setIsEditModalOpen(true);
@@ -162,7 +166,12 @@ export function CustomerPageContent() {
     }
 
     // 필수 필드 검증
-    if (!editForm.username || !editForm.name || !editForm.grade || !editForm.distributor) {
+    if (
+      !editForm.username ||
+      !editForm.name ||
+      !editForm.grade ||
+      !editForm.distributor
+    ) {
       alert('아이디, 고객명, 등급, 소속총판은 필수 입력 항목입니다.');
       return;
     }
@@ -176,7 +185,16 @@ export function CustomerPageContent() {
     }
 
     try {
-      const updateData: any = {
+      const updateData: {
+        username: string;
+        name: string;
+        email: string;
+        phone: string;
+        kakaoId: string;
+        distributor: string;
+        workGroup: string;
+        memo: string;
+      } = {
         username: editForm.username,
         name: editForm.name,
         email: editForm.email,
@@ -184,7 +202,7 @@ export function CustomerPageContent() {
         kakaoId: editForm.kakaoId,
         memo: editForm.memo,
         grade: editForm.grade,
-        distributor: editForm.distributor
+        distributor: editForm.distributor,
       };
 
       // 비밀번호가 변경된 경우에만 포함 (빈 문자열이 아닌 경우)
@@ -206,16 +224,16 @@ export function CustomerPageContent() {
       if (response.ok) {
         const result = await response.json();
         console.log('✅ 수정 성공:', result);
-        
+
         // 성공 메시지 표시
         alert('고객 정보가 수정되었습니다.');
-        
+
         // 모달 닫기
         setIsEditModalOpen(false);
         setEditingCustomer(null);
         setEditForm({});
         setEditPasswordConfirm('');
-        
+
         // 서버에서 최신 데이터 다시 불러오기
         fetchCustomers();
       } else {
@@ -248,8 +266,9 @@ export function CustomerPageContent() {
     }
 
     // 최고관리자 또는 관리자 권한 체크
-    const isAdmin = currentUser.grade === '최고관리자' || currentUser.grade === '관리자';
-    
+    const isAdmin =
+      currentUser.grade === '최고관리자' || currentUser.grade === '관리자';
+
     if (!isAdmin) {
       alert('관리자만 회원 상태를 변경할 수 있습니다.');
       return;
@@ -261,21 +280,23 @@ export function CustomerPageContent() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           status,
           processor: currentUser.name, // 실제 로그인된 관리자 이름
-          approved_at: status === 'active' ? new Date().toISOString() : null
+          approved_at: status === 'active' ? new Date().toISOString() : null,
         }),
       });
 
       if (response.ok) {
         const result = await response.json();
         console.log('✅ 상태 변경 성공:', result);
-        
+
         // 서버에서 최신 데이터 다시 불러오기
         fetchCustomers();
-        
-        alert(`회원 상태가 ${status === 'active' ? '승인' : status === 'rejected' ? '거부' : '대기'}로 변경되었습니다.`);
+
+        alert(
+          `회원 상태가 ${status === 'active' ? '승인' : status === 'rejected' ? '거부' : '대기'}로 변경되었습니다.`
+        );
       } else {
         const result = await response.json();
         alert(result.error || '상태 변경에 실패했습니다.');
@@ -299,10 +320,10 @@ export function CustomerPageContent() {
       if (response.ok) {
         const result = await response.json();
         console.log('✅ 등급 변경 성공:', result);
-        
+
         // 서버에서 최신 데이터 다시 불러오기
         fetchCustomers();
-        
+
         alert('등급이 변경되었습니다.');
       } else {
         const result = await response.json();
@@ -315,11 +336,15 @@ export function CustomerPageContent() {
   };
 
   const handleAddSlot = (customer: Customer) => {
-    router.push(`/slot-add?customerId=${customer.id}&username=${encodeURIComponent(customer.username)}&name=${encodeURIComponent(customer.name)}`);
+    router.push(
+      `/slot-add?customerId=${customer.id}&username=${encodeURIComponent(customer.username)}&name=${encodeURIComponent(customer.name)}`
+    );
   };
 
   const handleSlotStatus = (customer: Customer) => {
-    router.push(`/slot-status?customerId=${customer.id}&username=${encodeURIComponent(customer.username)}&name=${encodeURIComponent(customer.name)}`);
+    router.push(
+      `/slot-status?customerId=${customer.id}&username=${encodeURIComponent(customer.username)}&name=${encodeURIComponent(customer.name)}`
+    );
   };
 
   const getStatusButtonClass = (customerStatus: string, buttonType: string) => {
@@ -341,34 +366,82 @@ export function CustomerPageContent() {
     try {
       // 동적으로 xlsx 라이브러리 import
       const XLSX = await import('xlsx');
-      
+
       // 예시 데이터 생성
       const templateData = [
-        ['순번', '소속총판', '아이디', '고객명', '전화번호', '가입일', '슬롯수'],
-        [1, '총판아디', 'cosmos', '안혜진', '010-1234-5678', '2025-09-01 9:38', 1],
-        [2, '총판아디', 'pprcomme', '이정호', '010-2345-6789', '2025-09-01 9:38', 1],
-        [3, '총판아디', 'donmany8', '김은미', '010-3456-7890', '2025-09-01 9:38', 1],
-        [4, '총판아디', 'tnsgh0', '권순호', '010-4567-8901', '2025-09-01 9:38', 1],
-        [5, '총판아디', 'euni', '김은호', '010-5678-9012', '2025-09-01 9:38', 1],
+        [
+          '순번',
+          '소속총판',
+          '아이디',
+          '고객명',
+          '전화번호',
+          '가입일',
+          '슬롯수',
+        ],
+        [
+          1,
+          '총판아디',
+          'cosmos',
+          '안혜진',
+          '010-1234-5678',
+          '2025-09-01 9:38',
+          1,
+        ],
+        [
+          2,
+          '총판아디',
+          'pprcomme',
+          '이정호',
+          '010-2345-6789',
+          '2025-09-01 9:38',
+          1,
+        ],
+        [
+          3,
+          '총판아디',
+          'donmany8',
+          '김은미',
+          '010-3456-7890',
+          '2025-09-01 9:38',
+          1,
+        ],
+        [
+          4,
+          '총판아디',
+          'tnsgh0',
+          '권순호',
+          '010-4567-8901',
+          '2025-09-01 9:38',
+          1,
+        ],
+        [
+          5,
+          '총판아디',
+          'euni',
+          '김은호',
+          '010-5678-9012',
+          '2025-09-01 9:38',
+          1,
+        ],
         ['', '', '', '', '', '', ''],
         ['', '', '', '', '', '', ''],
         ['', '', '', '', '', '', ''],
-        ['', '', '', '', '', '', '']
+        ['', '', '', '', '', '', ''],
       ];
 
       // 워크북 생성
       const workbook = XLSX.utils.book_new();
       const worksheet = XLSX.utils.aoa_to_sheet(templateData);
-      
+
       // 컬럼 너비 설정
       const colWidths = [
-        { wch: 5 },   // No
-        { wch: 12 },  // 소속총판
-        { wch: 20 },  // 아이디
-        { wch: 10 },  // 고객명
-        { wch: 15 },  // 전화번호
-        { wch: 20 },  // 가입일
-        { wch: 8 }    // 슬롯수
+        { wch: 5 }, // No
+        { wch: 12 }, // 소속총판
+        { wch: 20 }, // 아이디
+        { wch: 10 }, // 고객명
+        { wch: 15 }, // 전화번호
+        { wch: 20 }, // 가입일
+        { wch: 8 }, // 슬롯수
       ];
       worksheet['!cols'] = colWidths;
 
@@ -376,9 +449,14 @@ export function CustomerPageContent() {
       XLSX.utils.book_append_sheet(workbook, worksheet, '고객목록');
 
       // 엑셀 파일 생성 및 다운로드
-      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      
+      const excelBuffer = XLSX.write(workbook, {
+        bookType: 'xlsx',
+        type: 'array',
+      });
+      const blob = new Blob([excelBuffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       link.setAttribute('href', url);
@@ -387,17 +465,18 @@ export function CustomerPageContent() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       // 메모리 정리
       URL.revokeObjectURL(url);
-      
     } catch (error) {
       console.error('양식 다운로드 오류:', error);
       alert('양식 다운로드 중 오류가 발생했습니다.');
     }
   };
 
-  const handleExcelFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExcelFileUpload = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (file) {
       setExcelImportFile(file);
@@ -412,7 +491,7 @@ export function CustomerPageContent() {
 
     try {
       setExcelImportLoading(true);
-      
+
       // FormData로 파일 전송
       const formData = new FormData();
       formData.append('file', excelImportFile);
@@ -481,12 +560,14 @@ export function CustomerPageContent() {
     }
 
     try {
-      const deletePromises = Array.from(selectedCustomers).map(async (customerId) => {
-        const response = await fetch(`/api/users/${customerId}`, {
-          method: 'DELETE',
-        });
-        return { customerId, success: response.ok };
-      });
+      const deletePromises = Array.from(selectedCustomers).map(
+        async customerId => {
+          const response = await fetch(`/api/users/${customerId}`, {
+            method: 'DELETE',
+          });
+          return { customerId, success: response.ok };
+        }
+      );
 
       const results = await Promise.all(deletePromises);
       const successCount = results.filter(r => r.success).length;
@@ -538,7 +619,7 @@ export function CustomerPageContent() {
             )}
           </div>
           <div className="flex space-x-2">
-            <Button 
+            <Button
               onClick={handleExcelImport}
               variant="outline"
               className="text-blue-600 border-blue-300 hover:bg-blue-50"
@@ -546,7 +627,7 @@ export function CustomerPageContent() {
               대량등록
             </Button>
             {selectedCustomers.size > 0 && (
-              <Button 
+              <Button
                 onClick={handleBulkDelete}
                 variant="outline"
                 className="text-red-600 border-red-300 hover:bg-red-50"
@@ -554,7 +635,7 @@ export function CustomerPageContent() {
                 선택삭제 ({selectedCustomers.size})
               </Button>
             )}
-            <Button 
+            <Button
               onClick={handleSignupClick}
               className="bg-black hover:bg-gray-800 text-white px-6 py-2"
             >
@@ -568,13 +649,22 @@ export function CustomerPageContent() {
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                <svg
+                  className="h-5 w-5 text-yellow-400"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </div>
               <div className="ml-3">
                 <p className="text-sm text-yellow-800">
-                  <strong>승인 대기 중인 고객이 있습니다.</strong> 승인, 대기, 거부 버튼을 클릭하여 상태를 변경해주세요.
+                  <strong>승인 대기 중인 고객이 있습니다.</strong> 승인, 대기,
+                  거부 버튼을 클릭하여 상태를 변경해주세요.
                 </p>
               </div>
             </div>
@@ -586,13 +676,22 @@ export function CustomerPageContent() {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                <svg
+                  className="h-5 w-5 text-blue-400"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </div>
               <div className="ml-3">
                 <p className="text-sm text-blue-800">
-                  <strong>등록된 고객이 없습니다.</strong> 회원가입 버튼을 클릭하여 첫 번째 고객을 등록해보세요.
+                  <strong>등록된 고객이 없습니다.</strong> 회원가입 버튼을
+                  클릭하여 첫 번째 고객을 등록해보세요.
                 </p>
               </div>
             </div>
@@ -613,33 +712,65 @@ export function CustomerPageContent() {
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">순번</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">소속총판</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">아이디</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">비밀번호</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">고객명</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">등급</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">휴대폰/카톡</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">메모</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">가입일/승인처리일</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">슬롯수</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">추가횟수</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">슬롯관리</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    순번
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    소속총판
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    아이디
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    비밀번호
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    고객명
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    등급
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    휴대폰/카톡
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    메모
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    가입일/승인처리일
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    상태
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    슬롯수
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    추가횟수
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    슬롯관리
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {customers.length === 0 ? (
                   <tr>
-                    <td colSpan={15} className="px-6 py-4 text-center text-gray-500">
+                    <td
+                      colSpan={15}
+                      className="px-6 py-4 text-center text-gray-500"
+                    >
                       등록된 고객이 없습니다.
                     </td>
                   </tr>
                 ) : (
                   customers.map((customer, index) => (
-                    <tr key={customer.id} className={`hover:bg-gray-50 ${
-                      customer.status === 'pending' ? 'bg-yellow-50' : ''
-                    } ${selectedCustomers.has(customer.id) ? 'bg-blue-50' : ''}`}>
+                    <tr
+                      key={customer.id}
+                      className={`hover:bg-gray-50 ${
+                        customer.status === 'pending' ? 'bg-yellow-50' : ''
+                      } ${selectedCustomers.has(customer.id) ? 'bg-blue-50' : ''}`}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <input
                           type="checkbox"
@@ -648,15 +779,29 @@ export function CustomerPageContent() {
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{index + 1}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{customer.distributor || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{customer.username}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{customer.password || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{customer.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {index + 1}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {customer.distributor_name ||
+                          customer.distributor ||
+                          '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {customer.username}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {customer.password || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {customer.name}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <select
                           value={customer.grade}
-                          onChange={(e) => handleGradeChange(customer.id, e.target.value)}
+                          onChange={e =>
+                            handleGradeChange(customer.id, e.target.value)
+                          }
                           className="border-0 bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
                         >
                           <option value="일반회원">일반회원</option>
@@ -667,43 +812,61 @@ export function CustomerPageContent() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div>
                           <div>{customer.phone || '-'}</div>
-                          <div className="text-xs text-gray-500">{customer.kakaoId || '-'}</div>
+                          <div className="text-xs text-gray-500">
+                            {customer.kakaoId || '-'}
+                          </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{customer.memo || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {customer.memo || '-'}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div>
                           <div>{formatDate(customer.created_at)}</div>
-                          <div className="text-xs text-gray-500">{customer.approved_at ? formatDate(customer.approved_at) : '-'}</div>
+                          <div className="text-xs text-gray-500">
+                            {customer.approved_at
+                              ? formatDate(customer.approved_at)
+                              : '-'}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div className="flex space-x-1">
                           <Button
                             size="sm"
-                            onClick={() => handleStatusChange(customer.id, 'active')}
+                            onClick={() =>
+                              handleStatusChange(customer.id, 'active')
+                            }
                             className={`px-3 py-1 text-xs ${getStatusButtonClass(customer.status, 'active')}`}
                           >
                             승인
                           </Button>
                           <Button
                             size="sm"
-                            onClick={() => handleStatusChange(customer.id, 'pending')}
+                            onClick={() =>
+                              handleStatusChange(customer.id, 'pending')
+                            }
                             className={`px-3 py-1 text-xs ${getStatusButtonClass(customer.status, 'pending')}`}
                           >
                             대기
                           </Button>
                           <Button
                             size="sm"
-                            onClick={() => handleStatusChange(customer.id, 'rejected')}
+                            onClick={() =>
+                              handleStatusChange(customer.id, 'rejected')
+                            }
                             className={`px-3 py-1 text-xs ${getStatusButtonClass(customer.status, 'rejected')}`}
                           >
                             거부
                           </Button>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{customer.slot_used}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{customer.additional_count}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {customer.slot_used}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {customer.additional_count}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div className="flex space-x-2">
                           <Button
@@ -759,7 +922,9 @@ export function CustomerPageContent() {
                   <Input
                     id="edit-username"
                     value={editForm.username || ''}
-                    onChange={(e) => handleInputChange('username', e.target.value)}
+                    onChange={e =>
+                      handleInputChange('username', e.target.value)
+                    }
                     className="mt-1"
                     required
                   />
@@ -770,7 +935,9 @@ export function CustomerPageContent() {
                     id="edit-password"
                     type="password"
                     value={editForm.password || ''}
-                    onChange={(e) => handleInputChange('password', e.target.value)}
+                    onChange={e =>
+                      handleInputChange('password', e.target.value)
+                    }
                     className="mt-1"
                     placeholder="변경시에만 입력"
                   />
@@ -781,7 +948,7 @@ export function CustomerPageContent() {
                     id="edit-password-confirm"
                     type="password"
                     value={editPasswordConfirm}
-                    onChange={(e) => setEditPasswordConfirm(e.target.value)}
+                    onChange={e => setEditPasswordConfirm(e.target.value)}
                     className="mt-1"
                     placeholder="비밀번호 변경시에만 입력"
                   />
@@ -791,7 +958,7 @@ export function CustomerPageContent() {
                   <Input
                     id="edit-name"
                     value={editForm.name || ''}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    onChange={e => handleInputChange('name', e.target.value)}
                     className="mt-1"
                     required
                   />
@@ -802,7 +969,7 @@ export function CustomerPageContent() {
                     id="edit-email"
                     type="email"
                     value={editForm.email || ''}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    onChange={e => handleInputChange('email', e.target.value)}
                     className="mt-1"
                   />
                 </div>
@@ -811,7 +978,7 @@ export function CustomerPageContent() {
                   <Input
                     id="edit-phone"
                     value={editForm.phone || ''}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    onChange={e => handleInputChange('phone', e.target.value)}
                     className="mt-1"
                   />
                 </div>
@@ -820,7 +987,7 @@ export function CustomerPageContent() {
                   <Input
                     id="edit-kakaoId"
                     value={editForm.kakaoId || ''}
-                    onChange={(e) => handleInputChange('kakaoId', e.target.value)}
+                    onChange={e => handleInputChange('kakaoId', e.target.value)}
                     className="mt-1"
                   />
                 </div>
@@ -829,7 +996,7 @@ export function CustomerPageContent() {
                   <select
                     id="edit-grade"
                     value={editForm.grade || ''}
-                    onChange={(e) => handleInputChange('grade', e.target.value)}
+                    onChange={e => handleInputChange('grade', e.target.value)}
                     className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   >
@@ -843,12 +1010,14 @@ export function CustomerPageContent() {
                   <select
                     id="edit-distributor"
                     value={editForm.distributor || ''}
-                    onChange={(e) => handleInputChange('distributor', e.target.value)}
+                    onChange={e =>
+                      handleInputChange('distributor', e.target.value)
+                    }
                     className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   >
                     <option value="">소속총판을 선택하세요</option>
-                    {distributors.map((distributor) => (
+                    {distributors.map(distributor => (
                       <option key={distributor.id} value={distributor.name}>
                         {distributor.name}
                       </option>
@@ -860,7 +1029,7 @@ export function CustomerPageContent() {
                   <Textarea
                     id="edit-memo"
                     value={editForm.memo || ''}
-                    onChange={(e) => handleInputChange('memo', e.target.value)}
+                    onChange={e => handleInputChange('memo', e.target.value)}
                     className="mt-1"
                     rows={3}
                   />
@@ -887,9 +1056,9 @@ export function CustomerPageContent() {
 
         {/* 엑셀 대량 등록 모달 */}
         {isExcelImportModalOpen && (
-          <div 
+          <div
             className="fixed inset-0 flex items-center justify-center z-50"
-            onClick={(e) => {
+            onClick={e => {
               if (e.target === e.currentTarget) {
                 setIsExcelImportModalOpen(false);
                 setExcelImportFile(null);
@@ -901,7 +1070,9 @@ export function CustomerPageContent() {
               <div className="space-y-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-medium text-blue-900">엑셀 파일 양식</h4>
+                    <h4 className="font-medium text-blue-900">
+                      엑셀 파일 양식
+                    </h4>
                     <Button
                       onClick={handleDownloadTemplate}
                       variant="outline"
@@ -912,8 +1083,13 @@ export function CustomerPageContent() {
                     </Button>
                   </div>
                   <div className="text-sm text-blue-800 space-y-2">
-                    <p><strong>컬럼 순서:</strong> 순번, 소속총판, 아이디, 고객명, 전화번호, 가입일, 슬롯수</p>
-                    <p><strong>주의사항:</strong></p>
+                    <p>
+                      <strong>컬럼 순서:</strong> 순번, 소속총판, 아이디,
+                      고객명, 전화번호, 가입일, 슬롯수
+                    </p>
+                    <p>
+                      <strong>주의사항:</strong>
+                    </p>
                     <ul className="list-disc list-inside space-y-1 text-xs">
                       <li>첫 번째 행은 반드시 헤더여야 합니다</li>
                       <li>아이디와 고객명은 필수 입력 항목입니다</li>
@@ -921,11 +1097,15 @@ export function CustomerPageContent() {
                       <li>가입일 형식: YYYY-MM-DD HH:mm:ss 또는 YYYY-MM-DD</li>
                       <li>슬롯수는 숫자로 입력해주세요</li>
                     </ul>
-                    <p><strong>예시:</strong></p>
+                    <p>
+                      <strong>예시:</strong>
+                    </p>
                     <div className="bg-white p-2 rounded border text-xs font-mono">
-                      순번	소속총판	아이디	고객명	전화번호	가입일	슬롯수<br/>
-                      1	총판아디	cosmos	안혜진	010-1234-5678	2025-09-01 9:38	1<br/>
-                      2	총판아디	pprcomme	이정호	010-2345-6789	2025-09-01 9:38	1
+                      순번 소속총판 아이디 고객명 전화번호 가입일 슬롯수
+                      <br />
+                      1 총판아디 cosmos 안혜진 010-1234-5678 2025-09-01 9:38 1
+                      <br />2 총판아디 pprcomme 이정호 010-2345-6789 2025-09-01
+                      9:38 1
                     </div>
                   </div>
                 </div>

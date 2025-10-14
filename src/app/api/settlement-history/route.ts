@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     });
 
     // 먼저 settlement_history 테이블이 존재하는지 확인
-    const { data: tableCheck, error: tableError } = await supabase
+    const { error: tableError } = await supabase
       .from('settlement_history')
       .select('id')
       .limit(1);
@@ -175,37 +175,58 @@ export async function GET(request: NextRequest) {
       console.log('첫 번째 정산내역 데이터:', data[0]);
     }
 
-    // 필드명 변환: 표준화된 필드명으로 변환
-    const transformedData = (data || []).map(item => ({
-      id: item.id,
-      sequential_number: item.sequential_number || 1,
-      category:
-        item.category ||
-        (item.payment_type === 'extension'
-          ? '연장'
-          : item.payment_type === 'deposit'
-            ? '입금'
-            : '일반'),
-      distributor_name: item.distributor_name || '총판A',
-      customer_id: item.customer_id,
-      customer_name: item.customer_name || item.customer_id,
-      slot_addition_date: item.slot_addition_date
-        ? item.slot_addition_date.split('T')[0]
-        : item.created_at
-          ? item.created_at.split('T')[0]
-          : new Date().toISOString().split('T')[0],
-      slot_type: item.slot_type,
-      slot_count: item.slot_count || 1,
-      payer_name: item.payer_name || '',
-      payment_amount: item.payment_amount || 0,
-      usage_days: item.usage_days || 0,
-      memo: item.memo || '',
-      status: item.status,
-      payment_type: item.payment_type,
-      created_at: item.created_at,
-      completed_at: item.completed_at,
-      settlement_batch_id: item.settlement_batch_id,
-    }));
+    // 각 settlement에 대해 user_profiles에서 distributor 정보 조회
+    const transformedData = [];
+    for (const item of data || []) {
+      let distributorName = '-';
+
+      if (item.customer_id) {
+        try {
+          // user_profiles 테이블에서 username으로 distributor 정보 조회
+          const { data: userProfile } = await supabase
+            .from('user_profiles')
+            .select('distributor')
+            .eq('username', item.customer_id)
+            .single();
+
+          distributorName = userProfile?.distributor || '-';
+          console.log(`고객 ${item.customer_id}의 총판: ${distributorName}`);
+        } catch (userError) {
+          console.warn('사용자 정보 조회 실패:', item.customer_id, userError);
+        }
+      }
+
+      transformedData.push({
+        id: item.id,
+        sequential_number: item.sequential_number || 1,
+        category:
+          item.category ||
+          (item.payment_type === 'extension'
+            ? '연장'
+            : item.payment_type === 'deposit'
+              ? '입금'
+              : '일반'),
+        distributor_name: distributorName, // user_profiles에서 가져온 실제 총판명
+        customer_id: item.customer_id,
+        customer_name: item.customer_name || item.customer_id,
+        slot_addition_date: item.slot_addition_date
+          ? item.slot_addition_date.split('T')[0]
+          : item.created_at
+            ? item.created_at.split('T')[0]
+            : new Date().toISOString().split('T')[0],
+        slot_type: item.slot_type,
+        slot_count: item.slot_count || 1,
+        payer_name: item.payer_name || '',
+        payment_amount: item.payment_amount || 0,
+        usage_days: item.usage_days || 0,
+        memo: item.memo || '',
+        status: item.status,
+        payment_type: item.payment_type,
+        created_at: item.created_at,
+        completed_at: item.completed_at,
+        settlement_batch_id: item.settlement_batch_id,
+      });
+    }
 
     return NextResponse.json({
       success: true,

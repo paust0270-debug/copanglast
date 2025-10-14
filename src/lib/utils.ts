@@ -53,3 +53,67 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
     timeout = setTimeout(() => func(...args), wait);
   };
 }
+
+// 밀리초를 제거한 타임스탬프 생성 함수 (created_at과 동일한 형태)
+export function getTimestampWithoutMs(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+// 한국 시간(KST) 기준으로 잔여기간 계산 (시간대 차이 해결)
+export function calculateRemainingTimeKST(createdAt: string, usageDays: number): {
+  days: number;
+  hours: number;
+  minutes: number;
+  string: string;
+} {
+  // 현재 시간 (한국 시간 기준)
+  const now = new Date();
+  
+  // created_at을 로컬 시간으로 해석 (DB에 한국시간으로 저장되어 있음)
+  const createdDate = new Date(createdAt);
+  
+  // 만료일 계산 (created_at + usage_days, 72시간 방식)
+  // 예: 3일이면 등록일부터 72시간 후 만료
+  const expiryDate = new Date(
+    createdDate.getTime() + usageDays * 24 * 60 * 60 * 1000
+  );
+  
+  // 잔여 시간 계산 (밀리초)
+  const remainingMs = Math.max(0, expiryDate.getTime() - now.getTime());
+  
+  // 잔여 시간을 일, 시간, 분으로 변환
+  const days = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
+  const hours = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+  const minutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+  
+  // 잔여기간 문자열 생성 - 정확한 카운팅
+  let remainingTimeString = '';
+  if (remainingMs > 0) {
+    if (days > 0) {
+      remainingTimeString += `${days}일`;
+    }
+    if (hours > 0) {
+      remainingTimeString += (remainingTimeString ? ' ' : '') + `${hours}시간`;
+    }
+    if (minutes > 0) {
+      remainingTimeString += (remainingTimeString ? ' ' : '') + `${minutes}분`;
+    }
+  } else {
+    remainingTimeString = '만료됨';
+  }
+  
+  return {
+    days,
+    hours,
+    minutes,
+    string: remainingTimeString || '0분'
+  };
+}

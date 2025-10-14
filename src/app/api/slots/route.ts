@@ -4,7 +4,9 @@ import { supabase } from '@/lib/supabase';
 // Supabase 연결 확인
 if (!supabase) {
   console.error('❌ Supabase 클라이언트 초기화 실패');
-  throw new Error('Supabase 클라이언트가 초기화되지 않았습니다. 환경 변수를 확인하세요.');
+  throw new Error(
+    'Supabase 클라이언트가 초기화되지 않았습니다. 환경 변수를 확인하세요.'
+  );
 }
 
 // 슬롯 목록 조회
@@ -18,7 +20,9 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('slots')
-      .select('id, customer_id, customer_name, slot_type, slot_count, payment_type, payer_name, payment_amount, payment_date, usage_days, memo, status, created_at, updated_at, work_group, keyword, link_url, equipment_group')
+      .select(
+        'id, customer_id, customer_name, slot_type, slot_count, payment_type, payer_name, payment_amount, payment_date, usage_days, memo, status, created_at, updated_at, work_group, keyword, link_url, equipment_group'
+      )
       .order('created_at', { ascending: false });
 
     if (customerId) {
@@ -48,15 +52,14 @@ export async function GET(request: NextRequest) {
         customer_id: slot.customer_id,
         slot_type: slot.slot_type,
         slot_count: slot.slot_count,
-        status: slot.status
-      }))
+        status: slot.status,
+      })),
     });
 
     return NextResponse.json({
       success: true,
-      data: slots
+      data: slots,
     });
-
   } catch (error) {
     console.error('슬롯 목록 조회 API 예외 발생:', error);
     return NextResponse.json(
@@ -82,7 +85,7 @@ export async function POST(request: NextRequest) {
       paymentAmount,
       paymentDate,
       usageDays,
-      memo
+      memo,
     } = body;
 
     // 필수 필드 검증
@@ -98,8 +101,10 @@ export async function POST(request: NextRequest) {
     // 슬롯 데이터 생성 (현재 시간 기준)
     const now = new Date();
     const usageDaysValue = usageDays ? parseInt(usageDays) : 0;
-    const expiryDate = new Date(now.getTime() + usageDaysValue * 24 * 60 * 60 * 1000);
-    
+    const expiryDate = new Date(
+      now.getTime() + usageDaysValue * 24 * 60 * 60 * 1000
+    );
+
     // 현재 시간을 로컬 시간으로 포맷팅 (slots 테이블과 동일한 형식)
     const formatLocalDate = (date: Date) => {
       const year = date.getFullYear();
@@ -122,7 +127,7 @@ export async function POST(request: NextRequest) {
       const seconds = String(date.getSeconds()).padStart(2, '0');
       return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
     };
-    
+
     const slotData = {
       customer_id: customerId,
       customer_name: customerName,
@@ -136,7 +141,7 @@ export async function POST(request: NextRequest) {
       memo: memo || null,
       status: 'active',
       created_at: formatLocalDate(now),
-      updated_at: formatLocalDate(expiryDate)
+      updated_at: formatLocalDate(expiryDate),
     };
 
     // 슬롯 추가
@@ -156,32 +161,24 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ 슬롯 추가 완료:', slot);
 
-    // slot_status 테이블에 레코드 생성 (고객별 순번 관리)
+    // slot_status 테이블에 레코드 생성 (slots.id와 매칭)
     console.log('🔄 slot_status 레코드 생성 시작...');
-    console.log('🔍 현재 고객 정보:', { customerId, customerName, slotType, slotCount });
+    console.log('🔍 현재 고객 정보:', {
+      customerId,
+      customerName,
+      slotType,
+      slotCount,
+    });
     try {
-      // 고객별 최대 순번 조회
-      console.log(`고객 ${customerId}의 최대 순번 조회 중...`);
-      const { data: maxSequenceData, error: sequenceError } = await supabase
-        .from('slot_status')
-        .select('slot_sequence')
-        .eq('customer_id', customerId)
-        .order('slot_sequence', { ascending: false })
-        .limit(1);
+      // slots 테이블에 방금 생성된 레코드의 id를 slot_sequence로 사용
+      // slots.id와 slot_status.slot_sequence를 1:N 매칭
+      const newSlotId = slot.id; // slots 테이블의 id (AUTO INCREMENT)
 
-      console.log('순번 조회 결과:', { maxSequenceData, sequenceError });
+      console.log(
+        `slots.id = ${newSlotId}를 slot_sequence로 사용하여 ${slotCount}개 레코드 생성`
+      );
 
-      let nextSequence = 1;
-      if (!sequenceError && maxSequenceData && maxSequenceData.length > 0) {
-        nextSequence = (maxSequenceData[0].slot_sequence || 0) + 1;
-        console.log(`기존 최대 순번: ${maxSequenceData[0].slot_sequence}, 다음 순번: ${nextSequence}`);
-      } else {
-        console.log('기존 순번 없음, 첫 번째 순번: 1');
-      }
-
-      console.log(`고객 ${customerId}의 다음 순번: ${nextSequence}`);
-
-      // 슬롯 개수만큼 개별 레코드 생성 (키워드별 개별 사용을 위해)
+      // 슬롯 개수만큼 개별 레코드 생성 (모두 같은 slot_sequence 사용)
       const slotStatusRecords = [];
       for (let i = 0; i < parseInt(slotCount); i++) {
         const slotStatusData = {
@@ -189,7 +186,7 @@ export async function POST(request: NextRequest) {
           customer_name: customerName,
           slot_type: slotType,
           slot_count: 1, // 각 레코드는 1개씩
-          slot_sequence: nextSequence + i,
+          slot_sequence: newSlotId, // ✅ 모든 레코드가 같은 순번 (slots.id와 매칭)
           status: '작동중', // 작업 등록 전 상태 (제약조건에 따라 '작동중'으로 설정)
           usage_days: usageDaysValue, // slots 테이블과 동일한 잔여기간
           distributor: '일반', // 기본값
@@ -203,12 +200,14 @@ export async function POST(request: NextRequest) {
           traffic: '', // 기본값
           created_at: formatSlotStatusDate(now).replace('T', ' '), // slots 테이블과 동일한 등록일 (공백으로 변경)
           updated_at: formatSlotStatusDate(expiryDate).replace('T', ' '), // slots 테이블과 동일한 만료일 (공백으로 변경)
-          expiry_date: formatSlotStatusDate(expiryDate).replace('T', ' ') // 만료일 전용 컬럼 (공백으로 변경)
+          expiry_date: formatSlotStatusDate(expiryDate).replace('T', ' '), // 만료일 전용 컬럼 (공백으로 변경)
         };
         slotStatusRecords.push(slotStatusData);
       }
 
-      console.log(`slot_status 생성 데이터: ${slotStatusRecords.length}개 레코드`);
+      console.log(
+        `slot_status 생성 데이터: ${slotStatusRecords.length}개 레코드`
+      );
 
       const { data: slotStatus, error: slotStatusError } = await supabase
         .from('slot_status')
@@ -222,7 +221,7 @@ export async function POST(request: NextRequest) {
         console.error('오류 세부사항:', slotStatusError.details);
       } else {
         console.log('✅ slot_status 레코드 생성 완료:', slotStatus);
-        
+
         // 생성 시점에 이미 올바른 만료일이 설정되었으므로 추가 업데이트 불필요
       }
     } catch (error) {
@@ -262,15 +261,17 @@ export async function POST(request: NextRequest) {
     // 정산 테이블에도 데이터 저장 (미정산 페이지에서 조회하기 위해)
     try {
       // 등록된 총판명 조회 (distributors 테이블에서)
-      const { data: distributorsData, error: distributorsError } = await supabase
-        .from('distributors')
-        .select('name')
-        .order('created_at', { ascending: true })
-        .limit(1);
+      const { data: distributorsData, error: distributorsError } =
+        await supabase
+          .from('distributors')
+          .select('name')
+          .order('created_at', { ascending: true })
+          .limit(1);
 
-      const distributorName = distributorsData && distributorsData.length > 0 
-        ? distributorsData[0].name 
-        : '일반'; // 기본값
+      const distributorName =
+        distributorsData && distributorsData.length > 0
+          ? distributorsData[0].name
+          : '일반'; // 기본값
 
       const settlementData = {
         customer_id: customerId,
@@ -283,7 +284,7 @@ export async function POST(request: NextRequest) {
         payment_amount: paymentAmount ? parseInt(paymentAmount) : 0,
         usage_days: usageDays ? parseInt(usageDays) : 30,
         memo: memo || '',
-        status: 'pending' // 미정산 상태로 생성
+        status: 'pending', // 미정산 상태로 생성
       };
 
       const { error: settlementError } = await supabase
@@ -304,9 +305,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: slot,
-      message: '슬롯이 성공적으로 추가되었습니다.'
+      message: '슬롯이 성공적으로 추가되었습니다.',
     });
-
   } catch (error) {
     console.error('슬롯 추가 API 예외 발생:', error);
     return NextResponse.json(
@@ -320,34 +320,34 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const { slotId, status } = await request.json();
-    
+
     if (!slotId || !status) {
       return NextResponse.json(
         { error: '슬롯 ID와 상태가 필요합니다.' },
         { status: 400 }
       );
     }
-    
+
     if (!['active', 'inactive'].includes(status)) {
       return NextResponse.json(
         { error: '유효하지 않은 상태입니다.' },
         { status: 400 }
       );
     }
-    
+
     console.log('🔧 슬롯 상태 업데이트 요청:', { slotId, status });
-    
+
     const { data, error } = await supabase
       .from('slots')
-      .update({ 
-        status
+      .update({
+        status,
         // updated_at은 만료일이므로 상태 업데이트 시 변경하지 않음
       })
       .eq('id', slotId)
       .select();
-    
+
     console.log('📊 Supabase 응답:', { data, error });
-    
+
     if (error) {
       console.error('슬롯 상태 업데이트 오류:', error);
       return NextResponse.json(
@@ -355,15 +355,14 @@ export async function PUT(request: NextRequest) {
         { status: 500 }
       );
     }
-    
+
     console.log(`✅ 슬롯 ${slotId}의 상태가 ${status}로 변경되었습니다.`);
-    
+
     return NextResponse.json({
       success: true,
       data: data[0],
-      message: `슬롯 상태가 ${status === 'inactive' ? '일시 중지' : '활성화'}되었습니다.`
+      message: `슬롯 상태가 ${status === 'inactive' ? '일시 중지' : '활성화'}되었습니다.`,
     });
-    
   } catch (error) {
     console.error('슬롯 상태 업데이트 API 예외 발생:', error);
     return NextResponse.json(

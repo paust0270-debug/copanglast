@@ -3,16 +3,33 @@ import { supabase } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
-    const { slotId, paymentType, payerName, paymentAmount, paymentDate, usageDays } = await request.json();
+    const {
+      slotId,
+      paymentType,
+      payerName,
+      paymentAmount,
+      paymentDate,
+      usageDays,
+    } = await request.json();
 
-    console.log('슬롯 연장 요청:', { slotId, paymentType, payerName, paymentAmount, paymentDate, usageDays });
+    console.log('슬롯 연장 요청:', {
+      slotId,
+      paymentType,
+      payerName,
+      paymentAmount,
+      paymentDate,
+      usageDays,
+    });
 
     // 필수 필드 검증
     if (!slotId || !usageDays) {
-      return NextResponse.json({
-        success: false,
-        error: '필수 필드가 누락되었습니다.'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '필수 필드가 누락되었습니다.',
+        },
+        { status: 400 }
+      );
     }
 
     // 슬롯 ID를 숫자로 변환
@@ -22,16 +39,21 @@ export async function POST(request: NextRequest) {
     // 슬롯 정보 조회 (slot_count 포함)
     const { data: slotData, error: slotError } = await supabase
       .from('slots')
-      .select('id, customer_id, customer_name, slot_type, slot_count, created_at, usage_days')
+      .select(
+        'id, customer_id, customer_name, slot_type, slot_count, created_at, usage_days'
+      )
       .eq('id', numericSlotId)
       .single();
 
     if (slotError || !slotData) {
       console.error('슬롯 조회 오류:', slotError);
-      return NextResponse.json({
-        success: false,
-        error: '슬롯을 찾을 수 없습니다.'
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '슬롯을 찾을 수 없습니다.',
+        },
+        { status: 404 }
+      );
     }
 
     console.log('슬롯 데이터:', slotData);
@@ -40,7 +62,9 @@ export async function POST(request: NextRequest) {
     // 현재 만료일 계산 (created_at + usage_days)
     const createdDate = new Date(slotData.created_at);
     const currentUsageDays = slotData.usage_days || 0;
-    const currentExpiryDate = new Date(createdDate.getTime() + currentUsageDays * 24 * 60 * 60 * 1000);
+    const currentExpiryDate = new Date(
+      createdDate.getTime() + currentUsageDays * 24 * 60 * 60 * 1000
+    );
     console.log('현재 만료일:', currentExpiryDate);
 
     // 새로운 사용일수 계산 (기존 사용일수 + 연장일수)
@@ -51,7 +75,7 @@ export async function POST(request: NextRequest) {
     const { data: updatedSlot, error: updateError } = await supabase
       .from('slots')
       .update({
-        usage_days: newUsageDays
+        usage_days: newUsageDays,
       })
       .eq('id', numericSlotId)
       .select('id, usage_days, created_at')
@@ -59,10 +83,13 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error('슬롯 업데이트 오류:', updateError);
-      return NextResponse.json({
-        success: false,
-        error: '슬롯 업데이트 중 오류가 발생했습니다.'
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '슬롯 업데이트 중 오류가 발생했습니다.',
+        },
+        { status: 500 }
+      );
     }
 
     console.log('슬롯 연장 완료:', updatedSlot);
@@ -70,15 +97,17 @@ export async function POST(request: NextRequest) {
     // 연장 내역을 정산 테이블에 저장 (미정산 내역으로 추가)
     try {
       // 등록된 총판명 조회 (distributors 테이블에서)
-      const { data: distributorsData, error: distributorsError } = await supabase
-        .from('distributors')
-        .select('name')
-        .order('created_at', { ascending: true })
-        .limit(1);
+      const { data: distributorsData, error: distributorsError } =
+        await supabase
+          .from('distributors')
+          .select('name')
+          .order('created_at', { ascending: true })
+          .limit(1);
 
-      const distributorName = distributorsData && distributorsData.length > 0 
-        ? distributorsData[0].name 
-        : '일반'; // 기본값
+      const distributorName =
+        distributorsData && distributorsData.length > 0
+          ? distributorsData[0].name
+          : '일반'; // 기본값
 
       const settlementData = {
         customer_id: slotData.customer_id,
@@ -91,11 +120,11 @@ export async function POST(request: NextRequest) {
         payment_amount: parseInt(paymentAmount) || 0,
         usage_days: parseInt(usageDays),
         memo: '',
-        status: 'pending' // 미정산 상태로 생성
+        status: 'pending', // 미정산 상태로 생성
       };
-      
+
       console.log('정산 데이터 저장:', settlementData);
-      
+
       const { error: settlementError } = await supabase
         .from('settlements')
         .insert(settlementData);
@@ -112,7 +141,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 새로운 만료일 계산
-    const newExpiryDate = new Date(createdDate.getTime() + newUsageDays * 24 * 60 * 60 * 1000);
+    const newExpiryDate = new Date(
+      createdDate.getTime() + newUsageDays * 24 * 60 * 60 * 1000
+    );
 
     return NextResponse.json({
       success: true,
@@ -122,15 +153,17 @@ export async function POST(request: NextRequest) {
         previousExpiryDate: currentExpiryDate.toISOString(),
         newExpiryDate: newExpiryDate.toISOString(),
         extendedDays: parseInt(usageDays),
-        newUsageDays: newUsageDays
-      }
+        newUsageDays: newUsageDays,
+      },
     });
-
   } catch (error) {
     console.error('슬롯 연장 API 오류:', error);
-    return NextResponse.json({
-      success: false,
-      error: '슬롯 연장 중 오류가 발생했습니다.'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: '슬롯 연장 중 오류가 발생했습니다.',
+      },
+      { status: 500 }
+    );
   }
 }

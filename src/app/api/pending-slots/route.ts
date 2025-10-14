@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { getTimestampWithoutMs } from '@/lib/utils';
 
 // 대기 상태 슬롯 조회
 export async function GET(request: NextRequest) {
@@ -193,7 +194,7 @@ export async function PUT(request: NextRequest) {
           status: 'approved',
           approved_by: approvedBy,
           approved_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: getTimestampWithoutMs()
         })
         .eq('id', id);
 
@@ -218,7 +219,7 @@ export async function PUT(request: NextRequest) {
           approved_by: approvedBy,
           approved_at: new Date().toISOString(),
           rejection_reason: rejectionReason,
-          updated_at: new Date().toISOString()
+          updated_at: getTimestampWithoutMs()
         })
         .eq('id', id);
 

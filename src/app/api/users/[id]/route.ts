@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/supabase';
+import { getTimestampWithoutMs } from '@/lib/utils';
 import { hashPassword } from '@/lib/password';
 
 export async function PUT(
@@ -34,7 +35,7 @@ export async function PUT(
     const supabase = createSupabaseClient();
 
     // 업데이트할 데이터 준비
-    const updateData: any = {};
+    const updateData: Record<string, string | number | boolean> = {};
     if (username !== undefined) updateData.username = username;
     if (password !== undefined && password.trim() !== '') {
       // 비밀번호를 원본 그대로 저장 (해시하지 않음)
@@ -64,7 +65,7 @@ export async function PUT(
       }
     }
     if (approved_at !== undefined) updateData.approved_at = approved_at;
-    updateData.updated_at = new Date().toISOString();
+    updateData.updated_at = getTimestampWithoutMs();
 
     console.log('🔧 업데이트할 데이터:', updateData);
 

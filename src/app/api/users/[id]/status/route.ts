@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { getTimestampWithoutMs } from '@/lib/utils';
 
 export async function PATCH(
   request: Request,
@@ -32,7 +33,7 @@ export async function PATCH(
       .from('users')
       .update({
         status: body.status,
-        updated_at: new Date().toISOString()
+        updated_at: getTimestampWithoutMs()
       })
       .eq('id', userId)
       .select()

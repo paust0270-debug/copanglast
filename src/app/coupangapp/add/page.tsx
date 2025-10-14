@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { calculateRemainingTimeKST } from '@/lib/utils';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -73,7 +74,7 @@ interface CustomerSlot {
   equipmentGroup: string;
   remainingDays: string;
   registrationDate: string;
-  status: '작동중' | '만료' | '정지';
+  status: '작동중' | '만료' | '정지' | 'inactive';
   memo?: string;
   created_at?: string;
 }
@@ -130,8 +131,37 @@ function SlotAddPageContent() {
   const handleRankClick = async (slot: CustomerSlot) => {
     if (slot.customerId && slot.slotSequence) {
       setSelectedSlot(slot);
-      await fetchRankHistoryFromAPI(slot.customerId, slot.slotSequence);
+
+      // 임시 데이터 설정 (테스트용)
+      const tempRankHistory = [
+        {
+          sequence: 1,
+          changeDate: '2025-10-14',
+          rank: 36,
+          rankChange: 233,
+          startRankDiff: 233,
+        },
+        {
+          sequence: 2,
+          changeDate: '2025-10-13',
+          rank: 269,
+          rankChange: 0,
+          startRankDiff: 0,
+        },
+        {
+          sequence: 3,
+          changeDate: '2025-10-12',
+          rank: 269,
+          rankChange: 0,
+          startRankDiff: 0,
+        },
+      ];
+
+      setRankHistory(tempRankHistory);
       setShowRankChart(true); // 모달창 열기
+
+      // 실제 API 호출은 주석 처리 (테스트용)
+      // await fetchRankHistoryFromAPI(slot.customerId, slot.slotSequence);
     }
   };
 
@@ -383,6 +413,42 @@ function SlotAddPageContent() {
     return () => clearInterval(timer);
   }, []);
 
+  // 순위 변동폭 계산 함수
+  const calculateRankChange = (currentRank: string, startRank: string) => {
+    // 빈 문자열이거나 "-"인 경우
+    if (
+      !currentRank ||
+      currentRank === '-' ||
+      !startRank ||
+      startRank === '-'
+    ) {
+      return { text: '[-]', color: 'text-gray-500' };
+    }
+
+    // 숫자 추출 (예: "5위" -> 5, "10 [0]" -> 10)
+    const extractNumber = (rankStr: string) => {
+      const match = rankStr.match(/(\d+)/);
+      return match ? parseInt(match[1]) : null;
+    };
+
+    const current = extractNumber(currentRank);
+    const start = extractNumber(startRank);
+
+    if (current === null || start === null) {
+      return { text: '[-]', color: 'text-gray-500' };
+    }
+
+    const change = start - current; // 시작순위 - 현재순위 (양수면 상승, 음수면 하락)
+
+    if (change === 0) {
+      return { text: '[0]', color: 'text-gray-500' };
+    } else if (change > 0) {
+      return { text: `[↑${change}]`, color: 'text-red-600' }; // 상승: 빨간색
+    } else {
+      return { text: `[↓${Math.abs(change)}]`, color: 'text-blue-600' }; // 하락: 파란색
+    }
+  };
+
   // 잔여기간 계산 함수 (실시간 카운팅)
   const calculateRemainingTime = (registrationDate: string) => {
     try {
@@ -395,6 +461,7 @@ function SlotAddPageContent() {
 
       if (isNaN(expiryDate.getTime())) return '30일';
 
+      // 현재 시간 (로컬 시간 기준)
       const now = currentTime;
       const diffMs = expiryDate.getTime() - now.getTime();
 
@@ -453,8 +520,8 @@ function SlotAddPageContent() {
       const customerId = urlParams.get('customerId');
       const username = urlParams.get('username');
 
-      // 개별 고객 페이지인 경우 해당 고객의 슬롯만 조회 (slots 테이블 조회 제외)
-      let apiUrl = '/api/slot-status?type=slot_status&skipSlotsTable=true';
+      // 개별 고객 페이지인 경우 해당 고객의 슬롯만 조회 (slots 테이블도 조회하여 최신 usage_days 반영)
+      let apiUrl = '/api/slot-status?type=slot_status';
       if (customerId && username) {
         apiUrl += `&customerId=${customerId}&username=${username}`;
       } else {
@@ -479,48 +546,17 @@ function SlotAddPageContent() {
       // slot_status 데이터를 CustomerSlot 형식으로 변환
       const convertedData: CustomerSlot[] = result.data.map(
         (item: Record<string, unknown>, index: number) => {
-          // 개별 슬롯의 실제 잔여기간 계산
-          const now = new Date();
-          const createdDate = item.created_at
-            ? new Date(item.created_at as string)
-            : now;
+          // API에서 계산된 잔여기간 사용 (한국 시간 기준)
+          const remainingTimeString = (item.remaining_days as string) || '30일';
+
+          // 등록일과 만료일 계산 (API에서 받은 데이터 사용)
+          const createdAt = item.created_at as string;
           const usageDays = (item.usage_days as number) || 30;
-
-          // 총 사용 시간을 밀리초로 변환
-          const totalUsageMs = usageDays * 24 * 60 * 60 * 1000;
-
-          // 경과 시간 계산 (밀리초)
-          const elapsedMs = now.getTime() - createdDate.getTime();
-
-          // 실제 잔여 시간 계산 (밀리초)
-          const remainingMs = Math.max(0, totalUsageMs - elapsedMs);
-
-          // 잔여 시간을 일, 시간, 분으로 변환
-          const remainingDays = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
-          const remainingHours = Math.floor(
-            (remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000)
-          );
-          const remainingMinutes = Math.floor(
-            (remainingMs % (60 * 60 * 1000)) / (60 * 1000)
-          );
-          const remainingSeconds = Math.floor(
-            (remainingMs % (60 * 1000)) / 1000
+          const createdDateKST = new Date(createdAt);
+          const expiryDateKST = new Date(
+            createdDateKST.getTime() + usageDays * 24 * 60 * 60 * 1000
           );
 
-          // 잔여기간 문자열 생성
-          let remainingTimeString = '';
-          if (remainingDays > 0) {
-            remainingTimeString = `${remainingDays}일 ${remainingHours}시간 ${remainingMinutes}분 ${remainingSeconds}초`;
-          } else if (remainingHours > 0) {
-            remainingTimeString = `${remainingHours}시간 ${remainingMinutes}분 ${remainingSeconds}초`;
-          } else if (remainingMinutes > 0) {
-            remainingTimeString = `${remainingMinutes}분 ${remainingSeconds}초`;
-          } else {
-            remainingTimeString = `${remainingSeconds}초`;
-          }
-
-          // 등록일과 만료일 계산
-          const expiryDate = new Date(createdDate.getTime() + totalUsageMs);
           const formatDate = (date: Date) => {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -531,7 +567,7 @@ function SlotAddPageContent() {
             return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
           };
 
-          const registrationDateRange = `${formatDate(createdDate)} ~ ${formatDate(expiryDate)}`;
+          const registrationDateRange = `${formatDate(createdDateKST)} ~ ${formatDate(expiryDateKST)}`;
 
           return {
             id: item.id,
@@ -543,8 +579,8 @@ function SlotAddPageContent() {
             workGroup: item.work_group || '공통',
             keyword: item.keyword || '',
             linkUrl: item.link_url || '',
-            currentRank: item.current_rank || '1 [0]',
-            startRank: item.start_rank || '1 [0]',
+            currentRank: item.current_rank || '-',
+            startRank: item.start_rank || '-',
             slotCount: item.slot_count || 1,
             traffic: item.traffic || '0 (0/0)',
             equipmentGroup: item.equipment_group || '지정안함',
@@ -655,8 +691,8 @@ function SlotAddPageContent() {
         keyword: form.keyword,
         link_url: form.linkUrl,
         memo: form.memo,
-        current_rank: '1 [0]',
-        start_rank: '1 [0]',
+        current_rank: '',
+        start_rank: '',
         slot_count: form.slotCount,
         traffic: '0 (0/0)',
         equipment_group: form.equipmentGroup,
@@ -681,6 +717,8 @@ function SlotAddPageContent() {
         throw new Error(result.error || '슬롯 등록에 실패했습니다.');
       }
 
+      // traffic 테이블 저장은 slot_status API에서 자동으로 처리됩니다.
+
       // 새로운 슬롯 등록 추가 (화면 업데이트)
       const newCustomer: CustomerSlot = {
         id: result.data.id,
@@ -689,8 +727,8 @@ function SlotAddPageContent() {
         workGroup: form.workGroup,
         keyword: form.keyword,
         linkUrl: form.linkUrl,
-        currentRank: '1 [0]',
-        startRank: '1 [0]',
+        currentRank: '-',
+        startRank: '-',
         slotCount: form.slotCount,
         traffic: '0 (0/0)',
         equipmentGroup: form.equipmentGroup,
@@ -819,8 +857,8 @@ function SlotAddPageContent() {
           keyword: data.keyword,
           link_url: data.linkUrl,
           memo: bulkForm.memo,
-          current_rank: '1 [0]',
-          start_rank: '1 [0]',
+          current_rank: '',
+          start_rank: '',
           slot_count: data.slotCount,
           traffic: '0 (0/0)',
           equipment_group: bulkForm.equipmentGroup,
@@ -845,6 +883,8 @@ function SlotAddPageContent() {
           throw new Error(result.error || '슬롯 등록에 실패했습니다.');
         }
 
+        // traffic 테이블 저장은 slot_status API에서 자동으로 처리됩니다.
+
         return result.data;
       });
 
@@ -859,8 +899,8 @@ function SlotAddPageContent() {
           workGroup: bulkForm.workGroup,
           keyword: parsedData[index].keyword,
           linkUrl: parsedData[index].linkUrl,
-          currentRank: '1 [0]',
-          startRank: '1 [0]',
+          currentRank: '-',
+          startRank: '-',
           slotCount: parsedData[index].slotCount,
           traffic: '0 (0/0)',
           equipmentGroup: bulkForm.equipmentGroup,
@@ -1253,7 +1293,7 @@ function SlotAddPageContent() {
         슬롯수: customer.slotCount,
         트래픽: customer.traffic,
         장비그룹: customer.equipmentGroup,
-        잔여기간: calculateRemainingTime(customer.registrationDate),
+        잔여기간: customer.remainingDays,
         '등록일/만료일': customer.registrationDate,
         상태: customer.status,
         등록일시: customer.created_at || '',
@@ -1332,7 +1372,7 @@ function SlotAddPageContent() {
         슬롯수: customer.slotCount,
         트래픽: customer.traffic,
         장비그룹: customer.equipmentGroup,
-        잔여기간: calculateRemainingTime(customer.registrationDate),
+        잔여기간: customer.remainingDays,
         '등록일/만료일': customer.registrationDate,
         상태: customer.status,
         등록일시: customer.created_at || '',
@@ -1390,8 +1430,9 @@ function SlotAddPageContent() {
       case '작동중':
       case '구동중':
       case 'active':
-      case 'inactive':
         return <Badge className="bg-green-500">구동중</Badge>;
+      case 'inactive':
+        return <Badge className="bg-orange-500 text-white">일시중지</Badge>;
       case '만료':
       case 'expired':
         return <Badge className="bg-red-500">만료</Badge>;
@@ -2072,7 +2113,13 @@ function SlotAddPageContent() {
                     {customers.map((customer, index) => (
                       <tr
                         key={`customer-${customer.id || index}`}
-                        className={index === 0 ? 'bg-pink-100' : ''}
+                        className={
+                          customer.status === 'inactive'
+                            ? 'bg-orange-50'
+                            : index === 0
+                              ? 'bg-pink-100'
+                              : ''
+                        }
                       >
                         <td className="border border-gray-300 p-2 text-center">
                           <Checkbox
@@ -2281,7 +2328,22 @@ function SlotAddPageContent() {
                             className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
                             title="클릭하여 순위 변동 히스토리 보기"
                           >
-                            {customer.currentRank}
+                            {customer.currentRank}{' '}
+                            <span
+                              className={
+                                calculateRankChange(
+                                  customer.currentRank,
+                                  customer.startRank
+                                ).color
+                              }
+                            >
+                              {
+                                calculateRankChange(
+                                  customer.currentRank,
+                                  customer.startRank
+                                ).text
+                              }
+                            </span>
                           </button>
                         </td>
                         <td className="border border-gray-300 p-2 text-center text-xs">
@@ -2340,7 +2402,7 @@ function SlotAddPageContent() {
                         </td>
                         <td className="border border-gray-300 p-2 text-center">
                           <span className="inline-block px-1 py-0.5 bg-red-100 text-red-800 text-xs rounded">
-                            {calculateRemainingTime(customer.registrationDate)}
+                            {customer.remainingDays}
                           </span>
                         </td>
                         <td className="border border-gray-300 p-2 text-center text-xs">
@@ -2472,20 +2534,26 @@ function SlotAddPageContent() {
             onClick={() => setShowRankChart(false)}
           >
             <div
-              className="bg-white rounded-lg p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200 transform transition-all duration-300 ease-in-out"
+              className="bg-white rounded-2xl p-8 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl border-0 transform transition-all duration-300 ease-in-out"
               onClick={e => e.stopPropagation()}
             >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">
-                  순위 변동 히스토리 - {selectedSlot.keyword}
-                </h3>
+              {/* 헤더 */}
+              <div className="flex justify-between items-center mb-8">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                    📊 순위 변동 히스토리
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    {selectedSlot.keyword} - {selectedSlot.nickname}
+                  </p>
+                </div>
                 <button
                   onClick={() => setShowRankChart(false)}
-                  className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full p-2 transition-colors duration-200"
+                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-3 transition-all duration-200"
                   title="닫기"
                 >
                   <svg
-                    className="w-5 h-5"
+                    className="w-6 h-6"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -2501,89 +2569,114 @@ function SlotAddPageContent() {
               </div>
 
               {rankHistory.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse border border-gray-300 text-sm">
-                    <thead>
-                      <tr className="bg-gray-50">
-                        <th className="border border-gray-300 p-2 text-center">
-                          순번
-                        </th>
-                        <th className="border border-gray-300 p-2 text-center">
-                          변동일
-                        </th>
-                        <th className="border border-gray-300 p-2 text-center">
-                          순위
-                        </th>
-                        <th className="border border-gray-300 p-2 text-center">
-                          등락폭
-                        </th>
-                        <th className="border border-gray-300 p-2 text-center">
-                          시작대비
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rankHistory.map((item, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="border border-gray-300 p-2 text-center">
-                            {item.sequence}
-                          </td>
-                          <td className="border border-gray-300 p-2 text-center">
-                            {item.changeDate}
-                          </td>
-                          <td className="border border-gray-300 p-2 text-center font-medium">
-                            {item.rank}
-                          </td>
-                          <td
-                            className={`border border-gray-300 p-2 text-center ${
-                              item.rankChange > 0
-                                ? 'text-red-600'
-                                : item.rankChange < 0
-                                  ? 'text-blue-600'
-                                  : 'text-gray-600'
-                            }`}
-                          >
-                            {item.rankChange > 0
-                              ? `+${item.rankChange}`
-                              : item.rankChange}
-                          </td>
-                          <td
-                            className={`border border-gray-300 p-2 text-center ${
-                              item.startRankDiff > 0
-                                ? 'text-red-600'
-                                : item.startRankDiff < 0
-                                  ? 'text-blue-600'
-                                  : 'text-gray-600'
-                            }`}
-                          >
-                            {item.startRankDiff > 0
-                              ? `+${item.startRankDiff}`
-                              : item.startRankDiff}
-                          </td>
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-white rounded-lg shadow-sm">
+                          <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 rounded-l-lg">
+                            날짜
+                          </th>
+                          <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">
+                            현재 순위
+                          </th>
+                          <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 rounded-r-lg">
+                            전일 대비
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="space-y-2">
+                        {rankHistory.map((item, index) => {
+                          // 전일 대비 등락폭 계산
+                          const previousItem = rankHistory[index + 1];
+                          const dailyChange = previousItem
+                            ? previousItem.rank - item.rank
+                            : 0;
+
+                          // 등락폭 표시 로직
+                          const getChangeDisplay = (change: number) => {
+                            if (change === 0)
+                              return {
+                                text: '변동없음',
+                                color: 'text-gray-500',
+                                icon: '➖',
+                              };
+                            if (change > 0)
+                              return {
+                                text: `▲${change}위 상승`,
+                                color: 'text-red-500',
+                                icon: '📈',
+                              };
+                            return {
+                              text: `▼${Math.abs(change)}위 하락`,
+                              color: 'text-blue-500',
+                              icon: '📉',
+                            };
+                          };
+
+                          const changeDisplay = getChangeDisplay(dailyChange);
+
+                          return (
+                            <tr
+                              key={index}
+                              className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
+                            >
+                              <td className="px-6 py-4 text-sm text-gray-600 rounded-l-lg">
+                                {item.changeDate}
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
+                                  {item.rank}위
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-center rounded-r-lg">
+                                <span
+                                  className={`inline-flex items-center text-sm font-medium ${changeDisplay.color}`}
+                                >
+                                  <span className="mr-1">
+                                    {changeDisplay.icon}
+                                  </span>
+                                  {changeDisplay.text}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  순위 변동 데이터가 없습니다.
+                <div className="text-center py-16">
+                  <div className="text-6xl mb-4">📊</div>
+                  <h4 className="text-xl font-semibold text-gray-700 mb-2">
+                    순위 변동 데이터가 없습니다
+                  </h4>
+                  <p className="text-gray-500">
+                    아직 순위 체크가 진행되지 않았습니다.
+                  </p>
                 </div>
               )}
 
-              <div className="mt-4 text-sm text-gray-600">
-                <p>
-                  <strong>검색어:</strong> {selectedSlot.keyword}
-                </p>
-                <p>
-                  <strong>링크:</strong> {selectedSlot.linkUrl}
-                </p>
-                <p>
-                  <strong>현재 순위:</strong> {selectedSlot.currentRank}
-                </p>
-                <p>
-                  <strong>시작 순위:</strong> {selectedSlot.startRank}
-                </p>
+              {/* 현재 상태 요약 */}
+              <div className="mt-8 bg-gray-50 rounded-xl p-6">
+                <h4 className="text-lg font-semibold text-gray-800 mb-4">
+                  📋 현재 상태
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-white rounded-lg p-4 shadow-sm">
+                    <div className="text-sm text-gray-600 mb-1">현재 순위</div>
+                    <div className="text-xl font-bold text-green-600">
+                      {selectedSlot.currentRank}
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 shadow-sm">
+                    <div className="text-sm text-gray-600 mb-1">시작 순위</div>
+                    <div className="text-xl font-bold text-blue-600">
+                      {selectedSlot.startRank}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

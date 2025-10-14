@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { getTimestampWithoutMs } from '@/lib/utils';
 
 // 공지사항 조회
 export async function GET(
@@ -71,7 +72,7 @@ export async function PUT(
       .update({
         title,
         content,
-        updated_at: new Date().toISOString(),
+        updated_at: getTimestampWithoutMs(),
       })
       .eq('id', noticeId)
       .select()

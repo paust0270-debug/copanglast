@@ -15,6 +15,7 @@ interface SlotData {
   usedSlots: number;
   remainingSlots: number;
   pausedSlots?: number; // 일시 중지된 슬롯 수
+  expiredSlots?: number; // 만료된 슬롯 수
   totalPaymentAmount: number; // 총 입금액
   remainingDays: number; // 잔여일수 (기존 호환성)
   remainingHours: number; // 잔여시간
@@ -90,8 +91,14 @@ function SlotStatusPageContent() {
 
       console.log('슬롯 데이터 조회 시작...');
 
-      // API 엔드포인트 호출 (원래대로)
-      const response = await fetch('/api/slot-status');
+      // API 엔드포인트 호출 (특정 고객 필터링 시 type=slot_status 사용)
+      let apiUrl = '/api/slot-status';
+      if (isFilteredByCustomer && filteredCustomerInfo) {
+        apiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+      }
+
+      console.log('API 호출 URL:', apiUrl);
+      const response = await fetch(apiUrl);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -104,7 +111,14 @@ function SlotStatusPageContent() {
       }
 
       console.log('조회된 슬롯 데이터:', result.data);
-      setSlotData(result.data);
+
+      // 특정 고객 필터링 시 슬롯 카운팅 정보 저장
+      // type=slot_status일 때는 result.data를 직접 사용 (pausedSlots, expiredSlots 포함)
+      if (isFilteredByCustomer && result.data && result.data.length > 0) {
+        setSlotData(result.data); // API에서 계산된 pausedSlots, expiredSlots 사용
+      } else {
+        setSlotData(result.data);
+      }
     } catch (error) {
       console.error('슬롯 데이터 조회 오류:', error);
       setError('슬롯 데이터를 불러오는 중 오류가 발생했습니다.');
@@ -162,55 +176,50 @@ function SlotStatusPageContent() {
   const handleSlotTypeClick = (slot: SlotData) => {
     console.log('🔍 슬롯타입 버튼 클릭:', {
       slotType: slot.slotType,
-      remainingSlots: slot.remainingSlots,
+      slotCount: slot.slotCount,
       customerId: slot.customerId,
       customerName: slot.customerName,
     });
 
-    if (slot.remainingSlots > 0) {
-      // URL에서 전달받은 파라미터들 사용
-      const actualCustomerId = searchParams.get('customerId');
-      const username = searchParams.get('username');
+    // 항상 작업 등록 페이지로 이동 (잔여 슬롯 체크 제거)
+    const actualCustomerId = searchParams.get('customerId');
+    const username = searchParams.get('username');
 
-      const params = new URLSearchParams({
-        customerId: actualCustomerId || slot.customerId, // UUID 우선 사용
-        username: username || slot.customerId, // username 추가
-        slotCount: slot.remainingSlots.toString(),
-        customerName: slot.customerName,
-        slotType: slot.slotType,
-      });
+    const params = new URLSearchParams({
+      customerId: actualCustomerId || slot.customerId, // UUID 우선 사용
+      username: username || slot.customerId, // username 추가
+      slotCount: slot.slotCount.toString(), // 총 슬롯 수 사용
+      customerName: slot.customerName,
+      slotType: slot.slotType,
+    });
 
-      // 슬롯타입에 따라 다른 페이지로 이동
-      let targetUrl = '';
-      switch (slot.slotType) {
-        case '쿠팡':
-          targetUrl = `/coupangapp/add?${params.toString()}`;
-          break;
-        case '쿠팡VIP':
-          targetUrl = `/coupangapp/vip?${params.toString()}`;
-          break;
-        case '쿠팡 앱':
-          targetUrl = `/coupangapp/app?${params.toString()}`;
-          break;
-        default:
-          targetUrl = `/coupangapp/add?${params.toString()}`;
-          break;
-      }
-
-      console.log('🚀 슬롯타입 클릭 - 이동할 URL:', targetUrl);
-      console.log('📋 전달되는 파라미터:', {
-        customerId: actualCustomerId || slot.customerId,
-        username: username || slot.customerId,
-        slotCount: slot.remainingSlots,
-        customerName: slot.customerName,
-        slotType: slot.slotType,
-      });
-
-      router.push(targetUrl);
-    } else {
-      console.log('❌ 사용 가능한 슬롯이 없어서 이동할 수 없습니다.');
-      alert('사용 가능한 슬롯이 없습니다.');
+    // 슬롯타입에 따라 다른 페이지로 이동
+    let targetUrl = '';
+    switch (slot.slotType) {
+      case '쿠팡':
+        targetUrl = `/coupangapp/add?${params.toString()}`;
+        break;
+      case '쿠팡VIP':
+        targetUrl = `/coupangapp/vip?${params.toString()}`;
+        break;
+      case '쿠팡 앱':
+        targetUrl = `/coupangapp/app?${params.toString()}`;
+        break;
+      default:
+        targetUrl = `/coupangapp/add?${params.toString()}`;
+        break;
     }
+
+    console.log('🚀 슬롯타입 클릭 - 이동할 URL:', targetUrl);
+    console.log('📋 전달되는 파라미터:', {
+      customerId: actualCustomerId || slot.customerId,
+      username: username || slot.customerId,
+      slotCount: slot.slotCount,
+      customerName: slot.customerName,
+      slotType: slot.slotType,
+    });
+
+    router.push(targetUrl);
   };
 
   // 내역 버튼 클릭 처리
@@ -321,9 +330,8 @@ function SlotStatusPageContent() {
       const confirmed = window.confirm(
         `정말로 "${slot.slotType}" 슬롯을 ${actionText}?\n\n` +
           `고객: ${slot.customerName}\n` +
-          `슬롯 개수: ${slot.slotCount}개\n` +
-          `잔여 슬롯: ${slot.remainingSlots}개\n\n` +
-          `${newStatus === 'inactive' ? '중지된 슬롯은 사용가능한 슬롯 수에서 차감됩니다.' : '재개된 슬롯은 사용가능한 슬롯 수에 추가됩니다.'}`
+          `슬롯 개수: ${slot.slotCount}개\n\n` +
+          `이 작업은 slot_status 테이블의 모든 관련 레코드에도 적용됩니다.`
       );
 
       if (!confirmed) {
@@ -331,14 +339,13 @@ function SlotStatusPageContent() {
         return;
       }
 
-      // 슬롯 상태 변경 (새로운 API 사용)
-      const response = await fetch('/api/slots', {
-        method: 'PUT',
+      // 슬롯 상태 변경 (PATCH API 사용)
+      const response = await fetch(`/api/slots/${slot.id}`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          slotId: slot.id,
           status: newStatus,
         }),
       });
@@ -348,17 +355,32 @@ function SlotStatusPageContent() {
       if (result.success) {
         console.log(`✅ 슬롯 ${action} 성공:`, result);
 
-        // 성공 알림
+        // 성공 알림 (업데이트된 레코드 수 포함)
         alert(
           `슬롯이 성공적으로 ${action}되었습니다!\n\n` +
             `고객: ${slot.customerName}\n` +
             `슬롯 유형: ${slot.slotType}\n` +
-            `${action}된 슬롯: ${slot.slotCount}개\n\n` +
-            `사용가능한 슬롯 수가 자동으로 업데이트됩니다.`
+            `업데이트된 slot_status 레코드: ${result.updatedCount || slot.slotCount}개\n\n` +
+            `coupangapp/add 페이지의 레코드들도 ${action} 상태로 변경되었습니다.`
         );
 
-        // 페이지 새로고침하여 최신 데이터 표시
-        window.location.reload();
+        // 로컬 상태 업데이트 (페이지 새로고침 없이)
+        setSlotData(prevData =>
+          prevData.map(item =>
+            item.id === slot.id
+              ? {
+                  ...item,
+                  status: newStatus,
+                  pausedSlots: newStatus === 'inactive' ? item.slotCount : 0,
+                  usedSlots: newStatus === 'inactive' ? 0 : item.usedSlots,
+                  remainingSlots:
+                    newStatus === 'inactive'
+                      ? 0
+                      : item.slotCount - item.usedSlots,
+                }
+              : item
+          )
+        );
       } else {
         console.error(`❌ 슬롯 ${action} 실패:`, result.error);
         alert(`슬롯 ${action}에 실패했습니다: ${result.error}`);
@@ -367,11 +389,6 @@ function SlotStatusPageContent() {
       console.error(`❌ 슬롯 ${action} 중 오류 발생:`, error);
       alert(`슬롯 ${action} 중 오류가 발생했습니다. 다시 시도해주세요.`);
     }
-  };
-
-  // 중지 버튼 클릭 처리 (기존 함수명 유지)
-  const handleStopClick = (slot: SlotData) => {
-    handleSlotStatusChange(slot, 'inactive');
   };
 
   const getStatusBadge = (status: string) => {
@@ -463,70 +480,6 @@ function SlotStatusPageContent() {
           </div>
         </div>
 
-        {/* 통계 정보 */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-600">
-                총 슬롯:
-              </span>
-              <span className="text-lg font-bold text-blue-600">
-                {filteredData.reduce((sum, slot) => sum + slot.slotCount, 0)}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-600">
-                사용 중:
-              </span>
-              <span className="text-lg font-bold text-green-600">
-                {filteredData.reduce((sum, slot) => sum + slot.usedSlots, 0)}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-600">잔여:</span>
-              <span className="text-lg font-bold text-orange-600">
-                {filteredData.reduce(
-                  (sum, slot) => sum + slot.remainingSlots,
-                  0
-                )}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-600">
-                일시 중지:
-              </span>
-              <span className="text-lg font-bold text-yellow-600">
-                {filteredData.reduce(
-                  (sum, slot) => sum + (slot.pausedSlots || 0),
-                  0
-                )}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-600">만료됨:</span>
-              <span className="text-lg font-bold text-red-600">
-                {filteredData
-                  .filter(slot => slot.status === 'expired')
-                  .reduce((sum, slot) => sum + slot.slotCount, 0)}
-              </span>
-              {filteredData.filter(
-                slot => slot.remainingDays === 0 && slot.remainingHours > 0
-              ).length > 0 && (
-                <span className="text-xs text-gray-500">
-                  (
-                  {
-                    filteredData.filter(
-                      slot =>
-                        slot.remainingDays === 0 && slot.remainingHours > 0
-                    ).length
-                  }
-                  개 시간 단위)
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
         {/* 슬롯 테이블 */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
@@ -550,12 +503,6 @@ function SlotStatusPageContent() {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     총 슬롯
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    사용 중
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    잔여
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     잔여기간
@@ -601,32 +548,15 @@ function SlotStatusPageContent() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <Button
                           onClick={() => handleSlotTypeClick(slot)}
-                          disabled={slot.remainingSlots === 0}
                           variant="outline"
                           size="sm"
-                          className={`${
-                            slot.remainingSlots === 0
-                              ? 'text-gray-400 border-gray-200 cursor-not-allowed'
-                              : 'text-blue-600 border-blue-300 hover:bg-blue-50'
-                          }`}
+                          className="text-blue-600 border-blue-300 hover:bg-blue-50"
                         >
                           {slot.slotType}
                         </Button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {slot.slotCount}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {slot.usedSlots}
-                      </td>
-                      <td
-                        className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
-                          slot.remainingSlots > 0
-                            ? 'text-green-600'
-                            : 'text-red-600'
-                        }`}
-                      >
-                        {slot.remainingSlots}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div className="flex flex-col">

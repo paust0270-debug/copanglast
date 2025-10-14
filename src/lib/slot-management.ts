@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { getTimestampWithoutMs } from '@/lib/utils';
 
 // 사용자별 슬롯 정보 조회
 export async function getUserSlotInfo(userId: string) {
@@ -27,7 +28,7 @@ export async function changeSlotStatus(slotId: number, newStatus: string) {
       .from('slots')
       .update({ 
         status: newStatus,
-        updated_at: new Date().toISOString()
+        updated_at: getTimestampWithoutMs()
       })
       .eq('id', slotId)
       .select();

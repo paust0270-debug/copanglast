@@ -15,10 +15,13 @@ export async function GET(
     console.log('정산 데이터 조회 시작, ID:', settlementId);
 
     if (!settlementId) {
-      return NextResponse.json({
-        success: false,
-        error: '정산 ID가 필요합니다.'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '정산 ID가 필요합니다.',
+        },
+        { status: 400 }
+      );
     }
 
     // settlement_history 테이블에서만 조회 (정산 내역 수정 페이지용)
@@ -33,28 +36,62 @@ export async function GET(
 
     if (error) {
       console.error('정산 데이터 조회 오류:', error);
-      return NextResponse.json({
-        success: false,
-        error: '정산 데이터를 조회하는 중 오류가 발생했습니다.'
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '정산 데이터를 조회하는 중 오류가 발생했습니다.',
+        },
+        { status: 500 }
+      );
     }
 
     if (!settlement) {
-      return NextResponse.json({
-        success: false,
-        error: '정산 데이터를 찾을 수 없습니다.'
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '정산 데이터를 찾을 수 없습니다.',
+        },
+        { status: 404 }
+      );
     }
 
     console.log('정산 데이터 조회 완료:', settlement);
+
+    // user_profiles에서 distributor 정보 조회
+    let distributorName = '-';
+    if (settlement.customer_id) {
+      try {
+        // user_profiles 테이블에서 username으로 distributor 정보 조회
+        const { data: userProfile } = await supabase
+          .from('user_profiles')
+          .select('distributor')
+          .eq('username', settlement.customer_id)
+          .single();
+
+        distributorName = userProfile?.distributor || '-';
+        console.log(
+          `고객 ${settlement.customer_id}의 총판: ${distributorName}`
+        );
+      } catch (userError) {
+        console.warn(
+          '사용자 정보 조회 실패:',
+          settlement.customer_id,
+          userError
+        );
+      }
+    }
 
     // 데이터 포맷팅 (정산 내역 페이지와 동일한 구조)
     const formattedSettlement = {
       id: settlement.id,
       sequential_number: settlement.id, // 순번은 ID로 설정
-      category: settlement.payment_type === 'extension' ? '연장' : 
-               settlement.payment_type === 'deposit' ? '입금' : '일반',
-      distributor_name: '총판A', // 기본값
+      category:
+        settlement.payment_type === 'extension'
+          ? '연장'
+          : settlement.payment_type === 'deposit'
+            ? '입금'
+            : '일반',
+      distributor_name: distributorName, // user_profiles에서 가져온 실제 총판명
       customer_id: settlement.customer_id,
       customer_name: settlement.customer_name,
       slot_type: settlement.slot_type,
@@ -69,20 +106,22 @@ export async function GET(
       created_at: settlement.created_at,
       updated_at: settlement.updated_at,
       settlement_batch_id: settlement.settlement_batch_id, // 중요: settlement_batch_id 추가
-      completed_at: settlement.completed_at
+      completed_at: settlement.completed_at,
     };
 
     return NextResponse.json({
       success: true,
-      data: formattedSettlement
+      data: formattedSettlement,
     });
-
   } catch (error) {
     console.error('정산 데이터 조회 API 오류:', error);
-    return NextResponse.json({
-      success: false,
-      error: '정산 데이터를 조회하는 중 오류가 발생했습니다.'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: '정산 데이터를 조회하는 중 오류가 발생했습니다.',
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -94,25 +133,28 @@ export async function PATCH(
   try {
     const { id: settlementId } = await params;
     const updateData = await request.json();
-    
+
     console.log('정산 데이터 수정 시작, ID:', settlementId);
     console.log('수정 데이터:', updateData);
 
     if (!settlementId) {
-      return NextResponse.json({
-        success: false,
-        error: '정산 ID가 필요합니다.'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '정산 ID가 필요합니다.',
+        },
+        { status: 400 }
+      );
     }
 
     // 수정할 필드들만 추출 (settlement_history 테이블 구조에 맞춤)
     const allowedFields = [
       'payment_amount',
-      'usage_days', 
+      'usage_days',
       'memo',
       'status',
       'payer_name',
-      'slot_addition_date'
+      'slot_addition_date',
     ];
 
     const filteredUpdateData: Record<string, unknown> = {};
@@ -140,24 +182,29 @@ export async function PATCH(
 
     // settlement_history에서 업데이트 실패한 경우 settlements 테이블에서 시도
     if (error && error.code === 'PGRST116') {
-      console.log('settlement_history에서 업데이트 실패, settlements 테이블에서 시도');
+      console.log(
+        'settlement_history에서 업데이트 실패, settlements 테이블에서 시도'
+      );
       const result = await supabase
         .from('settlements')
         .update(filteredUpdateData)
         .eq('id', settlementId)
         .select()
         .single();
-      
+
       data = result.data;
       error = result.error;
     }
 
     if (error) {
       console.error('정산 데이터 수정 오류:', error);
-      return NextResponse.json({
-        success: false,
-        error: '정산 데이터를 수정하는 중 오류가 발생했습니다.'
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '정산 데이터를 수정하는 중 오류가 발생했습니다.',
+        },
+        { status: 500 }
+      );
     }
 
     console.log('정산 데이터 수정 완료:', data);
@@ -165,15 +212,17 @@ export async function PATCH(
     return NextResponse.json({
       success: true,
       data: data,
-      message: '정산 데이터가 성공적으로 수정되었습니다.'
+      message: '정산 데이터가 성공적으로 수정되었습니다.',
     });
-
   } catch (error) {
     console.error('정산 데이터 수정 API 오류:', error);
-    return NextResponse.json({
-      success: false,
-      error: '정산 데이터를 수정하는 중 오류가 발생했습니다.'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: '정산 데이터를 수정하는 중 오류가 발생했습니다.',
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -187,10 +236,13 @@ export async function DELETE(
     console.log('정산 데이터 삭제 시작, ID:', settlementId);
 
     if (!settlementId) {
-      return NextResponse.json({
-        success: false,
-        error: '정산 ID가 필요합니다.'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '정산 ID가 필요합니다.',
+        },
+        { status: 400 }
+      );
     }
 
     // settlement_history 테이블에서 삭제
@@ -201,24 +253,29 @@ export async function DELETE(
 
     if (error) {
       console.error('정산 데이터 삭제 오류:', error);
-      return NextResponse.json({
-        success: false,
-        error: '정산 데이터를 삭제하는 중 오류가 발생했습니다.'
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '정산 데이터를 삭제하는 중 오류가 발생했습니다.',
+        },
+        { status: 500 }
+      );
     }
 
     console.log('정산 데이터 삭제 완료');
 
     return NextResponse.json({
       success: true,
-      message: '정산 데이터가 성공적으로 삭제되었습니다.'
+      message: '정산 데이터가 성공적으로 삭제되었습니다.',
     });
-
   } catch (error) {
     console.error('정산 데이터 삭제 API 오류:', error);
-    return NextResponse.json({
-      success: false,
-      error: '정산 데이터를 삭제하는 중 오류가 발생했습니다.'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: '정산 데이터를 삭제하는 중 오류가 발생했습니다.',
+      },
+      { status: 500 }
+    );
   }
 }
