@@ -61,7 +61,7 @@ export async function PUT(
       if (status === 'active') {
         updateData.approved_at = approved_at || new Date().toISOString();
       } else if (status === 'rejected') {
-        updateData.approved_at = null; // 거부시 승인일시 제거
+        updateData.approved_at = ''; // 거부시 승인일시 제거
       }
     }
     if (approved_at !== undefined) updateData.approved_at = approved_at;
