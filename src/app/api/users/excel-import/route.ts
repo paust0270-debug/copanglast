@@ -64,10 +64,10 @@ export async function POST(request: NextRequest) {
         }
 
         // 최소 컬럼 수 확인
-        if (row.length < 6) {
-          console.log(`행 ${rowNumber}: 컬럼 수 부족 - ${row.length}개 (필요: 6개)`, row);
+        if (rowArray.length < 6) {
+          console.log(`행 ${rowNumber}: 컬럼 수 부족 - ${rowArray.length}개 (필요: 6개)`, rowArray);
           results.failed++;
-          results.errors.push(`행 ${rowNumber}: 데이터 형식이 올바르지 않습니다. (컬럼 수: ${row.length})`);
+          results.errors.push(`행 ${rowNumber}: 데이터 형식이 올바르지 않습니다. (컬럼 수: ${rowArray.length})`);
           continue;
         }
 
