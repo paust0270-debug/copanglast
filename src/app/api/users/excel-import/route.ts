@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
           phone = '',
           joinDate = new Date().toISOString(),
           slotCount = 0
-        ] = row;
+        ] = rowArray;
 
         console.log('파싱된 데이터:', {
           no, distributor, username, name, phone, joinDate, slotCount
