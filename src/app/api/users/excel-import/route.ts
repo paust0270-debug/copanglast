@@ -51,13 +51,13 @@ export async function POST(request: NextRequest) {
     for (let i = 0; i < dataRows.length; i++) {
       const row = dataRows[i];
       const rowNumber = i + 2;
+      const rowArray = row as any[];
       
       try {
         console.log(`\n=== 행 ${rowNumber} 처리 시작 ===`);
         console.log('원본 데이터:', row);
         
         // 빈 행 건너뛰기
-        const rowArray = row as any[];
         if (!rowArray || rowArray.length === 0 || rowArray.every(cell => !cell || cell.toString().trim() === '')) {
           console.log(`행 ${rowNumber}: 빈 행 건너뛰기`);
           continue;
