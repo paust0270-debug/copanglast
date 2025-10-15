@@ -96,19 +96,7 @@ export async function POST(request: NextRequest) {
     console.log('사용자 프로필 정보 저장 시작');
     
     // 기본 프로필 데이터 (username 컬럼 제외)
-    const profileData: {
-      id: string;
-      username: string;
-      password: string;
-      name: string;
-      status: string;
-      grade?: string;
-      distributor?: string;
-      phone?: string;
-      email?: string;
-      address?: string;
-      registration_date?: string;
-    } = {
+    const profileData: any = {
       id: authData.user.id, // auth.users.id와 직접 연결
       username: username, // 아이디
       password: password, // 비밀번호 추가
