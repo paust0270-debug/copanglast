@@ -226,7 +226,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (error) {
       console.error('❌ slot_status 레코드 생성 중 예외 발생:', error);
-      console.error('오류 스택:', error.stack);
+      console.error('오류 스택:', (error as any).stack);
     }
 
     // 고객의 추가횟수 증가
