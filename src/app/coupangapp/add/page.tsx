@@ -2590,7 +2590,7 @@ function SlotAddPageContent() {
                           // 전일 대비 등락폭 계산
                           const previousItem = rankHistory[index + 1];
                           const dailyChange = previousItem
-                            ? previousItem.rank - item.rank
+                            ? Number(previousItem.rank) - Number(item.rank)
                             : 0;
 
                           // 등락폭 표시 로직
