@@ -17,6 +17,20 @@ const nextConfig: NextConfig = {
   
   // 백업 폴더 제외 설정
   webpack: (config, { isServer }) => {
+    // 백업 파일들을 빌드에서 완전히 제외
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      // 백업 파일들을 빈 모듈로 대체
+      './page_backup_.tsx': false,
+      './page_backup_20250831_165903.tsx': false,
+    };
+    
+    // 백업 폴더를 빌드에서 제외
+    config.module.rules.push({
+      test: /backup_/,
+      use: 'null-loader'
+    });
+    
     config.watchOptions = {
       ...config.watchOptions,
       ignored: [
