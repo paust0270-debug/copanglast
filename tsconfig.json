@@ -23,5 +23,16 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "backup_*/**", "**/*.backup.*"]
+  "exclude": [
+    "node_modules", 
+    "backup_*/**", 
+    "**/*.backup.*",
+    "copangapp202510-fresh/**",
+    "copangappfinal/**",
+    "copangbackup/**",
+    "copanglast-backup/**",
+    "coupang-rank-checker-final-20251003/**",
+    "crawling-project-backup*/**",
+    "cupang-ranking-checker/**"
+  ]
 }

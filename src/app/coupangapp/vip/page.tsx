@@ -425,6 +425,7 @@ export default function CoupangVipPage() {
       // Supabase에 저장할 데이터 준비
       const customerData = {
         name: `_VIP_${form.keyword.substring(0, 8)}`,
+        username: `_VIP_${form.keyword.substring(0, 8)}`, // username 속성 추가
         keyword: form.keyword,
         link_url: form.linkUrl,
         slot_count: form.slotCount,
@@ -523,6 +524,7 @@ export default function CoupangVipPage() {
       const promises = parsedData.map(async (data) => {
         const customerData = {
           name: `_VIP_${data.keyword.substring(0, 8)}`,
+          username: `_VIP_${data.keyword.substring(0, 8)}`, // username 속성 추가
           keyword: data.keyword,
           link_url: data.linkUrl,
           slot_count: data.slotCount,
@@ -627,7 +629,7 @@ export default function CoupangVipPage() {
     if (!editingCustomer?.id) return;
 
     try {
-      const updatedData = {
+      const updatedData: any = {
         keyword: editForm.keyword,
         link_url: editForm.linkUrl,
         memo: editForm.memo,

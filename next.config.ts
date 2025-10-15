@@ -25,18 +25,55 @@ const nextConfig: NextConfig = {
       './page_backup_20250831_165903.tsx': false,
     };
     
-    // 백업 폴더를 빌드에서 제외
-    config.module.rules.push({
-      test: /backup_/,
-      use: 'null-loader'
-    });
+    // 모든 백업 폴더와 파일들을 빌드에서 제외
+    config.module.rules.push(
+      {
+        test: /backup_/,
+        use: 'null-loader'
+      },
+      {
+        test: /copangapp202510-fresh/,
+        use: 'null-loader'
+      },
+      {
+        test: /copangappfinal/,
+        use: 'null-loader'
+      },
+      {
+        test: /copangbackup/,
+        use: 'null-loader'
+      },
+      {
+        test: /copanglast-backup/,
+        use: 'null-loader'
+      },
+      {
+        test: /coupang-rank-checker-final-20251003/,
+        use: 'null-loader'
+      },
+      {
+        test: /crawling-project-backup/,
+        use: 'null-loader'
+      },
+      {
+        test: /cupang-ranking-checker/,
+        use: 'null-loader'
+      }
+    );
     
     config.watchOptions = {
       ...config.watchOptions,
       ignored: [
         '**/node_modules/**',
         '**/backup_*/**',
-        '**/*.backup.*'
+        '**/*.backup.*',
+        '**/copangapp202510-fresh/**',
+        '**/copangappfinal/**',
+        '**/copangbackup/**',
+        '**/copanglast-backup/**',
+        '**/coupang-rank-checker-final-20251003/**',
+        '**/crawling-project-backup*/**',
+        '**/cupang-ranking-checker/**'
       ]
     };
     return config;

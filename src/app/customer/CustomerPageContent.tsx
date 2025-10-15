@@ -37,7 +37,7 @@ export function CustomerPageContent() {
   const [loading, setLoading] = useState(true);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editForm, setEditForm] = useState<Partial<Customer>>({});
+  const [editForm, setEditForm] = useState<any>({});
   const [editPasswordConfirm, setEditPasswordConfirm] = useState('');
   const [isExcelImportModalOpen, setIsExcelImportModalOpen] = useState(false);
   const [excelImportFile, setExcelImportFile] = useState<File | null>(null);
@@ -185,24 +185,15 @@ export function CustomerPageContent() {
     }
 
     try {
-      const updateData: {
-        username: string;
-        name: string;
-        email: string;
-        phone: string;
-        kakaoId: string;
-        distributor: string;
-        workGroup: string;
-        memo: string;
-      } = {
+      const updateData: any = {
         username: editForm.username,
         name: editForm.name,
-        email: editForm.email,
-        phone: editForm.phone,
-        kakaoId: editForm.kakaoId,
-        memo: editForm.memo,
-        grade: editForm.grade,
+        email: editForm.email || '',
+        phone: editForm.phone || '',
+        kakaoId: editForm.kakaoId || '',
+        memo: editForm.memo || '',
         distributor: editForm.distributor,
+        workGroup: editForm.workGroup || '',
       };
 
       // 비밀번호가 변경된 경우에만 포함 (빈 문자열이 아닌 경우)
