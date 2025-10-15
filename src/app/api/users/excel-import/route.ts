@@ -224,7 +224,7 @@ export async function POST(request: NextRequest) {
 
       } catch (error) {
         console.error(`행 ${rowNumber} 처리 중 오류:`, error);
-        const username = row[2] || '알 수 없음';
+        const username = rowArray[2] || '알 수 없음';
         results.failed++;
         results.errors.push(`행 ${rowNumber} (${username}): ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
       }
