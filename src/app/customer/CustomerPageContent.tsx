@@ -48,29 +48,22 @@ export function CustomerPageContent() {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [distributors, setDistributors] = useState<Distributor[]>([]);
 
-  // Supabase에서 고객 목록 가져오기
+  // Supabase에서 고객 목록 가져오기 (최적화)
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      console.log('고객 목록 조회 시작...');
-
       const response = await fetch('/api/users');
       const result = await response.json();
 
-      console.log('API 응답:', result);
-
       if (response.ok) {
         setCustomers(result.users || []);
-        console.log('고객 목록 조회 성공:', result.users?.length || 0, '명');
       } else {
         console.error('고객 목록 조회 실패:', result.error);
         alert(`고객 목록을 가져올 수 없습니다: ${result.error}`);
       }
     } catch (error) {
       console.error('고객 목록 조회 오류:', error);
-      alert(
-        '고객 목록을 가져오는 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.'
-      );
+      alert('고객 목록을 가져오는 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -86,18 +79,18 @@ export function CustomerPageContent() {
     }
   };
 
-  // 로그인 상태 확인
+  // 로그인 상태 확인 및 데이터 로드 (최적화)
   useEffect(() => {
     const user = localStorage.getItem('user');
     if (user) {
       setCurrentUser(JSON.parse(user));
+      // 병렬로 데이터 로드하여 성능 향상
+      Promise.all([fetchCustomers(), fetchDistributors()]);
     } else {
       // 로그인되지 않은 경우 로그인 페이지로 리다이렉트
       router.push('/login');
       return;
     }
-    fetchCustomers();
-    fetchDistributors();
   }, [router]);
 
   // 고객 목록이 변경될 때 선택 상태 초기화

@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { fixSchemaCacheIssues, withSchemaCacheFix } from '@/lib/schema-utils';
 
 export async function POST(request: NextRequest) {
   try {
-    // 스키마 캐시 문제 사전 해결
-    console.log('🔄 회원가입 전 스키마 캐시 문제 해결 중...');
-    await fixSchemaCacheIssues();
     
     const body = await request.json();
     const { username, password, name, email, phone, kakaoId } = body;
@@ -48,7 +44,7 @@ export async function POST(request: NextRequest) {
       });
     };
 
-    const { data: authData, error: authError } = await withSchemaCacheFix(createAuthUser)();
+    const { data: authData, error: authError } = await createAuthUser();
 
     if (authError) {
       console.error('Auth 사용자 생성 오류:', authError);
@@ -146,7 +142,7 @@ export async function POST(request: NextRequest) {
         .single();
     };
 
-    const { data: profile, error: profileError } = await withSchemaCacheFix(insertProfile)();
+    const { data: profile, error: profileError } = await insertProfile();
 
     if (profileError) {
       console.error('프로필 저장 오류:', profileError);
@@ -179,7 +175,7 @@ export async function POST(request: NextRequest) {
             .single();
         };
         
-        const { data: retryProfile, error: retryError } = await withSchemaCacheFix(retryInsert)();
+        const { data: retryProfile, error: retryError } = await retryInsert();
         
         if (retryError) {
           return NextResponse.json(
@@ -250,19 +246,11 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
-    // 스키마 캐시 문제 사전 해결
-    console.log('🔄 사용자 목록 조회 전 스키마 캐시 문제 해결 중...');
-    await fixSchemaCacheIssues();
-    
-    // user_profiles 테이블에서 사용자 목록 조회 (스키마 캐시 문제 해결 적용)
-    const getUsers = async () => {
-      return await supabase
-        .from('user_profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-    };
-
-    const { data: profiles, error } = await withSchemaCacheFix(getUsers)();
+    // user_profiles 테이블에서 사용자 목록 조회 (최적화: 스키마 캐시 문제 해결 제거)
+    const { data: profiles, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('사용자 목록 조회 오류:', error);
@@ -284,6 +272,7 @@ export async function GET() {
       memo: profile.memo,
       grade: profile.grade,
       distributor: profile.distributor,
+      distributor_name: profile.distributor, // distributor 값을 distributor_name으로도 매핑
       manager_id: profile.manager_id,
       status: profile.status,
       slot_used: profile.slot_used,

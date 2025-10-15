@@ -13,7 +13,7 @@ const nextConfig = {
   },
   // 빌드 시 linting 완전 비활성화
   experimental: {
-    esmExternals: false,
+    // esmExternals: false, // Turbopack과 호환되지 않음
   },
   // 웹팩 설정으로 ESLint와 TypeScript 체크 완전 비활성화
   webpack: (config, { dev, isServer }) => {

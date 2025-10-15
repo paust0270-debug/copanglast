@@ -23,6 +23,9 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type'); // 'slots' 또는 'slot_status' 구분
     const skipSlotsTable = searchParams.get('skipSlotsTable'); // slots 테이블 조회 건너뛰기
 
+    // distributorMap을 함수 최상위에서 정의
+    let distributorMap = new Map();
+
     // type 파라미터에 따라 다른 테이블 조회
     if (type === 'slot_status') {
       // slot_status 테이블 조회 (쿠팡 앱 추가 페이지용) - 키워드가 있는 레코드만
@@ -85,6 +88,52 @@ export async function GET(request: NextRequest) {
       } else if (skipSlotsTable) {
         console.log('⏭️ slots 테이블 조회 건너뛰기 (skipSlotsTable=true)');
         slotsData = [];
+        
+        // skipSlotsTable=true일 때도 일시중지된 슬롯 필터링을 위해 필요한 slots 데이터만 조회
+        if (type === 'slot_status' && slotStatusData && slotStatusData.length > 0) {
+          try {
+            // 고유한 slot_sequence 목록 추출
+            const uniqueSlotSequences = [...new Set(slotStatusData.map(slot => slot.slot_sequence))];
+            
+            // slots 테이블에서 상태 정보만 조회
+            const { data: slotsStatusData } = await supabase
+              .from('slots')
+              .select('id, status')
+              .in('id', uniqueSlotSequences);
+            
+            // slotsData를 상태 정보만 포함하도록 설정
+            slotsData = slotsStatusData || [];
+            console.log('✅ 일시중지 필터링을 위한 slots 상태 조회 완료:', slotsData.length, '개');
+          } catch (err) {
+            console.log('slots 상태 조회 중 오류 (무시):', err);
+            slotsData = [];
+          }
+        }
+      }
+
+      // user_profiles 테이블에서 distributor 값 조회 (type=slot_status일 때)
+      if (type === 'slot_status' && slotStatusData && slotStatusData.length > 0) {
+        try {
+          // 고유한 customer_id 목록 추출
+          const uniqueCustomerIds = [...new Set(slotStatusData.map(slot => slot.customer_id))];
+          
+          // user_profiles 테이블에서 distributor 값 조회
+          const { data: userProfilesData } = await supabase
+            .from('user_profiles')
+            .select('username, distributor')
+            .in('username', uniqueCustomerIds);
+
+          // Map으로 변환하여 빠른 조회 가능하도록 함
+          if (userProfilesData) {
+            userProfilesData.forEach(profile => {
+              distributorMap.set(profile.username, profile.distributor || '일반');
+            });
+          }
+          
+          console.log('✅ user_profiles distributor 매핑 완료:', distributorMap);
+        } catch (err) {
+          console.log('user_profiles distributor 조회 중 오류 (무시):', err);
+        }
       }
 
       // slot_status 데이터를 슬롯 등록 목록 형식으로 변환 (사용자별 순번 1번부터 시작)
@@ -348,14 +397,15 @@ export async function GET(request: NextRequest) {
       // slots 테이블에서 customer_name 조회
       if (customerSlots && customerSlots.length > 0) {
         customerName = customerSlots[0].customer_name || '';
-        distributor = customerSlots[0].work_group || '일반';
+        // work_group 대신 user_profiles의 distributor 값을 사용
+        // distributor = customerSlots[0].work_group || '일반';
       }
 
-      // customer_name이 없으면 users 테이블에서 조회
+      // customer_name이 없으면 user_profiles 테이블에서 조회
       if (!customerName) {
         try {
           const { data: userData } = await supabase
-            .from('users')
+            .from('user_profiles')
             .select('name, distributor')
             .eq('username', username)
             .single();
@@ -365,8 +415,24 @@ export async function GET(request: NextRequest) {
             distributor = userData.distributor || '일반';
           }
         } catch (err) {
-          console.log('users 테이블 조회 중 오류 (무시):', err);
+          console.log('user_profiles 테이블 조회 중 오류 (무시):', err);
         }
+      }
+
+      // 항상 user_profiles 테이블에서 distributor 값을 조회
+      try {
+        const { data: userProfileData } = await supabase
+          .from('user_profiles')
+          .select('distributor')
+          .eq('username', username)
+          .single();
+
+        if (userProfileData && userProfileData.distributor) {
+          distributor = userProfileData.distributor;
+          console.log('✅ user_profiles에서 distributor 조회:', distributor);
+        }
+      } catch (err) {
+        console.log('user_profiles distributor 조회 중 오류 (무시):', err);
       }
 
       return NextResponse.json({
@@ -391,7 +457,7 @@ export async function GET(request: NextRequest) {
             expiryDate: customerSlots[0]?.payment_date || '',
             addDate: customerSlots[0]?.payment_date || '',
             status: customerSlots[0]?.status || 'active',
-            userGroup: distributor,
+            userGroup: distributor || '일반',
           },
         ],
         stats: {
@@ -484,7 +550,7 @@ export async function GET(request: NextRequest) {
             ? new Date(slot.created_at).toISOString().split('T')[0]
             : '',
           status: isExpired ? 'expired' : slot.status,
-          userGroup: slot.work_group || '일반',
+          userGroup: distributorMap.get(slot.customer_id) || slot.work_group || '일반',
         };
       }) || [];
 

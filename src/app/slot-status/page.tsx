@@ -490,7 +490,7 @@ function SlotStatusPageContent() {
                     순번
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    총판
+                    소속총판
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     아이디

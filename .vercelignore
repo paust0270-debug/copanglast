@@ -1,0 +1,60 @@
+# 백업 폴더들
+backup_*/
+copangapp*/
+copangbackup/
+copanglast-backup/
+coupang-rank-checker-final-*/
+crawling-project-backup-*/
+cupang-ranking-checker/
+temp_backup_*/
+temp-backup-restore/
+
+# 데이터베이스 백업 파일들
+database_backup_*.json
+database-backup-*.sql
+*.xlsx
+
+# Python 캐시
+__pycache__/
+*.pyc
+*.pyo
+
+# Node modules (Vercel에서 자동 설치)
+node_modules/
+
+# 빌드 결과물
+.next/
+dist/
+
+# 로그 파일들
+*.log
+
+# 임시 파일들
+*.tmp
+*.temp
+
+# 대용량 파일들
+*.zip
+*.tar.gz
+*.rar
+
+# 개발 도구 파일들
+.vscode/
+.husky/
+
+# 환경 변수 파일들 (Vercel에서 별도 설정)
+.env
+.env.local
+.env.example
+
+# Git 관련
+.git/
+
+# 기타 불필요한 파일들
+*.md
+*.txt
+*.sql
+*.js
+*.py
+*.bat
+

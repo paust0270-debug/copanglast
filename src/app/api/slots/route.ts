@@ -122,6 +122,7 @@ export async function GET(request: NextRequest) {
 
 // 슬롯 추가
 export async function POST(request: NextRequest) {
+  const isDevMode = process.env.NODE_ENV === 'development';
   try {
     if (isDevMode) console.log('🔄 슬롯 추가 시작...');
 
