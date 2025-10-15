@@ -157,7 +157,7 @@ function SlotAddPageContent() {
         },
       ];
 
-      setRankHistory(tempRankHistory);
+      setRankHistory(tempRankHistory as any);
       setShowRankChart(true); // 모달창 열기
 
       // 실제 API 호출은 주석 처리 (테스트용)
