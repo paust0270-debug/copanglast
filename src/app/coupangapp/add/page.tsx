@@ -2,7 +2,8 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { calculateRemainingTimeKST } from '@/lib/utils';
+import { calculateRemainingTimeKST, calculateTrafficKST } from '@/lib/utils';
+import { calculateTrafficFromWorkStart } from '@/lib/utils';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import {
   fixSchemaCacheIssues,
   withSchemaCacheFix,
@@ -121,6 +123,14 @@ function SlotAddPageContent() {
   const [selectedSlot, setSelectedSlot] = useState<CustomerSlot | null>(null);
   const [rankHistory, setRankHistory] = useState<RankHistory[]>([]);
   const [showRankChart, setShowRankChart] = useState(false);
+  const [sortField, setSortField] = useState<string>(''); // 정렬 필드
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc'); // 정렬 방향
+  
+  // 각 슬롯별 작업 시작 시간 관리 (슬롯 ID -> 시작 시간)
+  const [workStartTimes, setWorkStartTimes] = useState<Map<string, string>>(new Map());
+  
+  // 개발 모드에서만 디버깅 로그 출력
+  const isDevMode = process.env.NODE_ENV === 'development';
 
   // 고객 페이지 데이터 (아이디, 고객명, 소속총판)
   const [customerData, setCustomerData] = useState<Record<string, unknown>[]>(
@@ -163,6 +173,80 @@ function SlotAddPageContent() {
       // 실제 API 호출은 주석 처리 (테스트용)
       // await fetchRankHistoryFromAPI(slot.customerId, slot.slotSequence);
     }
+  };
+
+  // 정렬 핸들러
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      // 같은 필드 클릭 시 정렬 방향 토글
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // 다른 필드 클릭 시 오름차순으로 설정
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // 정렬된 고객 목록 생성
+  const getSortedCustomers = (customers: CustomerSlot[]) => {
+    if (!sortField) return customers;
+
+    return [...customers].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortField) {
+        case 'remainingDays':
+          // 잔여기간을 총 일수로 변환하여 정렬
+          const parseRemainingDays = (daysStr: string) => {
+            if (!daysStr) return 0;
+            
+            // "29일 22시간 28분" 형태에서 일수만 추출
+            const dayMatch = daysStr.match(/(\d+)일/);
+            if (dayMatch) {
+              const days = parseInt(dayMatch[1]);
+              // 시간과 분도 고려하여 더 정확한 정렬
+              const hourMatch = daysStr.match(/(\d+)시간/);
+              const minuteMatch = daysStr.match(/(\d+)분/);
+              const hours = hourMatch ? parseInt(hourMatch[1]) : 0;
+              const minutes = minuteMatch ? parseInt(minuteMatch[1]) : 0;
+              
+              // 총 시간을 일 단위로 변환 (더 정확한 정렬)
+              return days + (hours / 24) + (minutes / (24 * 60));
+            }
+            
+            // "30일" 형태에서 숫자만 추출
+            const simpleMatch = daysStr.match(/(\d+)/);
+            return simpleMatch ? parseInt(simpleMatch[1]) : 0;
+          };
+          
+          aValue = parseRemainingDays(a.remainingDays || '');
+          bValue = parseRemainingDays(b.remainingDays || '');
+          break;
+        case 'customer':
+          aValue = a.customer || '';
+          bValue = b.customer || '';
+          break;
+        case 'nickname':
+          aValue = a.nickname || '';
+          bValue = b.nickname || '';
+          break;
+        case 'currentRank':
+          aValue = parseInt(a.currentRank?.replace(/[^0-9]/g, '') || '0');
+          bValue = parseInt(b.currentRank?.replace(/[^0-9]/g, '') || '0');
+          break;
+        case 'registrationDate':
+          aValue = new Date(a.registrationDate || '').getTime();
+          bValue = new Date(b.registrationDate || '').getTime();
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
   };
 
   // API에서 순위 히스토리 가져오기
@@ -221,8 +305,8 @@ function SlotAddPageContent() {
   // 실시간 잔여기간 카운팅을 위한 상태
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // 실시간 트래픽 카운터 상태 (300을 24시간으로 나눠서 1씩 증가)
-  const [trafficCounter, setTrafficCounter] = useState(0);
+  // 실시간 트래픽 카운터 - 화면 강제 업데이트용 상태
+  const [, setForceUpdate] = useState(0);
 
   // 수정 모드 상태 관리
   const [editingCustomer, setEditingCustomer] = useState<CustomerSlot | null>(
@@ -388,27 +472,11 @@ function SlotAddPageContent() {
     };
   }, [showRankChart]);
 
-  // 실시간 트래픽 카운터 업데이트 (1초마다)
+  // 실시간 트래픽 카운터 업데이트 (10초마다)
   useEffect(() => {
     const timer = setInterval(() => {
-      const now = new Date();
-      const startOfDay = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate()
-      );
-      const millisecondsSinceStartOfDay = now.getTime() - startOfDay.getTime();
-      const secondsSinceStartOfDay = millisecondsSinceStartOfDay / 1000;
-
-      // 24시간(86400초) 동안 300번의 1씩 증가가 일어나도록 계산
-      // 86400초 / 300 = 288초마다 1씩 증가
-      const incrementPerSecond = 300 / (24 * 60 * 60); // 0.00347...
-      const currentCounter = Math.floor(
-        secondsSinceStartOfDay * incrementPerSecond
-      );
-
-      setTrafficCounter(currentCounter % 300);
-    }, 1000);
+      setForceUpdate(prev => prev + 1);
+    }, 10000); // 10초마다 화면 업데이트
 
     return () => clearInterval(timer);
   }, []);
@@ -595,6 +663,53 @@ function SlotAddPageContent() {
 
       setCustomers(convertedData);
 
+      // workStartTimes는 기존 데이터 유지, 새로운 슬롯만 추가
+      setWorkStartTimes(prev => {
+        const newMap = new Map(prev);
+        // workStartTimes 업데이트
+        if (isDevMode) {
+          console.log('🔄 loadCustomers - workStartTimes 업데이트:', {
+            prevWorkStartTimes: Array.from(prev.entries()),
+            convertedDataLength: convertedData.length
+          });
+        }
+        
+        convertedData.forEach(slot => {
+          if (slot.id) {
+            const slotId = slot.id.toString();
+            if (!newMap.has(slotId)) {
+              // 작업 시작 시간이 없으면 created_at을 기준으로 설정
+              const workStartTime = slot.created_at || new Date().toISOString();
+              // 새로운 슬롯 workStartTime 설정
+              if (isDevMode) {
+                console.log('➕ 새로운 슬롯 workStartTime 설정:', {
+                  slotId,
+                  workStartTime
+                });
+              }
+              newMap.set(slotId, workStartTime);
+            } else {
+              // 기존 슬롯 workStartTime 유지
+              if (isDevMode) {
+                console.log('🔄 기존 슬롯 workStartTime 유지:', {
+                  slotId,
+                  existingWorkStartTime: newMap.get(slotId)
+                });
+              }
+            }
+          }
+        });
+        
+        // 최종 workStartTimes 업데이트 완료
+        if (isDevMode) {
+          console.log('✅ loadCustomers - 최종 workStartTimes:', Array.from(newMap.entries()));
+        }
+        return newMap;
+      });
+
+      // 삭제 후에는 workStartTimes를 완전히 초기화하지 않음
+      // 대신 새로운 슬롯만 추가하고 기존 데이터는 유지
+
       // 작업등록된 슬롯이 있는지 확인 (keyword가 있는 슬롯이 있는지)
       const hasRegisteredSlots = convertedData.some(
         slot => slot.keyword && slot.keyword.trim() !== ''
@@ -717,12 +832,37 @@ function SlotAddPageContent() {
         throw new Error(result.error || '슬롯 등록에 실패했습니다.');
       }
 
+      // 작업 시작 시간 기록 (현재 시간을 KST로 저장)
+      const now = new Date();
+      const kstOffset = 9 * 60; // UTC+9
+      const kstNow = new Date(now.getTime() + kstOffset * 60 * 1000);
+      const workStartTime = kstNow.toISOString();
+      
+      // 슬롯 ID별로 작업 시작 시간 저장
+      setWorkStartTimes(prev => {
+        const newMap = new Map(prev);
+        // result.data가 배열이므로 첫 번째 요소의 id 사용
+        if (result.data && result.data.length > 0 && result.data[0].id) {
+          const slotId = result.data[0].id.toString();
+          // 작업 시작 시간 저장
+          if (isDevMode) {
+            console.log('🔄 새로운 슬롯 등록 - 작업 시작 시간 저장:', {
+              slotId,
+              workStartTime,
+              prevWorkStartTimes: Array.from(prev.entries())
+            });
+          }
+          newMap.set(slotId, workStartTime);
+        }
+        return newMap;
+      });
+
       // traffic 테이블 저장은 slot_status API에서 자동으로 처리됩니다.
 
       // 새로운 슬롯 등록 추가 (화면 업데이트)
       const newCustomer: CustomerSlot = {
-        id: result.data.id,
-        customer: result.data.customer_name || finalCustomerName,
+        id: result.data[0].id,
+        customer: result.data[0].customer_name || finalCustomerName,
         nickname: form.keyword.substring(0, 10),
         workGroup: form.workGroup,
         keyword: form.keyword,
@@ -998,8 +1138,29 @@ function SlotAddPageContent() {
           };
         });
 
-        // 슬롯 등록 목록 새로고침
-        await loadCustomers();
+        // 개별삭제 후에는 해당 슬롯의 workStartTimes만 제거
+        if (isDevMode) {
+          console.log('🗑️ 개별 삭제 - 해당 슬롯 workStartTimes 제거');
+        }
+        setWorkStartTimes(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(id.toString());
+          return newMap;
+        });
+
+        // 로컬 상태만 업데이트 (loadCustomers 호출하지 않음)
+        setCustomers(prev => prev.filter(customer => customer.id !== id));
+        
+        // 슬롯 현황 업데이트
+        setCustomerSlotStatus(prev => {
+          const newUsedSlots = Math.max(0, prev.usedSlots - (customerToDelete?.slotCount || 0));
+          const newRemainingSlots = prev.totalSlots - newUsedSlots;
+          return {
+            ...prev,
+            usedSlots: newUsedSlots,
+            remainingSlots: newRemainingSlots,
+          };
+        });
 
         // 작업등록 상태 재확인
         const updatedCustomers = customers.filter(
@@ -1234,6 +1395,26 @@ function SlotAddPageContent() {
       setCustomers(prev =>
         prev.filter(customer => !selectedCustomers.has(customer.id || 0))
       );
+
+      // 전체 삭제인 경우 workStartTimes 완전 초기화
+      if (selectedCustomers.size === customers.length) {
+        if (isDevMode) {
+          console.log('🗑️ 전체 삭제 - workStartTimes 완전 초기화');
+        }
+        setWorkStartTimes(new Map());
+      } else {
+        // 개별 삭제인 경우 해당 슬롯들의 workStartTimes만 제거
+        if (isDevMode) {
+          console.log('🗑️ 개별 삭제 - 선택된 슬롯들의 workStartTimes 제거');
+        }
+        setWorkStartTimes(prev => {
+          const newMap = new Map(prev);
+          selectedIds.forEach(slotId => {
+            newMap.delete(slotId.toString());
+          });
+          return newMap;
+        });
+      }
 
       // 슬롯 현황 업데이트 (삭제된 슬롯 개수만큼 사용 중 슬롯 수 감소)
       setCustomerSlotStatus(prev => {
@@ -2062,55 +2243,76 @@ function SlotAddPageContent() {
                 <table className="w-full border-collapse border border-gray-300">
                   <thead>
                     <tr className="bg-gray-100">
-                      <th className="border border-gray-300 p-2 text-center w-8">
+                      <th className="border border-gray-300 p-1 text-center w-8">
                         <Checkbox
                           checked={selectAll}
                           onCheckedChange={handleSelectAll}
                         />
                       </th>
-                      <th className="border border-gray-300 p-2 text-center w-12">
+                      <th className="border border-gray-300 p-1 text-center w-12 text-xs font-medium">
                         순번
                       </th>
-                      <th className="border border-gray-300 p-2 text-center w-24">
+                      <th className="border border-gray-300 p-1 text-center w-24 text-xs font-medium">
                         아이디
                       </th>
-                      <th className="border border-gray-300 p-2 text-center w-32">
+                      <th className="border border-gray-300 p-1 text-center w-32 text-xs font-medium whitespace-nowrap">
                         작업그룹/검색어
                       </th>
-                      <th className="border border-gray-300 p-2 text-center w-48">
+                      <th className="border border-gray-300 p-1 text-center w-48 text-xs font-medium whitespace-nowrap">
                         링크주소/메모
                       </th>
-                      <th className="border border-gray-300 p-2 text-center w-20">
+                      <th className="border border-gray-300 p-1 text-center w-20 text-xs font-medium whitespace-nowrap">
                         현재순위
                       </th>
-                      <th className="border border-gray-300 p-2 text-center w-20">
+                      <th className="border border-gray-300 p-1 text-center w-20 text-xs font-medium whitespace-nowrap">
                         시작순위
                       </th>
-                      <th className="border border-gray-300 p-2 text-center w-16">
+                      <th className="border border-gray-300 p-1 text-center w-16 text-xs font-medium">
                         슬롯
                       </th>
-                      <th className="border border-gray-300 p-2 text-center w-20">
+                      <th className="border border-gray-300 p-1 text-center w-20 text-xs font-medium">
                         트래픽
                       </th>
-                      <th className="border border-gray-300 p-2 text-center w-24">
+                      <th className="border border-gray-300 p-1 text-center w-24 text-xs font-medium whitespace-nowrap">
                         장비그룹
                       </th>
-                      <th className="border border-gray-300 p-2 text-center w-28">
-                        잔여기간
+                      <th className="border border-gray-300 p-1 text-center w-28 text-xs font-medium">
+                        <button
+                          onClick={() => handleSort('remainingDays')}
+                          className="flex items-center justify-center gap-1 w-full hover:bg-gray-100 rounded px-1 py-1 whitespace-nowrap"
+                        >
+                          잔여기간
+                          <div className="flex flex-col">
+                            <ChevronUp 
+                              className={`w-3 h-3 ${
+                                sortField === 'remainingDays' && sortDirection === 'asc' 
+                                  ? 'text-blue-600' 
+                                  : 'text-gray-400'
+                              }`} 
+                            />
+                            <ChevronDown 
+                              className={`w-3 h-3 ${
+                                sortField === 'remainingDays' && sortDirection === 'desc' 
+                                  ? 'text-blue-600' 
+                                  : 'text-gray-400'
+                              }`} 
+                            />
+                          </div>
+                        </button>
                       </th>
-                      <th className="border border-gray-300 p-2 text-center w-32">
+                      <th className="border border-gray-300 p-1 text-center w-32 text-xs font-medium whitespace-nowrap">
                         등록일/만료일
                       </th>
-                      <th className="border border-gray-300 p-2 text-center w-16">
+                      <th className="border border-gray-300 p-1 text-center w-16 text-xs font-medium">
                         상태
                       </th>
-                      <th className="border border-gray-300 p-2 text-center w-20">
+                      <th className="border border-gray-300 p-1 text-center w-20 text-xs font-medium">
                         작업
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {customers.map((customer, index) => (
+                    {getSortedCustomers(customers).map((customer, index) => (
                       <tr
                         key={`customer-${customer.id || index}`}
                         className={
@@ -2121,7 +2323,7 @@ function SlotAddPageContent() {
                               : ''
                         }
                       >
-                        <td className="border border-gray-300 p-2 text-center">
+                        <td className="border border-gray-300 p-1 text-center text-xs">
                           <Checkbox
                             checked={selectedCustomers.has(customer.id || 0)}
                             onCheckedChange={checked =>
@@ -2132,10 +2334,10 @@ function SlotAddPageContent() {
                             }
                           />
                         </td>
-                        <td className="border border-gray-300 p-2 text-center text-xs">
+                        <td className="border border-gray-300 p-1 text-center text-xs">
                           {customer.id}
                         </td>
-                        <td className="border border-gray-300 p-2 text-center">
+                        <td className="border border-gray-300 p-1 text-center text-xs">
                           {(() => {
                             // URL 파라미터에서 customerId와 username 확인
                             const urlParams = new URLSearchParams(
@@ -2235,7 +2437,7 @@ function SlotAddPageContent() {
                             }
                           })()}
                         </td>
-                        <td className="border border-gray-300 p-2 text-center">
+                        <td className="border border-gray-300 p-1 text-center text-xs">
                           <div className="mb-1">
                             <Select
                               value={
@@ -2280,7 +2482,7 @@ function SlotAddPageContent() {
                             readOnly={editingCustomer?.id !== customer.id}
                           />
                         </td>
-                        <td className="border border-gray-300 p-2 text-center">
+                        <td className="border border-gray-300 p-1 text-center text-xs">
                           <div className="mb-1">
                             <Input
                               value={
@@ -2318,7 +2520,7 @@ function SlotAddPageContent() {
                             placeholder="메모를 입력하세요"
                           />
                         </td>
-                        <td className="border border-gray-300 p-2 text-center text-xs">
+                        <td className="border border-gray-300 p-1 text-center text-xs">
                           <button
                             onClick={e => {
                               e.preventDefault();
@@ -2346,10 +2548,10 @@ function SlotAddPageContent() {
                             </span>
                           </button>
                         </td>
-                        <td className="border border-gray-300 p-2 text-center text-xs">
+                        <td className="border border-gray-300 p-1 text-center text-xs">
                           {customer.startRank}
                         </td>
-                        <td className="border border-gray-300 p-2 text-center">
+                        <td className="border border-gray-300 p-1 text-center text-xs">
                           {editingCustomer?.id === customer.id ? (
                             <Input
                               type="number"
@@ -2368,13 +2570,26 @@ function SlotAddPageContent() {
                             </span>
                           )}
                         </td>
-                        <td className="border border-gray-300 p-2 text-center">
-                          <div className="text-xs">{customer.traffic}</div>
-                          <div className="text-xs text-gray-600">
-                            {trafficCounter}
+                        <td className="border border-gray-300 p-1 text-center text-xs">
+                          <div className="text-xs">
+                            {(() => {
+                              const slotId = customer.id?.toString() || '';
+                              const workStartTime = workStartTimes.get(slotId);
+                              const traffic = calculateTrafficFromWorkStart(workStartTime);
+                              // 트래픽 계산
+                              if (isDevMode) {
+                                console.log('📊 트래픽 계산:', {
+                                  slotId,
+                                  workStartTime,
+                                  traffic,
+                                  allWorkStartTimes: Array.from(workStartTimes.entries())
+                                });
+                              }
+                              return traffic;
+                            })()}
                           </div>
                         </td>
-                        <td className="border border-gray-300 p-2 text-center">
+                        <td className="border border-gray-300 p-1 text-center text-xs">
                           <Select
                             value={
                               editingCustomer?.id === customer.id
@@ -2400,18 +2615,18 @@ function SlotAddPageContent() {
                             </SelectContent>
                           </Select>
                         </td>
-                        <td className="border border-gray-300 p-2 text-center">
+                        <td className="border border-gray-300 p-1 text-center text-xs">
                           <span className="inline-block px-1 py-0.5 bg-red-100 text-red-800 text-xs rounded">
                             {customer.remainingDays}
                           </span>
                         </td>
-                        <td className="border border-gray-300 p-2 text-center text-xs">
+                        <td className="border border-gray-300 p-1 text-center text-xs">
                           {customer.registrationDate}
                         </td>
-                        <td className="border border-gray-300 p-2 text-center">
+                        <td className="border border-gray-300 p-1 text-center text-xs">
                           {getStatusBadge(customer.status)}
                         </td>
-                        <td className="border border-gray-300 p-2 text-center">
+                        <td className="border border-gray-300 p-1 text-center text-xs">
                           <div className="flex justify-center space-x-2">
                             {editingCustomer?.id === customer.id ? (
                               <>

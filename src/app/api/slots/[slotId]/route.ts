@@ -121,63 +121,54 @@ export async function PATCH(
   }
 }
 
-// 슬롯 수정
+// 슬롯 메모 수정 (메모만 수정 가능)
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ slotId: string }> }
 ) {
   try {
     const { slotId } = await params;
-    console.log(`🔄 슬롯 수정 시작: ${slotId}`);
+    console.log(`🔄 슬롯 메모 수정 시작: ${slotId}`);
 
     const body = await request.json();
-    const {
-      payment_type,
-      payer_name,
-      payment_amount,
-      payment_date,
-      usage_days,
-      memo,
-    } = body;
+    const { memo } = body;
 
-    // 수정할 데이터 준비
-    const updateData: Record<string, unknown> = {
-      updated_at: getTimestampWithoutMs(),
-    };
+    if (!slotId) {
+      return NextResponse.json({ error: '슬롯 ID가 필요합니다.' }, { status: 400 });
+    }
 
-    if (payment_type !== undefined) updateData.payment_type = payment_type;
-    if (payer_name !== undefined) updateData.payer_name = payer_name;
-    if (payment_amount !== undefined)
-      updateData.payment_amount = payment_amount;
-    if (payment_date !== undefined) updateData.payment_date = payment_date;
-    if (usage_days !== undefined) updateData.usage_days = usage_days;
-    if (memo !== undefined) updateData.memo = memo;
-
-    // 슬롯 수정
+    // 메모만 업데이트
     const { data: slot, error } = await supabase
       .from('slots')
-      .update(updateData)
+      .update({ 
+        memo: memo || null,
+        updated_at: getTimestampWithoutMs()
+      })
       .eq('id', slotId)
       .select()
       .single();
 
     if (error) {
-      console.error('슬롯 수정 오류:', error);
+      console.error('슬롯 메모 수정 오류:', error);
       return NextResponse.json(
-        { error: `슬롯 수정 중 오류가 발생했습니다: ${error.message}` },
+        { error: `슬롯 메모 수정 중 오류가 발생했습니다: ${error.message}` },
         { status: 500 }
       );
     }
 
-    console.log('✅ 슬롯 수정 완료:', slot);
+    if (!slot) {
+      return NextResponse.json({ error: '해당 슬롯을 찾을 수 없습니다.' }, { status: 404 });
+    }
+
+    console.log('✅ 슬롯 메모 수정 완료:', slot);
 
     return NextResponse.json({
       success: true,
       data: slot,
-      message: '슬롯이 성공적으로 수정되었습니다.',
+      message: '슬롯 메모가 성공적으로 수정되었습니다.',
     });
   } catch (error) {
-    console.error('슬롯 수정 API 예외 발생:', error);
+    console.error('슬롯 메모 수정 API 예외 발생:', error);
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }

@@ -13,22 +13,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
+// import { Textarea } from '@/components/ui/textarea';
+// import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import {
-  Users,
+  // Users,
   ShoppingCart,
-  Plus,
+  // Plus,
   X,
-  Calendar,
-  DollarSign,
-  Clock,
-  FileText,
+  // Calendar,
+  // DollarSign,
+  // Clock,
+  // FileText,
   Edit,
   Save,
-  Filter,
+  // Filter,
   Search,
+  Pause,
+  Play,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 
@@ -53,13 +57,19 @@ interface Slot {
   extension_count?: number;
   total_used_days?: number;
   remaining_days?: number;
+  remaining_hours?: number;
+  remaining_minutes?: number;
+  remainingTimeString?: string;
   expiry_date?: string;
   username?: string; // customer_name과 동일
 }
 
 function SlotsPageContentInner() {
-  const router = useRouter();
+  // const router = useRouter();
   const [slots, setSlots] = useState<Slot[]>([]);
+  
+  // 개발 모드에서만 디버깅 로그 출력
+  const isDevMode = process.env.NODE_ENV === 'development';
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -67,8 +77,9 @@ function SlotsPageContentInner() {
   const [selectedDistributor, setSelectedDistributor] = useState<string>('all');
   const [selectedSlotType, setSelectedSlotType] = useState<string>('all');
   const [searchKeyword, setSearchKeyword] = useState<string>('');
-
-  const distributors = ['총판선택', '본사'];
+  const [distributors, setDistributors] = useState<string[]>(['전체']);
+  const [sortField, setSortField] = useState<string>(''); // 정렬 필드
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc'); // 정렬 방향
   const slotTypes = [
     '쿠팡',
     '쿠팡VIP',
@@ -79,11 +90,29 @@ function SlotsPageContentInner() {
     '알리',
   ];
 
-  const searchParams = useSearchParams();
+  // const searchParams = useSearchParams();
 
   useEffect(() => {
     fetchSlots();
+    fetchDistributors();
   }, []);
+
+  async function fetchDistributors() {
+    try {
+      const response = await fetch('/api/distributors');
+      if (!response.ok) {
+        throw new Error('Failed to fetch distributors');
+      }
+      const result = await response.json();
+      
+      if (result.success && Array.isArray(result.data)) {
+        setDistributors(['전체', ...result.data]);
+      }
+    } catch (error) {
+      console.error('Error fetching distributors:', error);
+      // 오류 시 기본값 유지
+    }
+  }
 
   async function fetchSlots() {
     try {
@@ -116,18 +145,14 @@ function SlotsPageContentInner() {
   const handleEditSlot = (slot: Slot) => {
     setEditingId(slot.id);
     setEditForm({
-      slot_type: slot.slot_type,
-      slot_count: slot.slot_count,
-      payment_amount: slot.payment_amount,
-      memo: slot.memo,
-      status: slot.status,
+      memo: slot.memo
     });
   };
 
   const handleSaveEdit = async (id: number) => {
     try {
       const response = await fetch(`/api/slots/${id}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -145,6 +170,53 @@ function SlotsPageContentInner() {
     } catch (error) {
       console.error('Error updating slot:', error);
       alert('슬롯 정보 수정에 실패했습니다.');
+    }
+  };
+
+  const handleSlotStatusChange = async (slot: Slot, newStatus: string) => {
+    const action = newStatus === 'inactive' ? '중지' : '재개';
+    const actionText = newStatus === 'inactive' ? '중지하시겠습니까' : '재개하시겠습니까';
+
+    try {
+      if (isDevMode) console.log(`${action} 버튼 클릭:`, slot);
+
+      // 확인 대화상자
+      const confirmed = window.confirm(
+        `정말로 "${slot.slot_type}" 슬롯을 ${actionText}?\n\n` +
+          `고객: ${slot.customer_name}\n` +
+          `슬롯 개수: ${slot.slot_count}개\n\n` +
+          `이 작업은 slot_status 테이블의 모든 관련 레코드에도 적용됩니다.`
+      );
+
+      if (!confirmed) {
+        if (isDevMode) console.log(`${action} 취소됨`);
+        return;
+      }
+
+      // 슬롯 상태 변경 (PATCH API 사용)
+      const response = await fetch(`/api/slots/${slot.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: newStatus,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        if (isDevMode) console.log(`✅ 슬롯 ${action} 성공:`, result);
+        alert(`슬롯이 성공적으로 ${action}되었습니다.`);
+        await fetchSlots(); // 데이터 새로고침
+      } else {
+        console.error(`❌ 슬롯 ${action} 실패:`, result.error);
+        alert(`슬롯 ${action}에 실패했습니다: ${result.error}`);
+      }
+    } catch (error) {
+      console.error(`❌ 슬롯 ${action} 중 오류 발생:`, error);
+      alert(`슬롯 ${action} 중 오류가 발생했습니다. 다시 시도해주세요.`);
     }
   };
 
@@ -177,20 +249,131 @@ function SlotsPageContentInner() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case 'pending':
+        return <Badge className="bg-yellow-100 text-yellow-800">대기중</Badge>;
       case 'active':
-      case '구동중':
-        return <Badge className="bg-green-500 text-white">구동중</Badge>;
-      case 'expired':
-      case '만료':
-        return <Badge className="bg-red-500 text-white">만료</Badge>;
-      case 'suspended':
-      case '정지':
-        return <Badge className="bg-yellow-500 text-white">정지</Badge>;
+        return <Badge className="bg-green-100 text-green-800">활성</Badge>;
+      case 'completed':
+        return <Badge className="bg-blue-100 text-blue-800">완료</Badge>;
       case 'inactive':
-        return <Badge className="bg-green-500 text-white">구동중</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">비활성</Badge>;
+      case 'expired':
+        return <Badge className="bg-red-100 text-red-800">만료</Badge>;
+      case 'paused':
+        return <Badge className="bg-orange-100 text-orange-800">중지</Badge>;
       default:
-        return <Badge variant="secondary">{status}</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">알 수 없음</Badge>;
     }
+  };
+
+  // 슬롯타입 버튼 클릭 핸들러
+  const handleSlotTypeClick = (slot: Slot) => {
+    if (isDevMode) console.log('🔍 슬롯타입 버튼 클릭:', {
+      slotType: slot.slot_type,
+      slotCount: slot.slot_count,
+      customerId: slot.customer_id,
+      customerName: slot.customer_name,
+    });
+
+    // 작업 등록 페이지로 이동
+    const params = new URLSearchParams({
+      customerId: slot.customer_id,
+      username: slot.customer_id, // customer_id를 username으로 사용
+      slotCount: slot.slot_count.toString(),
+      customerName: slot.customer_name,
+      slotType: slot.slot_type,
+    });
+
+    // 슬롯타입에 따라 다른 페이지로 이동
+    let targetUrl = '';
+    switch (slot.slot_type) {
+      case '쿠팡':
+        targetUrl = `/coupangapp/add?${params.toString()}`;
+        break;
+      case '쿠팡VIP':
+        targetUrl = `/coupangapp/vip?${params.toString()}`;
+        break;
+      case '쿠팡 앱':
+        targetUrl = `/coupangapp/app?${params.toString()}`;
+        break;
+      default:
+        targetUrl = `/coupangapp/add?${params.toString()}`;
+        break;
+    }
+
+    if (isDevMode) {
+      console.log('🚀 슬롯타입 클릭 - 이동할 URL:', targetUrl);
+      console.log('📋 전달되는 파라미터:', {
+        customerId: slot.customer_id,
+        username: slot.customer_id,
+        slotCount: slot.slot_count,
+        customerName: slot.customer_name,
+        slotType: slot.slot_type,
+      });
+    }
+
+    window.open(targetUrl, '_blank');
+  };
+
+  // 정렬 함수
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      // 같은 필드 클릭 시 정렬 방향 토글
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // 다른 필드 클릭 시 오름차순으로 설정
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // 정렬된 슬롯 목록 생성
+  const getSortedSlots = (slots: Slot[]) => {
+    if (!sortField) return slots;
+
+    return [...slots].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortField) {
+        case 'remaining_days':
+          aValue = a.remaining_days || 0;
+          bValue = b.remaining_days || 0;
+          break;
+        case 'customer_id':
+          aValue = a.customer_id || '';
+          bValue = b.customer_id || '';
+          break;
+        case 'slot_type':
+          aValue = a.slot_type || '';
+          bValue = b.slot_type || '';
+          break;
+        case 'slot_count':
+          aValue = a.slot_count || 0;
+          bValue = b.slot_count || 0;
+          break;
+        case 'payment_amount':
+          aValue = a.payment_amount || 0;
+          bValue = b.payment_amount || 0;
+          break;
+        case 'status':
+          aValue = a.status || '';
+          bValue = b.status || '';
+          break;
+        case 'expiry_date':
+          aValue = new Date(a.expiry_date || '').getTime();
+          bValue = new Date(b.expiry_date || '').getTime();
+          break;
+        default:
+          return 0;
+      }
+
+      if (sortDirection === 'asc') {
+        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+      } else {
+        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+      }
+    });
   };
 
   const formatDate = (dateString: string) => {
@@ -203,21 +386,18 @@ function SlotsPageContentInner() {
 
   // 필터링된 슬롯 목록
   const filteredSlots = slots.filter(slot => {
-    const matchesDistributor =
-      selectedDistributor === 'all' || slot.distributor === selectedDistributor;
-    const matchesSlotType =
-      selectedSlotType === 'all' || slot.slot_type === selectedSlotType;
-    const matchesKeyword =
-      searchKeyword === '' ||
-      (slot.customer_name &&
-        slot.customer_name
-          .toLowerCase()
-          .includes(searchKeyword.toLowerCase())) ||
-      (slot.memo &&
-        slot.memo.toLowerCase().includes(searchKeyword.toLowerCase()));
-
+    const matchesDistributor = selectedDistributor === 'all' || selectedDistributor === '전체' || slot.distributor === selectedDistributor;
+    const matchesSlotType = selectedSlotType === 'all' || slot.slot_type === selectedSlotType;
+    const matchesKeyword = searchKeyword === '' || 
+      (slot.customer_id && slot.customer_id.toLowerCase().includes(searchKeyword.toLowerCase())) ||
+      (slot.customer_name && slot.customer_name.toLowerCase().includes(searchKeyword.toLowerCase())) ||
+      (slot.memo && slot.memo.toLowerCase().includes(searchKeyword.toLowerCase()));
+    
     return matchesDistributor && matchesSlotType && matchesKeyword;
   });
+
+  // 정렬 적용
+  const sortedSlots = getSortedSlots(filteredSlots);
 
   if (loading) {
     return (
@@ -325,7 +505,7 @@ function SlotsPageContentInner() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ShoppingCart className="h-6 w-6 text-blue-600" />
-              슬롯 목록 ({filteredSlots.length}개)
+              슬롯 목록 ({sortedSlots.length}개)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -346,7 +526,7 @@ function SlotsPageContentInner() {
                         아이디
                       </th>
                       <th className="border border-gray-300 p-3 text-center text-sm font-medium">
-                        슬롯유형
+                        슬롯 타입
                       </th>
                       <th className="border border-gray-300 p-3 text-center text-sm font-medium">
                         슬롯수
@@ -361,7 +541,28 @@ function SlotsPageContentInner() {
                         총사용일수
                       </th>
                       <th className="border border-gray-300 p-3 text-center text-sm font-medium">
-                        남은일수
+                        <button
+                          onClick={() => handleSort('remaining_days')}
+                          className="flex items-center justify-center gap-1 w-full hover:bg-gray-100 rounded px-2 py-1"
+                        >
+                          잔여기간
+                          <div className="flex flex-col">
+                            <ChevronUp 
+                              className={`w-3 h-3 ${
+                                sortField === 'remaining_days' && sortDirection === 'asc' 
+                                  ? 'text-blue-600' 
+                                  : 'text-gray-400'
+                              }`} 
+                            />
+                            <ChevronDown 
+                              className={`w-3 h-3 ${
+                                sortField === 'remaining_days' && sortDirection === 'desc' 
+                                  ? 'text-blue-600' 
+                                  : 'text-gray-400'
+                              }`} 
+                            />
+                          </div>
+                        </button>
                       </th>
                       <th className="border border-gray-300 p-3 text-center text-sm font-medium">
                         등록일
@@ -381,85 +582,34 @@ function SlotsPageContentInner() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredSlots.length > 0 ? (
-                      filteredSlots.map((slot, index) => (
+                    {sortedSlots.length > 0 ? (
+                      sortedSlots.map((slot, index) => (
                         <tr key={slot.id} className="hover:bg-gray-50">
                           <td className="border border-gray-300 p-3 text-center text-sm">
                             {index + 1}
                           </td>
-                          <td className="border border-gray-300 p-3 text-center text-sm font-medium">
-                            {slot.customer_name}
+                          <td className="border border-gray-300 p-3 text-center text-sm">
+                            <div className="flex flex-col gap-1 text-xs">
+                              <div className="font-medium">{slot.customer_id}</div>
+                              <div className="text-gray-600">{slot.customer_name}</div>
+                              <div className="text-gray-500">{slot.distributor || '일반'}</div>
+                            </div>
                           </td>
                           <td className="border border-gray-300 p-3 text-center text-sm">
-                            {editingId === slot.id ? (
-                              <Select
-                                value={editForm.slot_type || slot.slot_type}
-                                onValueChange={value =>
-                                  setEditForm(prev => ({
-                                    ...prev,
-                                    slot_type: value,
-                                  }))
-                                }
-                              >
-                                <SelectTrigger className="w-24 h-8 text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {slotTypes.map(type => (
-                                    <SelectItem key={type} value={type}>
-                                      {type}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            ) : (
-                              <Badge variant="outline" className="text-xs">
-                                {slot.slot_type}
-                              </Badge>
-                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-blue-600 border-blue-300 hover:bg-blue-50 text-xs"
+                              onClick={() => handleSlotTypeClick(slot)}
+                            >
+                              {slot.slot_type}
+                            </Button>
                           </td>
                           <td className="border border-gray-300 p-3 text-center text-sm">
-                            {editingId === slot.id ? (
-                              <Input
-                                type="number"
-                                min="1"
-                                value={editForm.slot_count || slot.slot_count}
-                                onChange={e =>
-                                  setEditForm(prev => ({
-                                    ...prev,
-                                    slot_count: parseInt(e.target.value) || 1,
-                                  }))
-                                }
-                                className="w-16 h-8 text-xs text-center"
-                              />
-                            ) : (
-                              slot.slot_count
-                            )}
+                            {slot.slot_count}
                           </td>
                           <td className="border border-gray-300 p-3 text-center text-sm">
-                            {editingId === slot.id ? (
-                              <Input
-                                type="number"
-                                min="0"
-                                value={
-                                  editForm.payment_amount ||
-                                  slot.payment_amount ||
-                                  0
-                                }
-                                onChange={e =>
-                                  setEditForm(prev => ({
-                                    ...prev,
-                                    payment_amount:
-                                      parseInt(e.target.value) || 0,
-                                  }))
-                                }
-                                className="w-20 h-8 text-xs text-center"
-                              />
-                            ) : (
-                              <span className="text-green-600 font-medium">
-                                {formatCurrency(slot.payment_amount || 0)}원
-                              </span>
-                            )}
+                            <span className="text-green-600 font-medium">{formatCurrency(slot.payment_amount || 0)}원</span>
                           </td>
                           <td className="border border-gray-300 p-3 text-center text-sm">
                             {slot.extension_count || 0}
@@ -477,7 +627,7 @@ function SlotsPageContentInner() {
                                     : 'bg-green-100 text-green-800'
                               }`}
                             >
-                              {slot.remaining_days || 0}일
+                              {slot.remainingTimeString || `${slot.remaining_days || 0}일`}
                             </span>
                           </td>
                           <td className="border border-gray-300 p-3 text-center text-sm">
@@ -511,30 +661,7 @@ function SlotsPageContentInner() {
                             )}
                           </td>
                           <td className="border border-gray-300 p-3 text-center text-sm">
-                            {editingId === slot.id ? (
-                              <Select
-                                value={editForm.status || slot.status}
-                                onValueChange={value =>
-                                  setEditForm(prev => ({
-                                    ...prev,
-                                    status: value as "active" | "expired" | "suspended",
-                                  }))
-                                }
-                              >
-                                <SelectTrigger className="w-20 h-8 text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="active">활성</SelectItem>
-                                  <SelectItem value="expired">만료</SelectItem>
-                                  <SelectItem value="suspended">
-                                    정지
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            ) : (
-                              getStatusBadge(slot.status)
-                            )}
+                            {getStatusBadge(slot.status)}
                           </td>
                           <td className="border border-gray-300 p-3 text-center text-sm">
                             <div className="flex justify-center space-x-2">
@@ -573,11 +700,19 @@ function SlotsPageContentInner() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => handleDeleteSlot(slot.id)}
-                                    className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
-                                    title="삭제"
+                                    onClick={() => handleSlotStatusChange(slot, slot.status === 'inactive' ? 'active' : 'inactive')}
+                                    className={`h-6 w-6 p-0 ${
+                                      slot.status === 'inactive' 
+                                        ? 'text-green-600 hover:text-green-800' 
+                                        : 'text-orange-600 hover:text-orange-800'
+                                    }`}
+                                    title={slot.status === 'inactive' ? '재개' : '중지'}
                                   >
-                                    <X className="w-4 h-4" />
+                                    {slot.status === 'inactive' ? (
+                                      <Play className="w-4 h-4" />
+                                    ) : (
+                                      <Pause className="w-4 h-4" />
+                                    )}
                                   </Button>
                                 </>
                               )}

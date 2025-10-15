@@ -117,3 +117,78 @@ export function calculateRemainingTimeKST(createdAt: string, usageDays: number):
     string: remainingTimeString || '0분'
   };
 }
+
+export function calculateTrafficKST(createdAt: string | null): number {
+  if (!createdAt) return 0;
+  
+  // KST 현재 시간
+  const now = new Date();
+  const kstOffset = 9 * 60; // UTC+9
+  const kstNow = new Date(now.getTime() + kstOffset * 60 * 1000);
+  
+  // 오늘 자정 KST
+  const kstMidnight = new Date(kstNow);
+  kstMidnight.setHours(0, 0, 0, 0);
+  
+  // 슬롯 생성 시간 KST 변환
+  const slotCreated = new Date(createdAt);
+  const kstCreated = new Date(slotCreated.getTime() + kstOffset * 60 * 1000);
+  
+  // 카운팅 시작 시간 결정
+  let countStartTime: Date;
+  
+  if (kstCreated < kstMidnight) {
+    // 어제 이전 생성 → 오늘 자정부터
+    countStartTime = kstMidnight;
+  } else {
+    // 오늘 생성 → 생성 시간부터
+    countStartTime = kstCreated;
+  }
+  
+  // 경과 시간 계산 (분 단위)
+  const elapsedMs = kstNow.getTime() - countStartTime.getTime();
+  const elapsedMinutes = elapsedMs / (1000 * 60);
+  
+  // 12분마다 1씩 증가, 최대 120
+  const traffic = Math.min(Math.floor(elapsedMinutes / 12), 120);
+  
+  return traffic;
+}
+
+// 작업 시작 시간을 기준으로 트래픽 계산하는 새로운 함수
+export function calculateTrafficFromWorkStart(workStartTime: string | null): number {
+  if (!workStartTime) return 0;
+  
+  // KST 현재 시간
+  const now = new Date();
+  const kstOffset = 9 * 60; // UTC+9
+  const kstNow = new Date(now.getTime() + kstOffset * 60 * 1000);
+  
+  // 오늘 자정 KST
+  const kstMidnight = new Date(kstNow);
+  kstMidnight.setHours(0, 0, 0, 0);
+  
+  // 작업 시작 시간 KST 변환
+  const workStart = new Date(workStartTime);
+  const kstWorkStart = new Date(workStart.getTime() + kstOffset * 60 * 1000);
+  
+  // 카운팅 시작 시간 결정
+  let countStartTime: Date;
+  
+  if (kstWorkStart < kstMidnight) {
+    // 어제 이전 시작 → 오늘 자정부터
+    countStartTime = kstMidnight;
+  } else {
+    // 오늘 시작 → 작업 시작 시간부터
+    countStartTime = kstWorkStart;
+  }
+  
+  // 경과 시간 계산 (분 단위)
+  const elapsedMs = kstNow.getTime() - countStartTime.getTime();
+  const elapsedMinutes = elapsedMs / (1000 * 60);
+  
+  // 12분마다 1씩 증가, 최대 120
+  const traffic = Math.min(Math.floor(elapsedMinutes / 12), 120);
+  
+  return traffic;
+}

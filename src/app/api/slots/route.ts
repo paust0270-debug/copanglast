@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { calculateRemainingTimeKST } from '@/lib/utils';
 
 // Supabase 연결 확인
 if (!supabase) {
@@ -11,8 +12,9 @@ if (!supabase) {
 
 // 슬롯 목록 조회
 export async function GET(request: NextRequest) {
+  const isDevMode = process.env.NODE_ENV === 'development';
   try {
-    console.log('🔄 슬롯 목록 조회 중...');
+    if (isDevMode) console.log('🔄 슬롯 목록 조회 중...');
 
     const { searchParams } = new URL(request.url);
     const customerId = searchParams.get('customerId');
@@ -43,22 +45,71 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('🔍 슬롯 조회 결과:', {
+    // 총판 정보 가져오기
+    const customerIds = [...new Set(slots?.map(slot => slot.customer_id) || [])];
+    const { data: userProfiles } = await supabase
+      .from('user_profiles')
+      .select('username, distributor')
+      .in('username', customerIds);
+
+    // customer_id를 키로 하는 총판 맵 생성
+    const distributorMap = new Map();
+    userProfiles?.forEach(profile => {
+      distributorMap.set(profile.username, profile.distributor);
+    });
+
+    // 잔여기간 계산 및 expiry_date 설정
+    const processedSlots = slots?.map(slot => {
+      const usageDays = slot.usage_days || 0;
+      
+      // calculateRemainingTimeKST 함수 사용하여 정확한 잔여기간 계산
+      const remainingTime = calculateRemainingTimeKST(slot.created_at, usageDays);
+      
+      // 만료일 계산
+      const createdDate = slot.created_at ? new Date(slot.created_at) : new Date();
+      const expiryDate = new Date(createdDate.getTime() + usageDays * 24 * 60 * 60 * 1000);
+
+      // 만료 상태 확인 (잔여 시간이 0이면 만료) - slot-status와 동일한 로직
+      const isExpired =
+        remainingTime.days === 0 &&
+        remainingTime.hours === 0 &&
+        remainingTime.minutes === 0 &&
+        usageDays > 0;
+
+      return {
+        ...slot,
+        remaining_days: remainingTime.days,
+        remaining_hours: remainingTime.hours,
+        remaining_minutes: remainingTime.minutes,
+        remainingTimeString: remainingTime.string,
+        expiry_date: slot.updated_at || expiryDate.toISOString().split('T')[0],
+        distributor: distributorMap.get(slot.customer_id) || '일반',
+        status: isExpired ? 'expired' : slot.status
+      };
+    });
+
+    if (isDevMode) console.log('🔍 슬롯 조회 결과 (수정됨):', {
       customerId,
       slotType,
-      totalSlots: slots?.length || 0,
-      slots: slots?.map(slot => ({
+      totalSlots: processedSlots?.length || 0,
+      slots: processedSlots?.map(slot => ({
         id: slot.id,
         customer_id: slot.customer_id,
         slot_type: slot.slot_type,
         slot_count: slot.slot_count,
         status: slot.status,
+        remaining_days: slot.remaining_days,
+        remaining_hours: slot.remaining_hours,
+        remaining_minutes: slot.remaining_minutes,
+        remainingTimeString: slot.remainingTimeString,
+        distributor: slot.distributor,
+        expiry_date: slot.expiry_date
       })),
     });
 
     return NextResponse.json({
       success: true,
-      data: slots,
+      data: processedSlots,
     });
   } catch (error) {
     console.error('슬롯 목록 조회 API 예외 발생:', error);
@@ -72,7 +123,7 @@ export async function GET(request: NextRequest) {
 // 슬롯 추가
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔄 슬롯 추가 시작...');
+    if (isDevMode) console.log('🔄 슬롯 추가 시작...');
 
     const body = await request.json();
     const {
