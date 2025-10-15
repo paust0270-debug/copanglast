@@ -57,7 +57,8 @@ export async function POST(request: NextRequest) {
         console.log('원본 데이터:', row);
         
         // 빈 행 건너뛰기
-        if (!row || row.length === 0 || row.every(cell => !cell || cell.toString().trim() === '')) {
+        const rowArray = row as any[];
+        if (!rowArray || rowArray.length === 0 || rowArray.every(cell => !cell || cell.toString().trim() === '')) {
           console.log(`행 ${rowNumber}: 빈 행 건너뛰기`);
           continue;
         }
