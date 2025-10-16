@@ -24,7 +24,7 @@ export default function Navigation() {
       // 서버에 로그아웃 요청
       await fetch('/api/auth/logout', {
         method: 'POST',
-        credentials: 'include'
+        credentials: 'include',
       });
     } catch (error) {
       console.error('로그아웃 API 호출 실패:', error);
@@ -37,66 +37,71 @@ export default function Navigation() {
   };
 
   const navigationItems = [
-    { 
-      name: '무료 서비스', 
+    {
+      name: '무료 서비스',
       href: '/dashboard',
-      subItems: []
+      subItems: [],
     },
-    { 
-      name: '메인서비스', 
+    {
+      name: '메인서비스',
       href: '/coupangapp',
       subItems: [
         { name: '쿠팡', href: '/coupangapp/add' },
         { name: '쿠팡VIP', href: '/coupangapp/vip' },
-        { name: '쿠팡APP', href: '/coupangapp/app' }
-      ]
+        { name: '쿠팡APP', href: '/coupangapp/app' },
+        { name: '네이버쇼핑', href: '/coupangapp/naver' },
+        { name: '플레이스', href: '/coupangapp/place' },
+        { name: '오늘의집', href: '/coupangapp/todayhome' },
+        { name: '알리', href: '/coupangapp/aliexpress' },
+      ],
     },
-    { 
-      name: '고객관리', 
+    {
+      name: '고객관리',
       href: '/customer',
       subItems: [
         { name: '고객관리', href: '/customer' },
         { name: '슬롯관리', href: '/admin/slots' },
-        { name: '슬롯현황', href: '/slot-status' }
-      ]
+        { name: '슬롯현황', href: '/slot-status' },
+      ],
     },
-    { 
-      name: '정산관리', 
+    {
+      name: '정산관리',
       href: '/settlement/history',
       subItems: [
         { name: '정산내역', href: '/settlement/history' },
         { name: '정산대기', href: '/settlement' },
-        { name: '미정산내역', href: '/settlement/unsettled' }
-      ]
+        { name: '미정산내역', href: '/settlement/unsettled' },
+      ],
     },
-    { 
-      name: '총판관리', 
+    {
+      name: '총판관리',
       href: '/distributor',
       subItems: [
         { name: '총판 대시보드', href: '/distributor' },
         { name: '총판관리', href: '/distributor-add' },
-        { name: '총판추가', href: '/distributor-add/add' }
-      ]
+        { name: '총판추가', href: '/distributor-add/add' },
+      ],
     },
-    { 
-      name: '작업관리', 
+    {
+      name: '작업관리',
       href: '/ranking-status',
       subItems: [
         { name: '순위체크현황', href: '/ranking-status' },
-        { name: '트래픽현황', href: '/traffic-status' }
-      ]
+        { name: '트래픽현황', href: '/traffic-status' },
+      ],
     },
-    { 
-      name: '공지사항', 
+    {
+      name: '공지사항',
       href: '/notices',
-      subItems: []
-    }
+      subItems: [],
+    },
   ];
 
   // 현재 활성화된 메인 탭 찾기
-  const activeMainTab = navigationItems.find(item => 
-    pathname.startsWith(item.href) || 
-    item.subItems.some(sub => pathname.startsWith(sub.href))
+  const activeMainTab = navigationItems.find(
+    item =>
+      pathname.startsWith(item.href) ||
+      item.subItems.some(sub => pathname.startsWith(sub.href))
   );
 
   return (
@@ -109,19 +114,21 @@ export default function Navigation() {
               <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center mr-3">
                 <span className="text-white font-bold text-xl">C</span>
               </div>
-              <span className="text-xl font-bold text-gray-900">쿠팡 랭킹 체커</span>
+              <span className="text-xl font-bold text-gray-900">
+                쿠팡 랭킹 체커
+              </span>
             </Link>
           </div>
 
           {/* 중앙 네비게이션 메뉴 */}
           <div className="hidden lg:flex items-center space-x-1">
-            {navigationItems.map((item) => {
+            {navigationItems.map(item => {
               const isActive = activeMainTab === item;
               const hasSubItems = item.subItems.length > 0;
-              
+
               return (
-                <div 
-                  key={item.name} 
+                <div
+                  key={item.name}
                   className="relative"
                   onMouseEnter={() => setHoveredItem(item.name)}
                   onMouseLeave={() => setHoveredItem(null)}
@@ -136,11 +143,11 @@ export default function Navigation() {
                   >
                     {item.name}
                   </Link>
-                  
+
                   {/* 드롭다운 서브메뉴 */}
                   {hasSubItems && hoveredItem === item.name && (
                     <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
-                      {item.subItems.map((subItem) => {
+                      {item.subItems.map(subItem => {
                         const isSubActive = pathname.startsWith(subItem.href);
                         return (
                           <Link

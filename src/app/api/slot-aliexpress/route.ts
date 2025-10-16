@@ -13,7 +13,7 @@ if (!supabase) {
 // 슬롯 현황 조회
 export async function GET(request: NextRequest) {
   try {
-    console.log('🔄 슬롯 현황 조회 중...');
+    console.log('🔄 알리엑스프레스 슬롯 현황 조회 중...');
 
     const { searchParams } = new URL(request.url);
     const userGroup = searchParams.get('userGroup');
@@ -28,25 +28,28 @@ export async function GET(request: NextRequest) {
 
     // type 파라미터에 따라 다른 테이블 조회
     if (type === 'slot_status') {
-      // slot_status 테이블 조회 (쿠팡 앱 추가 페이지용) - 키워드가 있는 레코드만, 쿠팡 슬롯 타입만
+      // slot_aliexpress 테이블 조회 (알리엑스프레스 앱 추가 페이지용) - 키워드가 있는 레코드만, 알리엑스프레스 슬롯 타입만
       let slotStatusQuery = supabase
-        .from('slot_status')
+        .from('slot_aliexpress')
         .select('*, slot_sequence') // slot_sequence 필드 명시적으로 포함
         .not('keyword', 'eq', '') // 키워드가 비어있지 않은 레코드만
-        .eq('slot_type', '쿠팡') // 쿠팡 슬롯 타입만 필터링
+        .eq('slot_type', '알리') // 알리엑스프레스 슬롯 타입만 필터링
         .order('created_at', { ascending: false });
 
       // 개별 고객 필터링 (customerId와 username이 있는 경우)
       if (customerId && username) {
-        slotStatusQuery = slotStatusQuery.eq('customer_id', username); // 기존 쿠팡은 username 사용
-        console.log('🔍 개별 고객 슬롯 필터링:', { customerId, username });
+        slotStatusQuery = slotStatusQuery.eq('customer_id', username); // 쿠팡과 동일하게 username 사용
+        console.log('🔍 개별 고객 알리엑스프레스 슬롯 필터링:', {
+          customerId,
+          username,
+        });
       }
 
       const { data: slotStatusData, error: slotStatusError } =
         await slotStatusQuery;
 
       if (slotStatusError) {
-        console.error('slot_status 데이터 조회 오류:', slotStatusError);
+        console.error('slot_aliexpress 데이터 조회 오류:', slotStatusError);
         return NextResponse.json(
           { error: '슬롯 등록 데이터를 불러오는 중 오류가 발생했습니다.' },
           { status: 500 }
@@ -64,7 +67,7 @@ export async function GET(request: NextRequest) {
               'id, customer_id, customer_name, slot_type, slot_count, payment_type, payer_name, payment_amount, payment_date, usage_days, memo, status, created_at, updated_at, work_group, keyword, link_url, equipment_group'
             )
             .eq('customer_id', username)
-            .eq('slot_type', '쿠팡') // 쿠팡 슬롯 타입만 필터링
+            .eq('slot_type', '알리') // 알리엑스프레스 슬롯 타입만 필터링
             .order('created_at', { ascending: false });
 
           if (slotsError) {
@@ -160,34 +163,34 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // slot_status 데이터를 슬롯 등록 목록 형식으로 변환 (사용자별 순번 1번부터 시작)
+      // slot_aliexpress 데이터를 슬롯 등록 목록 형식으로 변환 (사용자별 순번 1번부터 시작)
       const formattedSlotStatusData = slotStatusData?.map((slot, index) => {
         // slots 테이블에서 동일한 usage_days를 가진 데이터 찾기
-        // slots.id와 slot_status.slot_sequence로 매칭
+        // slots.id와 slot_aliexpress.slot_sequence로 매칭
         const matchingSlot = slotsData?.find(
           (s: { id: number }) => s.id === slot.slot_sequence
         );
 
-        // slots 테이블 데이터가 있으면 그것을 사용, 없으면 slot_status 데이터 사용
+        // slots 테이블 데이터가 있으면 그것을 사용, 없으면 slot_aliexpress 데이터 사용
         const baseData = matchingSlot || slot;
 
-        // coupangapp/add 페이지에서는 일시중지된 슬롯을 제외
+        // aliexpress 페이지에서는 일시중지된 슬롯을 제외
         // slot-status 페이지에서는 일시중지된 슬롯도 표시 (재개 버튼을 위해)
         if (
           type === 'slot_status' &&
           matchingSlot &&
           matchingSlot.status === 'inactive'
         ) {
-          return null; // coupangapp/add 페이지에서는 일시중지된 슬롯 제외
+          return null; // aliexpress 페이지에서는 일시중지된 슬롯 제외
         }
 
         console.log('슬롯 매칭 확인:', {
-          slot_status_id: slot.id,
-          slot_status_slot_sequence: slot.slot_sequence,
+          slot_aliexpress_id: slot.id,
+          slot_aliexpress_slot_sequence: slot.slot_sequence,
           slots_id: matchingSlot?.id,
-          slot_status_usage_days: slot.usage_days,
+          slot_aliexpress_usage_days: slot.usage_days,
           slots_usage_days: matchingSlot?.usage_days,
-          slot_status_created_at: slot.created_at,
+          slot_aliexpress_created_at: slot.created_at,
           matching_slot_found: !!matchingSlot,
           matching_slot_created_at: matchingSlot?.created_at,
           final_created_at: baseData.created_at,
@@ -271,13 +274,13 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 기본: slots 테이블 조회 (슬롯 현황 페이지용) - 쿠팡 슬롯 타입만
+    // 기본: slots 테이블 조회 (슬롯 현황 페이지용) - 알리엑스프레스 슬롯 타입만
     let slotsQuery = supabase
       .from('slots')
       .select(
         'id, customer_id, customer_name, slot_type, slot_count, payment_type, payer_name, payment_amount, payment_date, usage_days, memo, status, created_at, updated_at, work_group, keyword, link_url, equipment_group'
       )
-      .eq('slot_type', '쿠팡') // 쿠팡 슬롯 타입만 필터링
+      .eq('slot_type', '알리') // 알리엑스프레스 슬롯 타입만 필터링
       .order('created_at', { ascending: false });
 
     // 특정 고객 필터링 (username으로 필터링)
@@ -297,15 +300,18 @@ export async function GET(request: NextRequest) {
 
     // 특정 고객 요청인 경우 해당 고객의 슬롯 현황도 조회
     if (customerId && username) {
-      console.log('🔍 특정 고객 슬롯 현황 조회:', { customerId, username });
+      console.log('🔍 특정 고객 알리엑스프레스 슬롯 현황 조회:', {
+        customerId,
+        username,
+      });
 
       // 해당 고객의 슬롯 현황 (이미 username으로 필터링됨)
       const customerSlots = slotsData || [];
       console.log('📊 고객 슬롯 현황:', customerSlots);
 
-      // 1. 모든 slot_status 데이터를 한 번에 조회 (성능 최적화)
+      // 1. 모든 slot_aliexpress 데이터를 한 번에 조회 (성능 최적화)
       const { data: allSlotStatus } = await supabase
-        .from('slot_status')
+        .from('slot_aliexpress')
         .select('slot_sequence, keyword')
         .eq('customer_id', username)
         .in(
@@ -467,7 +473,7 @@ export async function GET(request: NextRequest) {
             id: customerId,
             customerId: customerId,
             customerName: customerName,
-            slotType: customerSlots[0]?.slot_type || '쿠팡',
+            slotType: customerSlots[0]?.slot_type || '알리',
             slotCount: totalSlots, // 계산된 총 슬롯 수 (사용중 + 잔여 + 일시중지 + 만료됨)
             usedSlots: usedSlots,
             remainingSlots: remainingSlots,
@@ -498,7 +504,7 @@ export async function GET(request: NextRequest) {
 
     // 전체 슬롯 현황 조회
     const { data: slotStatusData } = await supabase
-      .from('slot_status')
+      .from('slot_aliexpress')
       .select('*')
       .eq('customer_id', username)
       .order('created_at', { ascending: false });
@@ -559,9 +565,9 @@ export async function GET(request: NextRequest) {
           id: slot.id,
           customerId: slot.customer_id,
           customerName: slot.customer_name || '', // customer_name 필드 사용
-          slotType: slot.slot_type || '쿠팡',
+          slotType: slot.slot_type || '알리',
           slotCount: slot.slot_count || 1,
-          usedSlots: 0, // slot_status 테이블에서 계산
+          usedSlots: 0, // slot_aliexpress 테이블에서 계산
           remainingSlots: slot.slot_count || 1,
           pausedSlots: 0,
           totalPaymentAmount: slot.payment_amount || 0,
@@ -594,7 +600,7 @@ export async function GET(request: NextRequest) {
       data: filteredData,
     });
   } catch (error) {
-    console.error('슬롯 현황 조회 API 예외 발생:', error);
+    console.error('알리엑스프레스 슬롯 현황 조회 API 예외 발생:', error);
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }
@@ -605,7 +611,7 @@ export async function GET(request: NextRequest) {
 // 슬롯 등록 (개별 슬롯 할당 로직)
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔄 개별 슬롯 할당 처리 중...');
+    console.log('🔄 알리엑스프레스 개별 슬롯 할당 처리 중...');
 
     const body = await request.json();
     console.log('받은 데이터:', body);
@@ -631,10 +637,10 @@ export async function POST(request: NextRequest) {
     const requestedSlotCount = parseInt(body.slot_count) || 1;
 
     console.log(
-      `🎯 고객 ${customerId}에게 ${requestedSlotCount}개 슬롯 할당 요청`
+      `🎯 고객 ${customerId}에게 ${requestedSlotCount}개 알리엑스프레스 슬롯 할당 요청`
     );
 
-    // 1. slots 테이블에서 해당 고객의 쿠팡 슬롯만 조회 (usage_days 내림차순)
+    // 1. slots 테이블에서 해당 고객의 알리엑스프레스 슬롯만 조회 (usage_days 내림차순)
     // 일시중지된 슬롯도 포함하여 조회 (재등록 시 사용 가능)
     const { data: availableSlots, error: slotsError } = await supabase
       .from('slots')
@@ -642,7 +648,7 @@ export async function POST(request: NextRequest) {
         'id, customer_id, customer_name, slot_type, slot_count, payment_type, payer_name, payment_amount, payment_date, usage_days, memo, status, created_at, updated_at, work_group, keyword, link_url, equipment_group'
       )
       .eq('customer_id', customerId)
-      .eq('slot_type', '쿠팡') // 쿠팡 슬롯 타입만 조회
+      .eq('slot_type', '알리') // 알리엑스프레스 슬롯 타입만 조회
       .in('status', ['active', 'inactive']) // active와 inactive 모두 포함
       .order('usage_days', { ascending: false }); // 잔여기간이 긴 순서로 정렬
 
@@ -655,7 +661,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!availableSlots || availableSlots.length === 0) {
-      console.log('❌ 할당 가능한 슬롯이 없습니다.');
+      console.log('❌ 할당 가능한 알리엑스프레스 슬롯이 없습니다.');
       return NextResponse.json(
         { error: '할당 가능한 슬롯이 없습니다.' },
         { status: 400 }
@@ -709,7 +715,7 @@ export async function POST(request: NextRequest) {
 
     // 1.5. 현재 사용 중인 슬롯 수 확인 (키워드가 있는 레코드만, 일시중지된 슬롯 제외)
     const { data: currentSlotStatus } = await supabase
-      .from('slot_status')
+      .from('slot_aliexpress')
       .select('slot_count, keyword, slot_sequence')
       .eq('customer_id', customerId)
       .not('keyword', 'eq', ''); // 키워드가 비어있지 않은 레코드만
@@ -743,18 +749,18 @@ export async function POST(request: NextRequest) {
     if (remainingAvailableSlots < requestedSlotCount) {
       return NextResponse.json(
         {
-          error: `사용 가능한 슬롯이 부족합니다. (사용 가능: ${remainingAvailableSlots}개, 요청: ${requestedSlotCount}개)`,
+          error: `작업등록 가능한 슬롯이 부족합니다. (사용 가능: ${remainingAvailableSlots}개, 요청: ${requestedSlotCount}개)`,
         },
         { status: 400 }
       );
     }
 
-    // 2. 기존 slot_status 레코드 업데이트 (새 레코드 생성 방지)
-    console.log('🔄 기존 slot_status 레코드 업데이트 시작...');
+    // 2. 기존 slot_aliexpress 레코드 업데이트 (새 레코드 생성 방지)
+    console.log('🔄 기존 slot_aliexpress 레코드 업데이트 시작...');
 
     // 기존 빈 레코드들 조회 (키워드가 비어있는 레코드)
     const { data: emptySlotStatus, error: emptySlotError } = await supabase
-      .from('slot_status')
+      .from('slot_aliexpress')
       .select('*')
       .eq('customer_id', customerId)
       .eq('keyword', '')
@@ -762,7 +768,7 @@ export async function POST(request: NextRequest) {
       .limit(requestedSlotCount);
 
     if (emptySlotError) {
-      console.error('빈 slot_status 레코드 조회 오류:', emptySlotError);
+      console.error('빈 slot_aliexpress 레코드 조회 오류:', emptySlotError);
       return NextResponse.json(
         { error: '기존 슬롯 레코드를 조회하는 중 오류가 발생했습니다.' },
         { status: 500 }
@@ -796,7 +802,7 @@ export async function POST(request: NextRequest) {
         equipment_group: body.equipment_group || '지정안함',
         status: body.status || '작동중',
         memo: body.memo || '',
-        slot_type: body.slot_type || '쿠팡',
+        slot_type: body.slot_type || '알리',
         slot_sequence: existingRecord.slot_sequence || i + 1, // 기존 slot_sequence 보존, 없으면 순번 생성
         updated_at: getTimestampWithoutMs(), // 업데이트 시간 추가
         // usage_days, created_at, expiry_date는 보존 (변경하지 않음)
@@ -804,7 +810,7 @@ export async function POST(request: NextRequest) {
 
       updatePromises.push(
         supabase
-          .from('slot_status')
+          .from('slot_aliexpress')
           .update(updateData)
           .eq('id', existingRecord.id)
           .select()
@@ -842,7 +848,7 @@ export async function POST(request: NextRequest) {
 
     // 업데이트된 레코드들 조회
     const { data: updatedSlotStatus, error: selectError } = await supabase
-      .from('slot_status')
+      .from('slot_aliexpress')
       .select('*')
       .eq('customer_id', customerId)
       .eq('keyword', body.keyword)
@@ -866,12 +872,12 @@ export async function POST(request: NextRequest) {
         const keywordRecords = updatedSlotStatus.map(slot => ({
           keyword: body.keyword,
           link_url: body.link_url,
-          slot_type: body.slot_type || '쿠팡',
+          slot_type: body.slot_type || '알리',
           slot_count: 1, // 각 레코드는 1개 슬롯을 의미
           current_rank: extractRankNumber(body.current_rank),
-          slot_sequence: slot.slot_sequence, // slot_status의 순번을 그대로 사용
+          slot_sequence: slot.slot_sequence, // slot_aliexpress의 순번을 그대로 사용
           customer_id: customerId, // 고객 ID 추가
-          slot_id: slot.id, // slot_status 레코드 ID를 slot_id로 사용
+          slot_id: slot.id, // slot_aliexpress 레코드 ID를 slot_id로 사용
         }));
 
         console.log(`📝 ${keywordRecords.length}개 키워드 레코드 생성 중...`);
@@ -894,15 +900,15 @@ export async function POST(request: NextRequest) {
         const trafficRecords = updatedSlotStatus.map(slot => ({
           keyword: body.keyword,
           link_url: body.link_url,
-          slot_type: body.slot_type || '쿠팡',
+          slot_type: body.slot_type || '알리',
           slot_count: 1, // 각 레코드는 1개 슬롯을 의미
           current_rank: extractRankNumber(body.current_rank),
           last_check_date: null, // keywords와 동일하게 null
           created_at: null, // keywords와 동일하게 null
           updated_at: null, // keywords와 동일하게 null
-          slot_sequence: slot.slot_sequence, // slot_status의 순번을 그대로 사용
+          slot_sequence: slot.slot_sequence, // slot_aliexpress의 순번을 그대로 사용
           customer_id: customerId, // 고객 ID 추가
-          slot_id: slot.id, // slot_status 레코드 ID를 slot_id로 사용
+          slot_id: slot.id, // slot_aliexpress 레코드 ID를 slot_id로 사용
         }));
 
         console.log(`📝 ${trafficRecords.length}개 traffic 레코드 생성 중...`);
@@ -928,10 +934,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: updatedSlotStatus,
-      message: `${requestedSlotCount}개 슬롯이 성공적으로 등록되었습니다.`,
+      message: `${requestedSlotCount}개 알리엑스프레스 슬롯이 성공적으로 등록되었습니다.`,
     });
   } catch (error) {
-    console.error('슬롯 등록 API 예외 발생:', error);
+    console.error('알리엑스프레스 슬롯 등록 API 예외 발생:', error);
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }

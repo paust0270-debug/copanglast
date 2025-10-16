@@ -125,10 +125,12 @@ function SlotAddPageContent() {
   const [showRankChart, setShowRankChart] = useState(false);
   const [sortField, setSortField] = useState<string>(''); // 정렬 필드
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc'); // 정렬 방향
-  
+
   // 각 슬롯별 작업 시작 시간 관리 (슬롯 ID -> 시작 시간)
-  const [workStartTimes, setWorkStartTimes] = useState<Map<string, string>>(new Map());
-  
+  const [workStartTimes, setWorkStartTimes] = useState<Map<string, string>>(
+    new Map()
+  );
+
   // 개발 모드에서만 디버깅 로그 출력
   const isDevMode = process.env.NODE_ENV === 'development';
 
@@ -200,7 +202,7 @@ function SlotAddPageContent() {
           // 잔여기간을 총 일수로 변환하여 정렬
           const parseRemainingDays = (daysStr: string) => {
             if (!daysStr) return 0;
-            
+
             // "29일 22시간 28분" 형태에서 일수만 추출
             const dayMatch = daysStr.match(/(\d+)일/);
             if (dayMatch) {
@@ -210,16 +212,16 @@ function SlotAddPageContent() {
               const minuteMatch = daysStr.match(/(\d+)분/);
               const hours = hourMatch ? parseInt(hourMatch[1]) : 0;
               const minutes = minuteMatch ? parseInt(minuteMatch[1]) : 0;
-              
+
               // 총 시간을 일 단위로 변환 (더 정확한 정렬)
-              return days + (hours / 24) + (minutes / (24 * 60));
+              return days + hours / 24 + minutes / (24 * 60);
             }
-            
+
             // "30일" 형태에서 숫자만 추출
             const simpleMatch = daysStr.match(/(\d+)/);
             return simpleMatch ? parseInt(simpleMatch[1]) : 0;
           };
-          
+
           aValue = parseRemainingDays(a.remainingDays || '');
           bValue = parseRemainingDays(b.remainingDays || '');
           break;
@@ -670,21 +672,22 @@ function SlotAddPageContent() {
         if (isDevMode) {
           console.log('🔄 loadCustomers - workStartTimes 업데이트:', {
             prevWorkStartTimes: Array.from(prev.entries()),
-            convertedDataLength: convertedData.length
+            convertedDataLength: convertedData.length,
           });
         }
-        
+
         convertedData.forEach(slot => {
           if (slot.id) {
             const slotId = slot.id.toString();
             if (!newMap.has(slotId)) {
-              // 작업 시작 시간이 없으면 created_at을 기준으로 설정
-              const workStartTime = slot.created_at || new Date().toISOString();
+              // 작업 시작 시간이 없으면 created_at을 기준으로 설정 (약간의 여유를 두어 음수 방지)
+              const workStartTime =
+                slot.created_at || new Date(Date.now() - 60000).toISOString(); // 1분 전으로 설정
               // 새로운 슬롯 workStartTime 설정
               if (isDevMode) {
                 console.log('➕ 새로운 슬롯 workStartTime 설정:', {
                   slotId,
-                  workStartTime
+                  workStartTime,
                 });
               }
               newMap.set(slotId, workStartTime);
@@ -693,16 +696,19 @@ function SlotAddPageContent() {
               if (isDevMode) {
                 console.log('🔄 기존 슬롯 workStartTime 유지:', {
                   slotId,
-                  existingWorkStartTime: newMap.get(slotId)
+                  existingWorkStartTime: newMap.get(slotId),
                 });
               }
             }
           }
         });
-        
+
         // 최종 workStartTimes 업데이트 완료
         if (isDevMode) {
-          console.log('✅ loadCustomers - 최종 workStartTimes:', Array.from(newMap.entries()));
+          console.log(
+            '✅ loadCustomers - 최종 workStartTimes:',
+            Array.from(newMap.entries())
+          );
         }
         return newMap;
       });
@@ -837,7 +843,7 @@ function SlotAddPageContent() {
       const kstOffset = 9 * 60; // UTC+9
       const kstNow = new Date(now.getTime() + kstOffset * 60 * 1000);
       const workStartTime = kstNow.toISOString();
-      
+
       // 슬롯 ID별로 작업 시작 시간 저장
       setWorkStartTimes(prev => {
         const newMap = new Map(prev);
@@ -849,7 +855,7 @@ function SlotAddPageContent() {
             console.log('🔄 새로운 슬롯 등록 - 작업 시작 시간 저장:', {
               slotId,
               workStartTime,
-              prevWorkStartTimes: Array.from(prev.entries())
+              prevWorkStartTimes: Array.from(prev.entries()),
             });
           }
           newMap.set(slotId, workStartTime);
@@ -1150,10 +1156,13 @@ function SlotAddPageContent() {
 
         // 로컬 상태만 업데이트 (loadCustomers 호출하지 않음)
         setCustomers(prev => prev.filter(customer => customer.id !== id));
-        
+
         // 슬롯 현황 업데이트
         setCustomerSlotStatus(prev => {
-          const newUsedSlots = Math.max(0, prev.usedSlots - (customerToDelete?.slotCount || 0));
+          const newUsedSlots = Math.max(
+            0,
+            prev.usedSlots - (customerToDelete?.slotCount || 0)
+          );
           const newRemainingSlots = prev.totalSlots - newUsedSlots;
           return {
             ...prev,
@@ -2283,19 +2292,21 @@ function SlotAddPageContent() {
                         >
                           잔여기간
                           <div className="flex flex-col">
-                            <ChevronUp 
+                            <ChevronUp
                               className={`w-3 h-3 ${
-                                sortField === 'remainingDays' && sortDirection === 'asc' 
-                                  ? 'text-blue-600' 
+                                sortField === 'remainingDays' &&
+                                sortDirection === 'asc'
+                                  ? 'text-blue-600'
                                   : 'text-gray-400'
-                              }`} 
+                              }`}
                             />
-                            <ChevronDown 
+                            <ChevronDown
                               className={`w-3 h-3 ${
-                                sortField === 'remainingDays' && sortDirection === 'desc' 
-                                  ? 'text-blue-600' 
+                                sortField === 'remainingDays' &&
+                                sortDirection === 'desc'
+                                  ? 'text-blue-600'
                                   : 'text-gray-400'
-                              }`} 
+                              }`}
                             />
                           </div>
                         </button>
@@ -2575,14 +2586,17 @@ function SlotAddPageContent() {
                             {(() => {
                               const slotId = customer.id?.toString() || '';
                               const workStartTime = workStartTimes.get(slotId);
-                              const traffic = calculateTrafficFromWorkStart(workStartTime);
+                              const traffic =
+                                calculateTrafficFromWorkStart(workStartTime);
                               // 트래픽 계산
                               if (isDevMode) {
                                 console.log('📊 트래픽 계산:', {
                                   slotId,
                                   workStartTime,
                                   traffic,
-                                  allWorkStartTimes: Array.from(workStartTimes.entries())
+                                  allWorkStartTimes: Array.from(
+                                    workStartTimes.entries()
+                                  ),
                                 });
                               }
                               return traffic;

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const slotType = searchParams.get('slot_type') || 'coupang';
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const limit = parseInt(searchParams.get('limit') || '1000');
     const offset = parseInt(searchParams.get('offset') || '0');
 
     console.log('🔍 키워드 목록 조회:', { slotType, limit, offset });
@@ -35,9 +35,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: data || [],
-      total: data?.length || 0
+      total: data?.length || 0,
     });
-
   } catch (error) {
     console.error('키워드 목록 조회 예외:', error);
     return NextResponse.json(
@@ -53,7 +52,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { slot_type, keyword, link_url, slot_count, current_rank } = body;
 
-    console.log('➕ 키워드 추가:', { slot_type, keyword, link_url, slot_count, current_rank });
+    console.log('➕ 키워드 추가:', {
+      slot_type,
+      keyword,
+      link_url,
+      slot_count,
+      current_rank,
+    });
 
     if (!keyword || !link_url) {
       return NextResponse.json(
@@ -70,7 +75,9 @@ export async function POST(request: NextRequest) {
         link_url,
         slot_count: slot_count || 1,
         current_rank: current_rank || null,
-        last_check_date: new Date(new Date().getTime() + 9 * 60 * 60 * 1000).toISOString()
+        last_check_date: new Date(
+          new Date().getTime() + 9 * 60 * 60 * 1000
+        ).toISOString(),
       })
       .select()
       .single();
@@ -87,9 +94,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data
+      data,
     });
-
   } catch (error) {
     console.error('키워드 추가 예외:', error);
     return NextResponse.json(

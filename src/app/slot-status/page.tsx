@@ -83,41 +83,126 @@ function SlotStatusPageContent() {
     }
   }, [searchParams]);
 
-  // Supabase에서 슬롯 데이터 가져오기
+  // Supabase에서 슬롯 데이터 가져오기 (모든 슬롯 타입 통합)
   const fetchSlotData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      console.log('슬롯 데이터 조회 시작...');
+      console.log('슬롯 데이터 조회 시작... (모든 타입 통합)');
 
-      // API 엔드포인트 호출 (특정 고객 필터링 시 type=slot_status 사용)
-      let apiUrl = '/api/slot-status';
+      // 모든 슬롯 타입의 API를 호출하여 데이터 통합
+      const apiCalls = [];
+
+      // 1. 쿠팡 슬롯 조회
+      let coupangApiUrl = '/api/slot-status';
       if (isFilteredByCustomer && filteredCustomerInfo) {
-        apiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+        coupangApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+      }
+      apiCalls.push(fetch(coupangApiUrl).then(res => res.json()));
+
+      // 2. 쿠팡VIP 슬롯 조회
+      let coupangVipApiUrl = '/api/slot-coupangvip';
+      if (isFilteredByCustomer && filteredCustomerInfo) {
+        coupangVipApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+      }
+      apiCalls.push(fetch(coupangVipApiUrl).then(res => res.json()));
+
+      // 3. 쿠팡APP 슬롯 조회
+      let coupangAppApiUrl = '/api/slot-coupangapp';
+      if (isFilteredByCustomer && filteredCustomerInfo) {
+        coupangAppApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+      }
+      apiCalls.push(fetch(coupangAppApiUrl).then(res => res.json()));
+
+      // 4. 네이버쇼핑 슬롯 조회
+      let naverApiUrl = '/api/slot-naver';
+      if (isFilteredByCustomer && filteredCustomerInfo) {
+        naverApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+      }
+      apiCalls.push(fetch(naverApiUrl).then(res => res.json()));
+
+      // 5. 플레이스 슬롯 조회
+      let placeApiUrl = '/api/slot-place';
+      if (isFilteredByCustomer && filteredCustomerInfo) {
+        placeApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+      }
+      apiCalls.push(fetch(placeApiUrl).then(res => res.json()));
+
+      // 6. 오늘의집 슬롯 조회
+      let todayhomeApiUrl = '/api/slot-todayhome';
+      if (isFilteredByCustomer && filteredCustomerInfo) {
+        todayhomeApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+      }
+      apiCalls.push(fetch(todayhomeApiUrl).then(res => res.json()));
+
+      // 7. 알리엑스프레스 슬롯 조회
+      let aliexpressApiUrl = '/api/slot-aliexpress';
+      if (isFilteredByCustomer && filteredCustomerInfo) {
+        aliexpressApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+      }
+      apiCalls.push(fetch(aliexpressApiUrl).then(res => res.json()));
+
+      console.log('API 호출 URLs:', {
+        coupangApiUrl,
+        coupangVipApiUrl,
+        coupangAppApiUrl,
+        naverApiUrl,
+        placeApiUrl,
+        todayhomeApiUrl,
+        aliexpressApiUrl,
+      });
+
+      // 모든 API 호출 실행
+      const results = await Promise.all(apiCalls);
+
+      // 결과 통합
+      let allSlotData = [];
+      let hasError = false;
+      let errorMessage = '';
+
+      results.forEach((result, index) => {
+        const slotType = [
+          '쿠팡',
+          '쿠팡VIP',
+          '쿠팡APP',
+          '네이버쇼핑',
+          '플레이스',
+          '오늘의집',
+          '알리',
+        ][index];
+
+        if (result.success && result.data) {
+          // 각 슬롯 데이터에 타입 정보 추가
+          const typedData = result.data.map(slot => ({
+            ...slot,
+            slotType: slotType,
+          }));
+          allSlotData = allSlotData.concat(typedData);
+          console.log(
+            `${slotType} 슬롯 데이터 조회 성공:`,
+            typedData.length,
+            '개'
+          );
+        } else {
+          console.warn(`${slotType} 슬롯 데이터 조회 실패:`, result.error);
+          hasError = true;
+          errorMessage += `${slotType}: ${result.error || '알 수 없는 오류'}; `;
+        }
+      });
+
+      if (hasError) {
+        console.warn('일부 슬롯 타입 조회 실패:', errorMessage);
+        // 일부 실패해도 성공한 데이터는 표시
       }
 
-      console.log('API 호출 URL:', apiUrl);
-      const response = await fetch(apiUrl);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || '데이터 조회에 실패했습니다.');
-      }
-
-      console.log('조회된 슬롯 데이터:', result.data);
+      console.log('통합된 슬롯 데이터:', allSlotData);
 
       // 특정 고객 필터링 시 슬롯 카운팅 정보 저장
-      // type=slot_status일 때는 result.data를 직접 사용 (pausedSlots, expiredSlots 포함)
-      if (isFilteredByCustomer && result.data && result.data.length > 0) {
-        setSlotData(result.data); // API에서 계산된 pausedSlots, expiredSlots 사용
+      if (isFilteredByCustomer && allSlotData && allSlotData.length > 0) {
+        setSlotData(allSlotData);
       } else {
-        setSlotData(result.data);
+        setSlotData(allSlotData);
       }
     } catch (error) {
       console.error('슬롯 데이터 조회 오류:', error);
@@ -202,8 +287,20 @@ function SlotStatusPageContent() {
       case '쿠팡VIP':
         targetUrl = `/coupangapp/vip?${params.toString()}`;
         break;
-      case '쿠팡 앱':
+      case '쿠팡APP':
         targetUrl = `/coupangapp/app?${params.toString()}`;
+        break;
+      case '네이버쇼핑':
+        targetUrl = `/coupangapp/naver?${params.toString()}`;
+        break;
+      case '플레이스':
+        targetUrl = `/coupangapp/place?${params.toString()}`;
+        break;
+      case '오늘의집':
+        targetUrl = `/coupangapp/todayhome?${params.toString()}`;
+        break;
+      case '알리':
+        targetUrl = `/coupangapp/aliexpress?${params.toString()}`;
         break;
       default:
         targetUrl = `/coupangapp/add?${params.toString()}`;

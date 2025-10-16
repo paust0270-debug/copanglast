@@ -317,7 +317,7 @@ function SlotAddPageContent() {
   const [editForm, setEditForm] = useState<Partial<CustomerSlot>>({});
 
   // 페이지 제목 상태 관리
-  const [pageTitle, setPageTitle] = useState('쿠팡VIP');
+  const [pageTitle, setPageTitle] = useState('네이버쇼핑');
   const [listTitle, setListTitle] = useState('슬롯 등록 목록');
 
   // 체크박스 상태 관리
@@ -330,6 +330,22 @@ function SlotAddPageContent() {
   useEffect(() => {
     const initializeData = async () => {
       try {
+        // 스키마 캐시 문제 해결 및 브라우저 캐시 삭제
+
+        // 브라우저 캐시 삭제
+        clearBrowserCache();
+
+        // 스키마 캐시 문제 해결
+        const cacheFixed = await fixSchemaCacheIssues();
+
+        if (!cacheFixed) {
+          setError(
+            '데이터베이스 스키마 캐시 문제를 해결할 수 없습니다. 페이지를 새로고침하거나 개발 서버를 재시작해주세요.'
+          );
+          setLoading(false);
+          return;
+        }
+
         await loadCustomers();
         await loadCustomerData();
       } catch {
@@ -355,7 +371,7 @@ function SlotAddPageContent() {
       const nameParam = customerName || username;
 
       const response = await fetch(
-        `/api/slot-coupangvip?customerId=${customerId}&username=${username}&name=${encodeURIComponent(nameParam)}`
+        `/api/slot-naver?customerId=${customerId}&username=${username}&name=${encodeURIComponent(nameParam)}`
       );
       const data = await response.json();
 
@@ -373,10 +389,7 @@ function SlotAddPageContent() {
           customerName: slotData.customerName || '',
         });
       } else {
-        // 쿠팡VIP 슬롯 데이터가 없으면 0으로 설정
-        console.warn(
-          '⚠️ 해당 고객에게 쿠팡VIP 슬롯이 없습니다. 먼저 쿠팡VIP 슬롯을 추가해주세요.'
-        );
+        // 슬롯 데이터가 없으면 0으로 설정
         setCustomerSlotStatus({
           totalSlots: 0,
           usedSlots: 0,
@@ -406,12 +419,14 @@ function SlotAddPageContent() {
 
     // 페이지 제목 설정
     if (customerId && username) {
-      setPageTitle(`쿠팡VIP - ${customerSlotStatus.customerName || username}`);
+      setPageTitle(
+        `네이버쇼핑 - ${customerSlotStatus.customerName || username}`
+      );
       setListTitle(
         `${customerSlotStatus.customerName || username}님의 슬롯 등록 목록`
       );
     } else {
-      setPageTitle('쿠팡VIP - 관리자 모드');
+      setPageTitle('네이버쇼핑 - 관리자 모드');
       setListTitle('전체 슬롯 등록 목록 (관리자)');
     }
 
@@ -566,7 +581,7 @@ function SlotAddPageContent() {
     return `${formatDate(now)} ~ ${formatDate(expiryDate)}`;
   };
 
-  // 슬롯 등록 목록 로드 함수 (slot_coupangvip 테이블에서 조회)
+  // 슬롯 등록 목록 로드 함수 (slot_status 테이블에서 조회)
   const loadCustomers = async () => {
     try {
       setLoading(true);
@@ -578,13 +593,13 @@ function SlotAddPageContent() {
       const username = urlParams.get('username');
 
       // 개별 고객 페이지인 경우 해당 고객의 슬롯만 조회 (slots 테이블도 조회하여 최신 usage_days 반영)
-      let apiUrl = '/api/slot-coupangvip?type=slot_status';
+      let apiUrl = '/api/slot-naver?type=slot_status';
       if (customerId && username) {
         apiUrl += `&customerId=${customerId}&username=${username}`;
       } else {
       }
 
-      // slot_coupangvip 테이블에서 데이터 직접 조회
+      // slot_status 테이블에서 데이터 직접 조회
       const response = await fetch(apiUrl);
 
       const result = await response.json();
@@ -600,7 +615,7 @@ function SlotAddPageContent() {
         throw new Error(`예상된 배열이 아닙니다. 타입: ${typeof result.data}`);
       }
 
-      // slot_coupangvip 데이터를 CustomerSlot 형식으로 변환
+      // slot_status 데이터를 CustomerSlot 형식으로 변환
       const convertedData: CustomerSlot[] = result.data.map(
         (item: Record<string, unknown>, index: number) => {
           // API에서 계산된 잔여기간 사용 (한국 시간 기준)
@@ -667,8 +682,9 @@ function SlotAddPageContent() {
           if (slot.id) {
             const slotId = slot.id.toString();
             if (!newMap.has(slotId)) {
-              // 작업 시작 시간이 없으면 created_at을 기준으로 설정
-              const workStartTime = slot.created_at || new Date().toISOString();
+              // 작업 시작 시간이 없으면 created_at을 기준으로 설정 (약간의 여유를 두어 음수 방지)
+              const workStartTime =
+                slot.created_at || new Date(Date.now() - 60000).toISOString(); // 1분 전으로 설정
               // 새로운 슬롯 workStartTime 설정
               if (isDevMode) {
                 console.log('➕ 새로운 슬롯 workStartTime 설정:', {
@@ -727,7 +743,7 @@ function SlotAddPageContent() {
       const result = await response.json();
 
       if (response.ok) {
-        const customerList = result.users || result.data || [];
+        const customerList = result.users || [];
         setCustomerData(customerList);
       } else {
         console.error('❌ 고객 페이지 데이터 로드 실패:', result.error);
@@ -764,7 +780,7 @@ function SlotAddPageContent() {
     setBulkForm(prev => ({ ...prev, [field]: value }));
   };
 
-  // 슬롯 등록 처리 (slot_coupangvip 테이블에 저장)
+  // 슬롯 등록 처리 (slot_status 테이블에 저장)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -789,7 +805,7 @@ function SlotAddPageContent() {
       // customerName이 비어있으면 username을 사용
       const finalCustomerName = customerName || username;
 
-      // slot_coupangvip 테이블에 저장할 데이터 준비
+      // slot_status 테이블에 저장할 데이터 준비
       const slotStatusData = {
         customer_id: username,
         customer_name: finalCustomerName,
@@ -805,11 +821,11 @@ function SlotAddPageContent() {
         equipment_group: form.equipmentGroup,
         usage_days: 30,
         status: '작동중',
-        slot_type: slotType || '쿠팡VIP', // 슬롯 타입 (쿠팡VIP, 네이버 등)
+        slot_type: slotType || '쿠팡', // 슬롯 타입 (쿠팡, 네이버 등)
       };
 
-      // slot_coupangvip 테이블에 저장
-      const response = await fetch('/api/slot-coupangvip', {
+      // slot_status 테이블에 저장
+      const response = await fetch('/api/slot-naver', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -849,7 +865,7 @@ function SlotAddPageContent() {
         return newMap;
       });
 
-      // traffic 테이블 저장은 slot_coupangvip API에서 자동으로 처리됩니다.
+      // traffic 테이블 저장은 slot_status API에서 자동으로 처리됩니다.
 
       // 새로운 슬롯 등록 추가 (화면 업데이트)
       const newCustomer: CustomerSlot = {
@@ -996,11 +1012,11 @@ function SlotAddPageContent() {
           equipment_group: bulkForm.equipmentGroup,
           usage_days: 30,
           status: '작동중',
-          slot_type: slotType || '쿠팡VIP', // 슬롯 타입 (쿠팡VIP, 네이버 등)
+          slot_type: slotType || '쿠팡', // 슬롯 타입 (쿠팡, 네이버 등)
         };
 
-        // slot_coupangvip 테이블에 저장
-        const response = await fetch('/api/slot-coupangvip', {
+        // slot_status 테이블에 저장
+        const response = await fetch('/api/slot-naver', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1015,7 +1031,7 @@ function SlotAddPageContent() {
           throw new Error(result.error || '슬롯 등록에 실패했습니다.');
         }
 
-        // traffic 테이블 저장은 slot_coupangvip API에서 자동으로 처리됩니다.
+        // traffic 테이블 저장은 slot_status API에서 자동으로 처리됩니다.
 
         return result.data;
       });
@@ -1081,7 +1097,7 @@ function SlotAddPageContent() {
     }
   };
 
-  // 슬롯 삭제 (slot_coupangvip 테이블에서 삭제하고 슬롯 현황 업데이트)
+  // 슬롯 삭제 (slot_status 테이블에서 삭제하고 슬롯 현황 업데이트)
   const handleDeleteCustomer = async (id: number | undefined) => {
     if (!id) return;
 
@@ -1098,9 +1114,9 @@ function SlotAddPageContent() {
       )
     ) {
       try {
-        // slot_coupangvip 테이블에서 삭제 (실제 데이터베이스 ID 사용)
+        // slot_status 테이블에서 삭제 (실제 데이터베이스 ID 사용)
         const response = await fetch(
-          `/api/slot-coupangvip/${customerToDelete.db_id}`,
+          `/api/slot-naver/${customerToDelete.db_id}`,
           {
             method: 'DELETE',
             headers: {
@@ -1195,7 +1211,7 @@ function SlotAddPageContent() {
     setEditForm({});
   };
 
-  // 수정 저장 (slot_coupangvip 테이블 연동)
+  // 수정 저장 (Supabase 연동)
   const handleSaveEdit = async () => {
     if (!editingCustomer?.id) return;
 
@@ -1209,22 +1225,7 @@ function SlotAddPageContent() {
         equipment_group: editForm.equipmentGroup,
       };
 
-      // VIP 페이지에서는 slot_coupangvip 테이블 업데이트
-      const response = await fetch(
-        `/api/slot-coupangvip/${editingCustomer.db_id}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(updatedData),
-        }
-      );
-
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.error || '고객 정보 수정에 실패했습니다.');
-      }
+      await updateCustomer(editingCustomer.id, updatedData);
 
       // 로컬 상태 업데이트
       setCustomers(prev =>
@@ -1316,20 +1317,7 @@ function SlotAddPageContent() {
           updatedData.slot_count = bulkEditForm.slotCount;
 
         if (Object.keys(updatedData).length > 0) {
-          // VIP 페이지에서는 slot_coupangvip 테이블 업데이트
-          const response = await fetch(`/api/slot-coupangvip/${customerId}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(updatedData),
-          });
-
-          const result = await response.json();
-          if (!result.success) {
-            throw new Error(result.error || '고객 정보 수정에 실패했습니다.');
-          }
-          return result;
+          return await updateCustomer(customerId, updatedData);
         }
       });
 
@@ -1392,7 +1380,7 @@ function SlotAddPageContent() {
 
         // 개별행 삭제와 동일한 API 엔드포인트 사용 (실제 데이터베이스 ID 사용)
         const response = await fetch(
-          `/api/slot-coupangvip/${customerToDelete.db_id}`,
+          `/api/slot-naver/${customerToDelete.db_id}`,
           {
             method: 'DELETE',
             headers: {
@@ -1653,17 +1641,17 @@ function SlotAddPageContent() {
       <Navigation />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* 페이지 제목 */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">{pageTitle}</h1>
+        </div>
+
         {/* 에러 메시지 표시 */}
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {error}
           </div>
         )}
-
-        {/* 페이지 제목 */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">{pageTitle}</h1>
-        </div>
 
         {/* 상단 슬롯 정보 헤더 - 1줄로 정렬하고 슬롯등록과 동일한 사이즈 */}
         <div className="bg-white border-2 border-dashed border-purple-300 rounded-2xl p-6 mb-6 shadow-sm">
@@ -1685,9 +1673,9 @@ function SlotAddPageContent() {
 
                   return (
                     <div className="flex items-center space-x-3">
-                      <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full">
+                      <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full">
                         <svg
-                          className="w-6 h-6 text-purple-600"
+                          className="w-6 h-6 text-blue-600"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -1715,7 +1703,7 @@ function SlotAddPageContent() {
               })()}
 
               <div className="flex items-center space-x-3">
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full">
                   <svg
                     className="w-6 h-6 text-purple-600"
                     fill="none"
@@ -2255,12 +2243,10 @@ function SlotAddPageContent() {
             ) : !hasWorkRegisteredSlots ? (
               <div className="text-center py-8">
                 <div className="text-gray-500 text-lg mb-2">
-                  📋 쿠팡VIP 작업등록된 슬롯이 없습니다
+                  📋 작업등록된 슬롯이 없습니다
                 </div>
                 <p className="text-gray-400">
-                  {customerSlotStatus.totalSlots === 0
-                    ? '먼저 쿠팡VIP 슬롯을 추가해주세요. (슬롯 추가 → 쿠팡VIP 선택)'
-                    : '위의 슬롯 등록 폼을 사용하여 작업을 등록해주세요.'}
+                  위의 슬롯 등록 폼을 사용하여 작업을 등록해주세요.
                 </p>
               </div>
             ) : (
@@ -2422,11 +2408,11 @@ function SlotAddPageContent() {
                                       );
                                       if (customerInfo) {
                                         // 개별 고객 페이지로 이동
-                                        const url = `/coupangapp/vip?customerId=${customerInfo.id}&username=${customerInfo.username}&slotCount=10&customerName=${encodeURIComponent(customerInfo.name as string)}&slotType=coupangvip`;
+                                        const url = `/coupangapp/add?customerId=${customerInfo.id}&username=${customerInfo.username}&slotCount=10&customerName=${encodeURIComponent(customerInfo.name as string)}&slotType=coupang`;
                                         window.open(url, '_blank');
                                       } else {
                                         // 고객 정보가 없으면 기본값으로 이동
-                                        const url = `/coupangapp/vip?customerId=unknown&username=${customer.customer}&slotCount=10&customerName=${encodeURIComponent(customer.customer)}&slotType=coupangvip`;
+                                        const url = `/coupangapp/add?customerId=unknown&username=${customer.customer}&slotCount=10&customerName=${encodeURIComponent(customer.customer)}&slotType=coupang`;
                                         window.open(url, '_blank');
                                       }
                                     }}

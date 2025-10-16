@@ -46,7 +46,9 @@ export async function GET(request: NextRequest) {
     }
 
     // 총판 정보 가져오기
-    const customerIds = [...new Set(slots?.map(slot => slot.customer_id) || [])];
+    const customerIds = [
+      ...new Set(slots?.map(slot => slot.customer_id) || []),
+    ];
     const { data: userProfiles } = await supabase
       .from('user_profiles')
       .select('username, distributor')
@@ -61,13 +63,20 @@ export async function GET(request: NextRequest) {
     // 잔여기간 계산 및 expiry_date 설정
     const processedSlots = slots?.map(slot => {
       const usageDays = slot.usage_days || 0;
-      
+
       // calculateRemainingTimeKST 함수 사용하여 정확한 잔여기간 계산
-      const remainingTime = calculateRemainingTimeKST(slot.created_at, usageDays);
-      
+      const remainingTime = calculateRemainingTimeKST(
+        slot.created_at,
+        usageDays
+      );
+
       // 만료일 계산
-      const createdDate = slot.created_at ? new Date(slot.created_at) : new Date();
-      const expiryDate = new Date(createdDate.getTime() + usageDays * 24 * 60 * 60 * 1000);
+      const createdDate = slot.created_at
+        ? new Date(slot.created_at)
+        : new Date();
+      const expiryDate = new Date(
+        createdDate.getTime() + usageDays * 24 * 60 * 60 * 1000
+      );
 
       // 만료 상태 확인 (잔여 시간이 0이면 만료) - slot-status와 동일한 로직
       const isExpired =
@@ -84,28 +93,29 @@ export async function GET(request: NextRequest) {
         remainingTimeString: remainingTime.string,
         expiry_date: slot.updated_at || expiryDate.toISOString().split('T')[0],
         distributor: distributorMap.get(slot.customer_id) || '일반',
-        status: isExpired ? 'expired' : slot.status
+        status: isExpired ? 'expired' : slot.status,
       };
     });
 
-    if (isDevMode) console.log('🔍 슬롯 조회 결과 (수정됨):', {
-      customerId,
-      slotType,
-      totalSlots: processedSlots?.length || 0,
-      slots: processedSlots?.map(slot => ({
-        id: slot.id,
-        customer_id: slot.customer_id,
-        slot_type: slot.slot_type,
-        slot_count: slot.slot_count,
-        status: slot.status,
-        remaining_days: slot.remaining_days,
-        remaining_hours: slot.remaining_hours,
-        remaining_minutes: slot.remaining_minutes,
-        remainingTimeString: slot.remainingTimeString,
-        distributor: slot.distributor,
-        expiry_date: slot.expiry_date
-      })),
-    });
+    if (isDevMode)
+      console.log('🔍 슬롯 조회 결과 (수정됨):', {
+        customerId,
+        slotType,
+        totalSlots: processedSlots?.length || 0,
+        slots: processedSlots?.map(slot => ({
+          id: slot.id,
+          customer_id: slot.customer_id,
+          slot_type: slot.slot_type,
+          slot_count: slot.slot_count,
+          status: slot.status,
+          remaining_days: slot.remaining_days,
+          remaining_hours: slot.remaining_hours,
+          remaining_minutes: slot.remaining_minutes,
+          remainingTimeString: slot.remainingTimeString,
+          distributor: slot.distributor,
+          expiry_date: slot.expiry_date,
+        })),
+      });
 
     return NextResponse.json({
       success: true,
@@ -149,6 +159,8 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`슬롯 추가 시작: ${customerName} (${slotType} ${slotCount}개)`);
+    console.log('🔍 슬롯 타입 확인:', slotType);
+    console.log('🔍 저장할 테이블 결정 중...');
 
     // 슬롯 데이터 생성 (현재 시간 기준)
     const now = new Date();
@@ -213,17 +225,36 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ 슬롯 추가 완료:', slot);
 
-    // slot_status 테이블에 레코드 생성 (slots.id와 매칭)
-    console.log('🔄 slot_status 레코드 생성 시작...');
+    // 슬롯 타입에 따라 다른 상태 테이블에 레코드 생성 (slots.id와 매칭)
+    console.log('🔄 상태 테이블 레코드 생성 시작...');
     console.log('🔍 현재 고객 정보:', {
       customerId,
       customerName,
       slotType,
       slotCount,
     });
+
+    // 슬롯 타입에 따라 저장할 테이블 결정
+    let targetStatusTable = 'slot_status'; // 기본값 (쿠팡)
+    if (slotType === '쿠팡VIP') {
+      targetStatusTable = 'slot_coupangvip';
+    } else if (slotType === '쿠팡APP') {
+      targetStatusTable = 'slot_coupangapp';
+    } else if (slotType === '네이버쇼핑') {
+      targetStatusTable = 'slot_naver';
+    } else if (slotType === '플레이스') {
+      targetStatusTable = 'slot_place';
+    } else if (slotType === '오늘의집') {
+      targetStatusTable = 'slot_todayhome';
+    } else if (slotType === '알리') {
+      targetStatusTable = 'slot_aliexpress';
+    }
+
+    console.log(`📊 저장할 상태 테이블: ${targetStatusTable}`);
+
     try {
       // slots 테이블에 방금 생성된 레코드의 id를 slot_sequence로 사용
-      // slots.id와 slot_status.slot_sequence를 1:N 매칭
+      // slots.id와 상태 테이블의 slot_sequence를 1:N 매칭
       const newSlotId = slot.id; // slots 테이블의 id (AUTO INCREMENT)
 
       console.log(
@@ -258,56 +289,85 @@ export async function POST(request: NextRequest) {
       }
 
       console.log(
-        `slot_status 생성 데이터: ${slotStatusRecords.length}개 레코드`
+        `${targetStatusTable} 생성 데이터: ${slotStatusRecords.length}개 레코드`
       );
 
       const { data: slotStatus, error: slotStatusError } = await supabase
-        .from('slot_status')
+        .from(targetStatusTable)
         .insert(slotStatusRecords)
         .select();
 
       if (slotStatusError) {
-        console.error('❌ slot_status 레코드 생성 실패:', slotStatusError);
+        console.error(
+          `❌ ${targetStatusTable} 레코드 생성 실패:`,
+          slotStatusError
+        );
         console.error('오류 코드:', slotStatusError.code);
         console.error('오류 메시지:', slotStatusError.message);
         console.error('오류 세부사항:', slotStatusError.details);
+
+        // 상태 테이블 저장 실패 시 전체 슬롯 추가 실패로 처리
+        return NextResponse.json(
+          {
+            success: false,
+            error: `${targetStatusTable} 테이블에 데이터 저장에 실패했습니다: ${slotStatusError.message}`,
+          },
+          { status: 500 }
+        );
       } else {
-        console.log('✅ slot_status 레코드 생성 완료:', slotStatus);
+        console.log(`✅ ${targetStatusTable} 레코드 생성 완료:`, slotStatus);
 
         // 생성 시점에 이미 올바른 만료일이 설정되었으므로 추가 업데이트 불필요
       }
     } catch (error) {
-      console.error('❌ slot_status 레코드 생성 중 예외 발생:', error);
+      console.error(`❌ ${targetStatusTable} 레코드 생성 중 예외 발생:`, error);
       console.error('오류 스택:', (error as any).stack);
+
+      // 예외 발생 시 전체 슬롯 추가 실패로 처리
+      return NextResponse.json(
+        {
+          success: false,
+          error: `${targetStatusTable} 테이블에 데이터 저장 중 예외가 발생했습니다: ${(error as Error).message}`,
+        },
+        { status: 500 }
+      );
     }
 
     // 고객의 추가횟수 증가
     try {
-      // 현재 추가횟수 조회
+      // 현재 추가횟수 및 슬롯수 조회
       const { data: currentUser, error: fetchError } = await supabase
-        .from('users')
-        .select('additional_count')
+        .from('user_profiles')
+        .select('additional_count, slot_used')
         .eq('username', customerId)
         .single();
 
       if (fetchError) {
         console.log('추가횟수 조회 실패 (무시):', fetchError);
       } else {
-        // 추가횟수 증가
-        const newCount = (currentUser.additional_count || 0) + 1;
+        // additional_count +1, slot_used 업데이트
+        const newAdditionalCount = (currentUser.additional_count || 0) + 1;
+        const newSlotUsed = (currentUser.slot_used || 0) + parseInt(slotCount);
+
         const { error: updateError } = await supabase
-          .from('users')
-          .update({ additional_count: newCount })
+          .from('user_profiles')
+          .update({
+            additional_count: newAdditionalCount,
+            slot_used: newSlotUsed,
+          })
           .eq('username', customerId);
 
         if (updateError) {
-          console.log('추가횟수 업데이트 실패 (무시):', updateError);
+          console.log('추가횟수/슬롯수 업데이트 실패 (무시):', updateError);
         } else {
-          console.log('✅ 고객 추가횟수 증가 완료:', newCount);
+          console.log('✅ 고객 추가횟수 및 슬롯수 업데이트 완료:', {
+            newAdditionalCount,
+            newSlotUsed,
+          });
         }
       }
     } catch (error) {
-      console.log('추가횟수 업데이트 중 오류 (무시):', error);
+      console.log('추가횟수/슬롯수 업데이트 중 오류 (무시):', error);
     }
 
     // 정산 테이블에도 데이터 저장 (미정산 페이지에서 조회하기 위해)

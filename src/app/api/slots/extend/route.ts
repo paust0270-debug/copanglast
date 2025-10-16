@@ -140,6 +140,30 @@ export async function POST(request: NextRequest) {
       // 정산 내역 저장 실패해도 슬롯 연장은 성공으로 처리
     }
 
+    // 고객의 추가횟수 증가 (연장도 추가횟수로 카운트)
+    try {
+      const { data: currentUser, error: fetchError } = await supabase
+        .from('user_profiles')
+        .select('additional_count')
+        .eq('username', slotData.customer_id)
+        .single();
+
+      if (!fetchError && currentUser) {
+        const newAdditionalCount = (currentUser.additional_count || 0) + 1;
+
+        const { error: updateError } = await supabase
+          .from('user_profiles')
+          .update({ additional_count: newAdditionalCount })
+          .eq('username', slotData.customer_id);
+
+        if (!updateError) {
+          console.log('✅ 연장 시 추가횟수 증가 완료:', newAdditionalCount);
+        }
+      }
+    } catch (error) {
+      console.log('추가횟수 업데이트 중 오류 (무시):', error);
+    }
+
     // 새로운 만료일 계산
     const newExpiryDate = new Date(
       createdDate.getTime() + newUsageDays * 24 * 60 * 60 * 1000

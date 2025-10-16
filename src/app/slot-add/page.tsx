@@ -149,10 +149,13 @@ function SlotAddPageContent() {
           name: name || formData.customerName,
         });
 
+        // 모든 슬롯 타입에 대해 통합 슬롯 현황 페이지로 리다이렉트
+        const redirectUrl = `/slot-status?${params.toString()}`;
+
         alert(
           '슬롯이 성공적으로 추가되었습니다. 슬롯 현황 페이지로 이동합니다.'
         );
-        router.push(`/slot-status?${params.toString()}`);
+        router.push(redirectUrl);
       } else {
         alert(`슬롯 추가 실패: ${slotResult.error}`);
       }
@@ -236,13 +239,13 @@ function SlotAddPageContent() {
                     <SelectValue placeholder="슬롯 유형을 선택하세요" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="coupang">쿠팡</SelectItem>
-                    <SelectItem value="coupang-vip">쿠팡VIP</SelectItem>
-                    <SelectItem value="coupang-app">쿠팡APP</SelectItem>
-                    <SelectItem value="naver-shopping">네이버쇼핑</SelectItem>
-                    <SelectItem value="place">플레이스</SelectItem>
-                    <SelectItem value="today-house">오늘의집</SelectItem>
-                    <SelectItem value="aliexpress">알리</SelectItem>
+                    <SelectItem value="쿠팡">쿠팡</SelectItem>
+                    <SelectItem value="쿠팡VIP">쿠팡VIP</SelectItem>
+                    <SelectItem value="쿠팡APP">쿠팡APP</SelectItem>
+                    <SelectItem value="네이버쇼핑">네이버쇼핑</SelectItem>
+                    <SelectItem value="플레이스">플레이스</SelectItem>
+                    <SelectItem value="오늘의집">오늘의집</SelectItem>
+                    <SelectItem value="알리">알리</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
