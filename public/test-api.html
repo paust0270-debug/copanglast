@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #0070f3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0051cc;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+        }
+        .distributor {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff0000;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 API 테스트 - distributor 값 확인</h1>
+        <button onclick="testAPI()">API 호출하기</button>
+        <div id="result"></div>
+        <div id="distributor" class="distributor" style="display: none;"></div>
+    </div>
+
+    <script>
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            const distributorDiv = document.getElementById('distributor');
+            
+            resultDiv.textContent = '로딩 중...';
+            distributorDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/test-slots?customerId=choiangello111');
+                const data = await response.json();
+                
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    const distributor = data.data[0].distributor;
+                    distributorDiv.innerHTML = `
+                        <strong>✅ distributor 값:</strong> ${distributor}<br>
+                        <strong>타입:</strong> ${typeof distributor}<br>
+                        <strong>길이:</strong> ${distributor.length}<br>
+                        <strong>UTF-8 디코딩 시도:</strong> ${decodeURIComponent(escape(distributor))}<br>
+                        <strong>charCode:</strong> ${Array.from(distributor).map(c => c.charCodeAt(0)).join(', ')}
+                    `;
+                    distributorDiv.style.display = 'block';
+                    
+                    console.log('✅ distributor 값:', distributor);
+                    console.log('✅ distributor 타입:', typeof distributor);
+                    console.log('✅ distributor 길이:', distributor.length);
+                    console.log('✅ distributor charCodes:', Array.from(distributor).map(c => c.charCodeAt(0)));
+                }
+            } catch (error) {
+                resultDiv.textContent = '오류: ' + error.message;
+                console.error('❌ 에러:', error);
+            }
+        }
+    </script>
+</body>
+</html>
+

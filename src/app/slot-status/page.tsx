@@ -91,6 +91,119 @@ function SlotStatusPageContent() {
 
       console.log('슬롯 데이터 조회 시작... (모든 타입 통합)');
 
+      // URL 파라미터 직접 확인 (state 대신 URL 우선)
+      const customerId = searchParams.get('customerId');
+      const username = searchParams.get('username');
+      const name = searchParams.get('name');
+
+      console.log('🔍 URL 파라미터:', { customerId, username, name });
+      console.log('🔍 isFilteredByCustomer:', isFilteredByCustomer);
+      console.log('🔍 filteredCustomerInfo:', filteredCustomerInfo);
+
+      // 개별 고객 필터링 시에는 slots 테이블에서 직접 조회 (URL 파라미터 기준)
+      if (customerId && username && name) {
+        const customerInfo = {
+          id: customerId,
+          username: decodeURIComponent(username),
+          name: decodeURIComponent(name),
+        };
+        console.log('✅ 개별 고객 슬롯 현황 조회 (URL 기준):', customerInfo);
+
+        // 1. 슬롯 데이터 조회 (테스트 API 사용 - 이미 user_profiles에서 distributor 조회함)
+        const slotsApiUrl = `/api/test-slots?customerId=${customerInfo.username}`;
+        console.log('개별 고객 API URL:', slotsApiUrl);
+
+        const response = await fetch(slotsApiUrl);
+        const result = await response.json();
+
+        console.log('개별 고객 API 응답:', result);
+        console.log(
+          '첫 번째 슬롯의 distributor:',
+          result.data?.[0]?.distributor
+        );
+
+        if (result.success && result.data) {
+          // API 데이터를 프론트엔드 형식으로 변환 (미정산 내역 페이지와 동일한 방식)
+          const mappedData = result.data.map(slot => {
+            console.log('슬롯 매핑 중 - distributor:', slot.distributor);
+
+            // 만료일 계산 (등록일 + 사용일수)
+            const createdDate = new Date(slot.created_at);
+            const usageDays = slot.usage_days || 10;
+            const expiryDate = new Date(
+              createdDate.getTime() + usageDays * 24 * 60 * 60 * 1000
+            );
+            const expiryDateString = expiryDate.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+
+            // 잔여기간 계산
+            const now = new Date();
+            const remainingMs = expiryDate.getTime() - now.getTime();
+            const remainingDays = Math.max(
+              0,
+              Math.floor(remainingMs / (24 * 60 * 60 * 1000))
+            );
+            const remainingHours = Math.max(
+              0,
+              Math.floor(
+                (remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000)
+              )
+            );
+            const remainingMinutes = Math.max(
+              0,
+              Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000))
+            );
+            const remainingTimeString = `${remainingDays}일 ${remainingHours}시간 ${remainingMinutes}분`;
+
+            return {
+              id: slot.id,
+              customerId: slot.customer_id,
+              customerName: slot.customer_name,
+              slotType: slot.slot_type,
+              slotCount: slot.slot_count,
+              paymentType: slot.payment_type || 'deposit',
+              payerName: slot.payer_name || '-',
+              paymentAmount: slot.payment_amount || 0,
+              paymentDate: slot.payment_date || '2025-10-17',
+              usageDays: usageDays,
+              memo: slot.memo || null,
+              status: slot.status || 'active',
+              createdAt: slot.created_at,
+              updatedAt: slot.updated_at || slot.created_at,
+              workGroup: slot.work_group || '공통',
+              keyword: slot.keyword || null,
+              linkUrl: slot.link_url || null,
+              equipmentGroup: slot.equipment_group || '지정안함',
+              remainingDays: remainingDays,
+              remainingHours: remainingHours,
+              remainingMinutes: remainingMinutes,
+              remainingTimeString: remainingTimeString,
+              expiryDate: expiryDateString, // 계산된 만료일 (YYYY-MM-DD)
+              distributor: slot.distributor || '-', // API에서 user_profiles 조회한 값
+              userGroup: slot.distributor || '-', // API에서 user_profiles 조회한 값
+              totalPaymentAmount: slot.payment_amount || 0,
+              registrationDate: slot.payment_date || slot.created_at,
+            };
+          });
+
+          console.log('매핑된 데이터 첫 번째 항목:', mappedData[0]);
+
+          setFilteredData(mappedData);
+          setSlotData(mappedData);
+          console.log(
+            '개별 고객 슬롯 데이터 설정 완료:',
+            mappedData.length,
+            '개'
+          );
+        } else {
+          console.error('개별 고객 슬롯 데이터 조회 실패:', result.error);
+          setError(result.error || '슬롯 데이터를 불러올 수 없습니다.');
+        }
+
+        setLoading(false);
+        return;
+      }
+
+      // 전체 슬롯 현황 조회 (기존 로직)
       // 모든 슬롯 타입의 API를 호출하여 데이터 통합
       const apiCalls = [];
 

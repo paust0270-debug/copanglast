@@ -45,20 +45,23 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 총판 정보 가져오기
-    const customerIds = [
-      ...new Set(slots?.map(slot => slot.customer_id) || []),
-    ];
-    const { data: userProfiles } = await supabase
-      .from('user_profiles')
-      .select('username, distributor')
-      .in('username', customerIds);
+    // distributorMap 로직 제거 - slot.distributor 직접 사용
 
-    // customer_id를 키로 하는 총판 맵 생성
-    const distributorMap = new Map();
-    userProfiles?.forEach(profile => {
-      distributorMap.set(profile.username, profile.distributor);
-    });
+    // 디버깅: Supabase 쿼리 결과 확인
+    if (isDevMode) {
+      console.log('🔍 Supabase 쿼리 결과:', {
+        totalSlots: slots?.length || 0,
+        firstSlot: slots?.[0]
+          ? {
+              id: slots[0].id,
+              customer_id: slots[0].customer_id,
+              distributor: slots[0].distributor,
+              distributor_type: typeof slots[0].distributor,
+              distributor_length: slots[0].distributor?.length,
+            }
+          : null,
+      });
+    }
 
     // 잔여기간 계산 및 expiry_date 설정
     const processedSlots = slots?.map(slot => {
@@ -85,6 +88,19 @@ export async function GET(request: NextRequest) {
         remainingTime.minutes === 0 &&
         usageDays > 0;
 
+      // 디버깅 로그 추가
+      if (isDevMode) {
+        console.log('🔍 슬롯 처리 중:', {
+          id: slot.id,
+          customer_id: slot.customer_id,
+          original_distributor: slot.distributor,
+          distributor_type: typeof slot.distributor,
+          distributor_length: slot.distributor?.length,
+          distributor_truthy: !!slot.distributor,
+          final_distributor: slot.distributor || '일반',
+        });
+      }
+
       return {
         ...slot,
         remaining_days: remainingTime.days,
@@ -92,7 +108,7 @@ export async function GET(request: NextRequest) {
         remaining_minutes: remainingTime.minutes,
         remainingTimeString: remainingTime.string,
         expiry_date: slot.updated_at || expiryDate.toISOString().split('T')[0],
-        distributor: distributorMap.get(slot.customer_id) || '일반',
+        distributor: slot.distributor || '일반',
         status: isExpired ? 'expired' : slot.status,
       };
     });
@@ -192,6 +208,21 @@ export async function POST(request: NextRequest) {
       return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
     };
 
+    // 고객의 distributor 정보 조회
+    const { data: customerData, error: customerError } = await supabase
+      .from('user_profiles')
+      .select('distributor')
+      .eq('username', customerId)
+      .single();
+
+    if (customerError) {
+      console.error('고객 정보 조회 오류:', customerError);
+      return NextResponse.json(
+        { error: '고객 정보를 찾을 수 없습니다.' },
+        { status: 400 }
+      );
+    }
+
     const slotData = {
       customer_id: customerId,
       customer_name: customerName,
@@ -204,6 +235,7 @@ export async function POST(request: NextRequest) {
       usage_days: usageDaysValue,
       memo: memo || null,
       status: 'active',
+      distributor: customerData.distributor || '일반', // 고객의 distributor 정보 자동 설정
       created_at: formatLocalDate(now),
       updated_at: formatLocalDate(expiryDate),
     };
