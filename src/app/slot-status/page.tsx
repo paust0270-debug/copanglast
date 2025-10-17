@@ -143,6 +143,27 @@ function SlotStatusPageContent() {
       }
       apiCalls.push(fetch(aliexpressApiUrl).then(res => res.json()));
 
+      // 8. 쿠팡순위체크 슬롯 조회
+      let copangrankApiUrl = '/api/slot-copangrank';
+      if (isFilteredByCustomer && filteredCustomerInfo) {
+        copangrankApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+      }
+      apiCalls.push(fetch(copangrankApiUrl).then(res => res.json()));
+
+      // 9. N쇼핑순위체크 슬롯 조회
+      let naverrankApiUrl = '/api/slot-naverrank';
+      if (isFilteredByCustomer && filteredCustomerInfo) {
+        naverrankApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+      }
+      apiCalls.push(fetch(naverrankApiUrl).then(res => res.json()));
+
+      // 10. N플레이스순위체크 슬롯 조회
+      let placerankApiUrl = '/api/slot-placerank';
+      if (isFilteredByCustomer && filteredCustomerInfo) {
+        placerankApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+      }
+      apiCalls.push(fetch(placerankApiUrl).then(res => res.json()));
+
       console.log('API 호출 URLs:', {
         coupangApiUrl,
         coupangVipApiUrl,
@@ -151,6 +172,9 @@ function SlotStatusPageContent() {
         placeApiUrl,
         todayhomeApiUrl,
         aliexpressApiUrl,
+        copangrankApiUrl,
+        naverrankApiUrl,
+        placerankApiUrl,
       });
 
       // 모든 API 호출 실행
@@ -170,6 +194,9 @@ function SlotStatusPageContent() {
           '플레이스',
           '오늘의집',
           '알리',
+          '쿠팡순위체크',
+          'N쇼핑순위체크',
+          'N플레이스순위체크',
         ][index];
 
         if (result.success && result.data) {
@@ -301,6 +328,15 @@ function SlotStatusPageContent() {
         break;
       case '알리':
         targetUrl = `/coupangapp/aliexpress?${params.toString()}`;
+        break;
+      case '쿠팡순위체크':
+        targetUrl = `/coupangapp/copangrank?${params.toString()}`;
+        break;
+      case 'N쇼핑순위체크':
+        targetUrl = `/coupangapp/naverrank?${params.toString()}`;
+        break;
+      case 'N플레이스순위체크':
+        targetUrl = `/coupangapp/placerank?${params.toString()}`;
         break;
       default:
         targetUrl = `/coupangapp/add?${params.toString()}`;

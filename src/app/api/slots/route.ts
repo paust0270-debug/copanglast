@@ -248,6 +248,12 @@ export async function POST(request: NextRequest) {
       targetStatusTable = 'slot_todayhome';
     } else if (slotType === '알리') {
       targetStatusTable = 'slot_aliexpress';
+    } else if (slotType === '쿠팡순위체크') {
+      targetStatusTable = 'slot_copangrank';
+    } else if (slotType === 'N쇼핑순위체크') {
+      targetStatusTable = 'slot_naverrank';
+    } else if (slotType === 'N플레이스순위체크') {
+      targetStatusTable = 'slot_placerank';
     }
 
     console.log(`📊 저장할 상태 테이블: ${targetStatusTable}`);

@@ -246,6 +246,11 @@ function SlotAddPageContent() {
                     <SelectItem value="플레이스">플레이스</SelectItem>
                     <SelectItem value="오늘의집">오늘의집</SelectItem>
                     <SelectItem value="알리">알리</SelectItem>
+                    <SelectItem value="쿠팡순위체크">쿠팡순위체크</SelectItem>
+                    <SelectItem value="N쇼핑순위체크">N쇼핑순위체크</SelectItem>
+                    <SelectItem value="N플레이스순위체크">
+                      N플레이스순위체크
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>

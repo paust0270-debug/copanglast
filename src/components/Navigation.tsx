@@ -40,11 +40,15 @@ export default function Navigation() {
     {
       name: '무료 서비스',
       href: '/dashboard',
-      subItems: [],
+      subItems: [
+        { name: '쿠팡순위체크', href: '/coupangapp/copangrank' },
+        { name: 'N쇼핑순위체크', href: '/coupangapp/naverrank' },
+        { name: 'N플레이스순위체크', href: '/coupangapp/placerank' },
+      ],
     },
     {
       name: '메인서비스',
-      href: '/coupangapp',
+      href: '/coupangapp/add',
       subItems: [
         { name: '쿠팡', href: '/coupangapp/add' },
         { name: '쿠팡VIP', href: '/coupangapp/vip' },
