@@ -389,20 +389,8 @@ export const getNavigationItems = (
     },
     {
       name: '총판관리',
-      href: '/distributor',
+      href: '/distributor-add',
       roles: ['최고관리자'],
-      subItems: [
-        {
-          name: '총판목록',
-          href: '/distributor',
-          roles: ['최고관리자'],
-        },
-        {
-          name: '총판추가',
-          href: '/distributor-add',
-          roles: ['최고관리자'],
-        },
-      ],
     },
     {
       name: '작업관리',
