@@ -68,14 +68,16 @@ export default function Navigation() {
   if (!isClient) {
     return (
       <nav className="bg-white shadow-lg border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between h-16">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+          <div className="flex items-center justify-between h-14 sm:h-16">
             <div className="flex-shrink-0">
               <div className="flex items-center">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center mr-3 shadow-lg">
-                  <span className="text-white font-bold text-xl">AD</span>
+                <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg sm:rounded-xl flex items-center justify-center mr-2 sm:mr-3 shadow-lg">
+                  <span className="text-white font-bold text-base sm:text-lg lg:text-xl">
+                    AD
+                  </span>
                 </div>
-                <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <span className="text-base sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   애드팡팡
                 </span>
               </div>
@@ -109,15 +111,17 @@ export default function Navigation() {
 
   return (
     <nav className="bg-white shadow-lg border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="flex items-center justify-between h-16">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+        <div className="flex items-center justify-between h-14 sm:h-16">
           {/* 왼쪽 로고 */}
           <div className="flex-shrink-0">
             <Link href="/dashboard" className="flex items-center">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center mr-3 shadow-lg hover:shadow-xl transition-shadow duration-200">
-                <span className="text-white font-bold text-xl">AD</span>
+              <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg sm:rounded-xl flex items-center justify-center mr-2 sm:mr-3 shadow-lg hover:shadow-xl transition-shadow duration-200">
+                <span className="text-white font-bold text-base sm:text-lg lg:text-xl">
+                  AD
+                </span>
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="text-base sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 애드팡팡
               </span>
             </Link>
@@ -174,14 +178,17 @@ export default function Navigation() {
           </div>
 
           {/* 우측 사용자 영역 */}
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-3">
-              <span className="text-sm text-gray-600">
+          <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline">
                 {user.name} ({user.grade})
+              </span>
+              <span className="text-xs text-gray-600 sm:hidden">
+                {user.name}
               </span>
               <button
                 onClick={handleLogout}
-                className="text-gray-600 hover:text-red-600 px-3 py-2 text-sm font-medium transition-colors duration-200"
+                className="text-gray-600 hover:text-red-600 px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium transition-colors duration-200"
               >
                 로그아웃
               </button>
