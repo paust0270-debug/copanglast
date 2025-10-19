@@ -22,9 +22,39 @@ export async function GET(request: NextRequest) {
     const username = searchParams.get('username'); // 실제 고객명 (customer_id와 매칭)
     const type = searchParams.get('type'); // 'slots' 또는 'slot_status' 구분
     const skipSlotsTable = searchParams.get('skipSlotsTable'); // slots 테이블 조회 건너뛰기
+    const currentUser = searchParams.get('currentUser'); // 🔥 현재 로그인한 사용자
 
     // distributorMap을 함수 최상위에서 정의
     let distributorMap = new Map();
+
+    // 🔥 권한 기반 필터링을 위한 사용자 정보 조회
+    let userRole = null;
+    let userDistributor = null;
+
+    if (currentUser) {
+      try {
+        const { data: userProfile, error: userProfileError } = await supabase
+          .from('user_profiles')
+          .select('username, grade, distributor')
+          .eq('username', currentUser)
+          .single();
+
+        if (userProfileError || !userProfile) {
+          console.warn(
+            '⚠️ 사용자 프로필 조회 실패:',
+            userProfileError?.message
+          );
+        } else {
+          userRole = userProfile.grade;
+          userDistributor = userProfile.distributor;
+          console.log(
+            `👤 현재 사용자: ${currentUser}, 권한: ${userRole}, 소속: ${userDistributor}`
+          );
+        }
+      } catch (err) {
+        console.warn('⚠️ 사용자 프로필 조회 중 오류:', err);
+      }
+    }
 
     // type 파라미터에 따라 다른 테이블 조회
     if (type === 'slot_status') {
@@ -640,6 +670,27 @@ export async function POST(request: NextRequest) {
       `🎯 고객 ${customerId}에게 ${requestedSlotCount}개 플레이스 슬롯 할당 요청`
     );
 
+    // 🔥 distributor 자동 설정을 위한 사용자 프로필 조회
+    let userDistributor = '일반'; // 기본값
+    try {
+      const { data: userProfile, error: userProfileError } = await supabase
+        .from('user_profiles')
+        .select('username, distributor')
+        .eq('username', customerId)
+        .single();
+
+      if (userProfileError || !userProfile) {
+        console.warn('⚠️ 사용자 프로필 조회 실패:', userProfileError?.message);
+      } else {
+        userDistributor = userProfile.distributor || '일반';
+        console.log(
+          `✅ 사용자 ${customerId}의 distributor: ${userDistributor}`
+        );
+      }
+    } catch (err) {
+      console.warn('⚠️ 사용자 프로필 조회 중 오류:', err);
+    }
+
     // 1. slots 테이블에서 해당 고객의 플레이스 슬롯만 조회 (usage_days 내림차순)
     // 일시중지된 슬롯도 포함하여 조회 (재등록 시 사용 가능)
     const { data: availableSlots, error: slotsError } = await supabase
@@ -792,7 +843,7 @@ export async function POST(request: NextRequest) {
       const existingRecord = emptySlotStatus[i];
 
       const updateData = {
-        distributor: body.distributor || '일반',
+        distributor: userDistributor, // 🔥 자동 설정된 distributor
         work_group: body.work_group || '공통',
         keyword: body.keyword,
         link_url: body.link_url,

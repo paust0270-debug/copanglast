@@ -361,6 +361,13 @@ function SlotAddPageContent() {
         ? JSON.parse(currentUser).username
         : null;
 
+      console.log('🔍 VIP 페이지 - 현재 사용자 정보:', {
+        currentUser: currentUser,
+        currentUsername: currentUsername,
+        customerId: customerId,
+        username: username,
+      });
+
       const response = await fetch(
         `/api/slot-coupangvip?customerId=${customerId}&username=${username}&name=${encodeURIComponent(nameParam)}&currentUser=${currentUsername}`
       );
@@ -584,11 +591,18 @@ function SlotAddPageContent() {
       const customerId = urlParams.get('customerId');
       const username = urlParams.get('username');
 
+      // 🔥 현재 로그인한 사용자 정보 가져오기
+      const currentUser = localStorage.getItem('user');
+      const currentUsername = currentUser
+        ? JSON.parse(currentUser).username
+        : null;
+
       // 개별 고객 페이지인 경우 해당 고객의 슬롯만 조회 (slots 테이블도 조회하여 최신 usage_days 반영)
       let apiUrl = '/api/slot-coupangvip?type=slot_status';
       if (customerId && username) {
-        apiUrl += `&customerId=${customerId}&username=${username}`;
+        apiUrl += `&customerId=${customerId}&username=${username}&currentUser=${currentUsername}`;
       } else {
+        apiUrl += `&currentUser=${currentUsername}`;
       }
 
       // slot_coupangvip 테이블에서 데이터 직접 조회

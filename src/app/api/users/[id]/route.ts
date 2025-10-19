@@ -10,25 +10,25 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    
+
     console.log('🔧 사용자 수정 요청:', { id, body });
-    
-    const { 
-      username, 
-      password, 
-      name, 
-      email, 
-      phone, 
-      kakaoId, 
-      memo, 
-      grade, 
+
+    const {
+      username,
+      password,
+      name,
+      email,
+      phone,
+      kakaoId,
+      memo,
+      grade,
       distributor,
       manager_id,
-      slot_used, 
-      additional_count, 
+      slot_used,
+      additional_count,
       status,
       processor,
-      approved_at
+      approved_at,
     } = body;
 
     // Supabase 클라이언트 생성
@@ -49,11 +49,15 @@ export async function PUT(
     if (phone !== undefined) updateData.phone = phone;
     if (kakaoId !== undefined) updateData.kakao_id = kakaoId; // kakaoId를 kakao_id로 매핑
     if (memo !== undefined) updateData.memo = memo;
-    if (grade !== undefined) updateData.grade = grade;
+    if (grade !== undefined) {
+      updateData.grade = grade;
+      updateData.role = grade; // 🔥 role 필드도 grade와 동일하게 업데이트
+    }
     if (distributor !== undefined) updateData.distributor = distributor;
     if (manager_id !== undefined) updateData.manager_id = manager_id;
     if (slot_used !== undefined) updateData.slot_used = slot_used;
-    if (additional_count !== undefined) updateData.additional_count = additional_count;
+    if (additional_count !== undefined)
+      updateData.additional_count = additional_count;
     if (processor !== undefined) updateData.processor = processor;
     if (status !== undefined) {
       updateData.status = status;
@@ -88,7 +92,10 @@ export async function PUT(
     }
 
     // 업데이트된 사용자 정보에서 비밀번호 필드 확인
-    console.log('✅ 사용자 수정 성공 - 업데이트된 필드들:', Object.keys(updatedUser));
+    console.log(
+      '✅ 사용자 수정 성공 - 업데이트된 필드들:',
+      Object.keys(updatedUser)
+    );
     if (updateData.password) {
       console.log('✅ 비밀번호 필드 업데이트 확인됨');
     } else {
@@ -98,9 +105,8 @@ export async function PUT(
     return NextResponse.json({
       success: true,
       message: '사용자 정보가 수정되었습니다.',
-      user: updatedUser
+      user: updatedUser,
     });
-
   } catch (error) {
     console.error('사용자 정보 수정 API 오류:', error);
     return NextResponse.json(
@@ -136,9 +142,8 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: '사용자가 삭제되었습니다.'
+      message: '사용자가 삭제되었습니다.',
     });
-
   } catch (error) {
     console.error('사용자 삭제 API 오류:', error);
     return NextResponse.json(

@@ -259,3 +259,115 @@ export function getTrafficResetTime(): string {
 
   return `${hours}시간 ${minutes}분`;
 }
+
+// 기준점부터 트래픽 카운터 계산 (슬롯 등록/삭제 기준)
+export function calculateTrafficFromResetTime(
+  resetTime: string | null
+): number {
+  if (!resetTime) {
+    // 기준점이 없으면 자정 기준으로 계산
+    return calculateTrafficCounter();
+  }
+
+  const kstNow = getKSTDate();
+  const resetDate = new Date(resetTime);
+
+  // 기준점부터 경과된 시간 (분 단위)
+  const elapsedMinutes = Math.floor(
+    (kstNow.getTime() - resetDate.getTime()) / (60 * 1000)
+  );
+
+  // 12분마다 1씩 증가, 최대 120까지
+  const traffic = Math.min(Math.floor(elapsedMinutes / 12), 120);
+
+  return Math.max(0, traffic);
+}
+
+// 다음 업데이트까지 남은 시간 계산 (기준점 기준)
+export function getNextTrafficUpdateFromReset(
+  resetTime: string | null
+): number {
+  if (!resetTime) {
+    return getNextTrafficUpdate();
+  }
+
+  const kstNow = getKSTDate();
+  const resetDate = new Date(resetTime);
+  const elapsedMinutes = Math.floor(
+    (kstNow.getTime() - resetDate.getTime()) / (60 * 1000)
+  );
+
+  // 다음 12분 단위까지 남은 시간
+  const nextUpdate =
+    (Math.floor(elapsedMinutes / 12) + 1) * 12 - elapsedMinutes;
+
+  return nextUpdate;
+}
+
+// 슬롯별 생명주기 관련 함수들
+export function calculateSlotTraffic(createdAt: string): number {
+  const kstNow = getKSTDate();
+  const createdDate = new Date(createdAt);
+
+  // 슬롯 생성 시점부터 경과된 시간 (분 단위)
+  const elapsedMinutes = Math.floor(
+    (kstNow.getTime() - createdDate.getTime()) / (60 * 1000)
+  );
+
+  // 12분마다 1씩 증가, 최대 120까지 (24시간 = 1440분)
+  const traffic = Math.min(Math.floor(elapsedMinutes / 12), 120);
+
+  return Math.max(0, traffic);
+}
+
+export function getSlotRemainingTime(createdAt: string): string {
+  const kstNow = getKSTDate();
+  const createdDate = new Date(createdAt);
+
+  // 슬롯 생성 시점부터 경과된 시간 (분 단위)
+  const elapsedMinutes = Math.floor(
+    (kstNow.getTime() - createdDate.getTime()) / (60 * 1000)
+  );
+
+  // 24시간(1440분) 후 만료
+  const totalLifetime = 1440; // 24시간
+  const remainingMinutes = Math.max(0, totalLifetime - elapsedMinutes);
+
+  const hours = Math.floor(remainingMinutes / 60);
+  const minutes = remainingMinutes % 60;
+
+  if (remainingMinutes <= 0) {
+    return '만료됨';
+  }
+
+  return `${hours}시간 ${minutes}분`;
+}
+
+export function isSlotExpired(createdAt: string): boolean {
+  const kstNow = getKSTDate();
+  const createdDate = new Date(createdAt);
+
+  // 슬롯 생성 시점부터 경과된 시간 (분 단위)
+  const elapsedMinutes = Math.floor(
+    (kstNow.getTime() - createdDate.getTime()) / (60 * 1000)
+  );
+
+  // 24시간(1440분) 후 만료
+  return elapsedMinutes >= 1440;
+}
+
+export function getNextSlotTrafficUpdate(createdAt: string): number {
+  const kstNow = getKSTDate();
+  const createdDate = new Date(createdAt);
+
+  // 슬롯 생성 시점부터 경과된 시간 (분 단위)
+  const elapsedMinutes = Math.floor(
+    (kstNow.getTime() - createdDate.getTime()) / (60 * 1000)
+  );
+
+  // 다음 12분 단위까지 남은 시간
+  const nextUpdate =
+    (Math.floor(elapsedMinutes / 12) + 1) * 12 - elapsedMinutes;
+
+  return nextUpdate;
+}
