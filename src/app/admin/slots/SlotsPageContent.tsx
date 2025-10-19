@@ -122,16 +122,37 @@ function SlotsPageContentInner() {
       const userStr = localStorage.getItem('user');
       let apiUrl = '/api/slots';
 
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        console.log('👤 현재 사용자:', user.username, user.grade);
+      console.log('🔍 localStorage user 값:', userStr);
 
-        // 총판회원: 본인 소속 고객만 조회
-        if (user.grade === '총판회원' && user.username !== 'master') {
-          apiUrl += `?distributor=${encodeURIComponent(user.distributor)}`;
-          console.log(`✅ 총판 필터 적용: ${user.distributor}`);
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          console.log(
+            '👤 현재 사용자:',
+            user.username,
+            user.grade,
+            user.distributor
+          );
+
+          // 🔥 currentUser 파라미터 추가 (API에서 권한 기반 필터링)
+          apiUrl += '?currentUser=' + user.username;
+
+          // 총판회원: 본인 소속 고객만 조회 (기존 로직 유지)
+          if (user.grade === '총판회원' && user.username !== 'master') {
+            apiUrl += '&distributor=' + encodeURIComponent(user.distributor);
+            console.log('✅ 총판 필터 적용: ' + user.distributor);
+          }
+        } catch (parseError) {
+          console.error('❌ 사용자 정보 파싱 오류:', parseError);
+          apiUrl += '?currentUser=master';
         }
+      } else {
+        // 사용자 정보가 없는 경우 기본값으로 master 사용
+        apiUrl += '?currentUser=master';
+        console.log('⚠️ 사용자 정보 없음 - master로 설정');
       }
+
+      console.log('🔍 API URL:', apiUrl);
 
       const response = await fetch(apiUrl);
       if (!response.ok) {

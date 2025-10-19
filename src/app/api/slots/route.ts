@@ -19,6 +19,43 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const customerId = searchParams.get('customerId');
     const slotType = searchParams.get('slotType');
+    const distributor = searchParams.get('distributor');
+    const currentUser = searchParams.get('currentUser');
+
+    console.log('📋 슬롯 조회 파라미터:', {
+      customerId,
+      slotType,
+      distributor,
+      currentUser,
+    });
+
+    // 🔥 권한 기반 필터링 로직
+    let userRole = '일반회원';
+    let userDistributor = null;
+
+    if (currentUser) {
+      // user_profiles에서 현재 사용자 정보 조회
+      const { data: userProfile, error: userError } = await supabase
+        .from('user_profiles')
+        .select('role, distributor')
+        .eq('username', currentUser)
+        .single();
+
+      if (userError) {
+        console.error('사용자 프로필 조회 오류:', userError);
+      } else if (userProfile) {
+        userRole = userProfile.role || '일반회원';
+        userDistributor = userProfile.distributor;
+        console.log(
+          '👤 현재 사용자:',
+          currentUser,
+          '권한:',
+          userRole,
+          '소속:',
+          userDistributor
+        );
+      }
+    }
 
     let query = supabase
       .from('slots')
@@ -27,12 +64,59 @@ export async function GET(request: NextRequest) {
       )
       .order('created_at', { ascending: false });
 
+    // 권한 기반 필터링 적용
+    if (userRole === '최고관리자') {
+      console.log('🔓 최고관리자 - 모든 슬롯 조회');
+      // 최고관리자는 모든 슬롯 조회 가능
+    } else if (userRole === '총판회원') {
+      console.log('🔒 총판회원 - 소속 슬롯만 조회:', userDistributor);
+      // 총판회원은 자신의 distributor와 일치하는 슬롯만 조회
+      if (userDistributor) {
+        // user_profiles에서 해당 distributor에 속한 사용자들 조회
+        const { data: distributorUsers, error: distributorError } =
+          await supabase
+            .from('user_profiles')
+            .select('username')
+            .eq('distributor', userDistributor);
+
+        if (distributorError) {
+          console.error('총판 사용자 조회 오류:', distributorError);
+        } else if (distributorUsers) {
+          const usernames = distributorUsers.map(user => user.username);
+          console.log('✅ 총판 소속 사용자들:', usernames);
+          query = query.in('customer_id', usernames);
+        }
+      }
+    } else {
+      console.log('🔒 일반회원 - 본인 슬롯만 조회');
+      // 일반회원은 본인 슬롯만 조회
+      query = query.eq('customer_id', currentUser);
+    }
+
+    // 기존 필터링 로직 (권한 필터링 후 적용)
     if (customerId) {
       query = query.eq('customer_id', customerId);
     }
 
     if (slotType) {
       query = query.eq('slot_type', slotType);
+    }
+
+    // distributor 파라미터가 있는 경우 추가 필터링 (기존 로직 유지)
+    if (distributor) {
+      // user_profiles에서 해당 distributor에 속한 사용자들 조회
+      const { data: distributorUsers, error: distributorError } = await supabase
+        .from('user_profiles')
+        .select('username')
+        .eq('distributor', distributor);
+
+      if (distributorError) {
+        console.error('총판 사용자 조회 오류:', distributorError);
+      } else if (distributorUsers) {
+        const usernames = distributorUsers.map(user => user.username);
+        console.log('✅ 총판 필터 적용:', distributor, '사용자들:', usernames);
+        query = query.in('customer_id', usernames);
+      }
     }
 
     const { data: slots, error } = await query;

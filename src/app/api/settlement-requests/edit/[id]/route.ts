@@ -53,13 +53,14 @@ export async function GET(
 
     console.log('조회된 settlement_history 데이터:', historyData);
 
-    // 2. 해당 정산에 포함된 개별 settlements 항목들 조회
-    // 깃허브 20250914 백업 파일 로직: 정산 완료 시점을 기준으로 최근 settlements만 조회
-    const { data: settlementsData, error: settlementsError } = await supabase
-      .from('settlements')
+    // 2. 정산 수정용 원본 데이터 조회 (settlement_edit_items 테이블 사용)
+    const { data: editItemsData, error: editItemsError } = await supabase
+      .from('settlement_edit_items')
       .select(
         `
         id,
+        settlement_history_id,
+        original_settlement_id,
         customer_id,
         customer_name,
         distributor_name,
@@ -75,11 +76,46 @@ export async function GET(
         updated_at
       `
       )
-      .eq('customer_id', historyData.customer_id)
-      .eq('slot_type', historyData.slot_type)
-      .eq('status', 'history') // 정산 완료된 항목들만 조회
-      .lte('created_at', historyData.created_at) // 정산 완료 시점 이전의 항목들만
+      .eq('settlement_history_id', settlementHistoryId)
       .order('created_at', { ascending: true });
+
+    if (editItemsError) {
+      console.error('settlement_edit_items 조회 오류:', editItemsError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: '정산 수정용 데이터 조회 중 오류가 발생했습니다.',
+        },
+        { status: 500 }
+      );
+    }
+
+    console.log(
+      '조회된 settlement_edit_items 데이터:',
+      editItemsData?.length || 0,
+      '개'
+    );
+
+    // settlement_edit_items 데이터를 settlements 형태로 변환
+    const settlementsData =
+      editItemsData?.map(item => ({
+        id: item.original_settlement_id,
+        customer_id: item.customer_id,
+        customer_name: item.customer_name,
+        distributor_name: item.distributor_name,
+        slot_type: item.slot_type,
+        slot_count: item.slot_count,
+        payment_type: item.payment_type,
+        payer_name: item.payer_name,
+        payment_amount: item.payment_amount,
+        usage_days: item.usage_days,
+        memo: item.memo,
+        status: 'history', // 정산 완료된 상태로 표시
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+      })) || [];
+
+    const settlementsError = null; // 에러는 이미 처리됨
 
     if (settlementsError) {
       console.error('settlements 조회 오류:', settlementsError);
@@ -98,54 +134,31 @@ export async function GET(
       '개'
     );
 
-    // 3. 슬롯수와 결제액이 일치하는 settlements만 필터링
-    // 깃허브 20250914 백업 파일 로직: 정확한 settlements만 반환
-    let filteredSettlements = settlementsData || [];
-
-    console.log(`필터링 전 settlements 개수: ${filteredSettlements.length}개`);
-    console.log(
-      `settlement_history - 슬롯수: ${historyData.slot_count}, 결제액: ${historyData.payment_amount}`
-    );
-
-    // 최근 settlements부터 역순으로 확인하여 일치하는 조합 찾기
-    let foundMatch = false;
-    for (let i = filteredSettlements.length; i >= 1; i--) {
-      const recentSettlements = filteredSettlements.slice(-i);
-      const recentTotalSlots = recentSettlements.reduce(
-        (sum, settlement) => sum + settlement.slot_count,
-        0
-      );
-      const recentTotalAmount = recentSettlements.reduce(
-        (sum, settlement) => sum + settlement.payment_amount,
-        0
-      );
-
-      console.log(
-        `최근 ${i}개 settlements - 슬롯수: ${recentTotalSlots}, 결제액: ${recentTotalAmount}`
-      );
-
-      if (
-        recentTotalSlots === historyData.slot_count &&
-        recentTotalAmount === historyData.payment_amount
-      ) {
-        filteredSettlements = recentSettlements;
-        foundMatch = true;
+    // 🔍 디버깅: 조회된 settlements 상세 정보
+    if (settlementsData && settlementsData.length > 0) {
+      console.log('🔍 조회된 settlements 상세:');
+      settlementsData.forEach((item, index) => {
         console.log(
-          `✅ 일치하는 settlements 발견: ${recentSettlements.length}개`
+          `  ${index + 1}. ID: ${item.id}, status: ${item.status}, 슬롯수: ${item.slot_count}, 결제액: ${item.payment_amount}, 생성일: ${item.created_at}`
         );
-        break;
-      }
+      });
+    } else {
+      console.log('⚠️ settlements 데이터가 없습니다.');
     }
 
-    if (!foundMatch) {
-      console.log(
-        '⚠️ 일치하는 settlements 조합을 찾지 못했습니다. 모든 settlements를 반환합니다.'
-      );
-      // 일치하는 조합을 찾지 못한 경우, 모든 settlements 반환 (최근 2개로 제한하지 않음)
-      // filteredSettlements는 이미 모든 데이터를 포함하고 있음
-    }
-
+    // 3. 정산 수정용 원본 데이터 그대로 반환 (매칭 로직 불필요)
+    const filteredSettlements = settlementsData || [];
     console.log(`최종 반환할 settlements: ${filteredSettlements.length}개`);
+
+    // 🔍 디버깅: 반환할 settlements 상세 정보
+    if (filteredSettlements.length > 0) {
+      console.log('🔍 반환할 settlements 상세:');
+      filteredSettlements.forEach((item, index) => {
+        console.log(
+          `  ${index + 1}. ID: ${item.id}, 슬롯수: ${item.slot_count}, 결제액: ${item.payment_amount}, 생성일: ${item.created_at}`
+        );
+      });
+    }
 
     // 4. 각 settlement에 대해 user_profiles에서 distributor 정보 조회
     const processedSettlements = [];
