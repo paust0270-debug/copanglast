@@ -22,6 +22,36 @@ export async function GET(request: NextRequest) {
     const username = searchParams.get('username'); // 실제 고객명 (customer_id와 매칭)
     const type = searchParams.get('type'); // 'slots' 또는 'slot_status' 구분
     const skipSlotsTable = searchParams.get('skipSlotsTable'); // slots 테이블 조회 건너뛰기
+    const currentUser = searchParams.get('currentUser'); // 현재 로그인한 사용자
+
+    // 🔥 권한 기반 필터링을 위한 사용자 정보 조회
+    let userRole = null;
+    let userDistributor = null;
+
+    if (currentUser) {
+      try {
+        const { data: userProfile, error: userProfileError } = await supabase
+          .from('user_profiles')
+          .select('username, grade, distributor')
+          .eq('username', currentUser)
+          .single();
+
+        if (userProfileError || !userProfile) {
+          console.warn(
+            '⚠️ 사용자 프로필 조회 실패:',
+            userProfileError?.message
+          );
+        } else {
+          userRole = userProfile.grade;
+          userDistributor = userProfile.distributor;
+          console.log(
+            `👤 현재 사용자: ${currentUser}, 권한: ${userRole}, 소속: ${userDistributor}`
+          );
+        }
+      } catch (err) {
+        console.warn('⚠️ 사용자 프로필 조회 중 오류:', err);
+      }
+    }
 
     // distributorMap을 함수 최상위에서 정의
     let distributorMap = new Map();
@@ -36,7 +66,27 @@ export async function GET(request: NextRequest) {
         .eq('slot_type', '쿠팡') // 쿠팡 슬롯 타입만 필터링
         .order('created_at', { ascending: false });
 
-      // 개별 고객 필터링 (customerId와 username이 있는 경우)
+      // 🔥 권한 기반 필터링 적용
+      if (userRole && currentUser) {
+        if (userRole === '최고관리자') {
+          // 최고관리자: 모든 슬롯 조회 (필터링 없음)
+          console.log('🔓 최고관리자 - 모든 슬롯 조회');
+        } else if (userRole === '총판회원') {
+          // 총판회원: 자신의 슬롯 + 자신을 distributor로 가진 슬롯
+          console.log(
+            `👥 총판회원 - 자신의 슬롯 + 소속 회원 슬롯 조회 (소속: ${userDistributor})`
+          );
+          slotStatusQuery = slotStatusQuery.or(
+            `customer_id.eq.${currentUser},distributor.eq.${userDistributor}`
+          );
+        } else {
+          // 일반회원: 자신의 슬롯만
+          console.log('👤 일반회원 - 자신의 슬롯만 조회');
+          slotStatusQuery = slotStatusQuery.eq('customer_id', currentUser);
+        }
+      }
+
+      // 개별 고객 필터링 (customerId와 username이 있는 경우) - 권한 필터링과 별개로 동작
       if (customerId && username) {
         slotStatusQuery = slotStatusQuery.eq('customer_id', username); // 기존 쿠팡은 username 사용
         console.log('🔍 개별 고객 슬롯 필터링:', { customerId, username });
@@ -268,6 +318,9 @@ export async function GET(request: NextRequest) {
         success: true,
         data: formattedSlotStatusData?.filter(item => item !== null), // null 값 제거
         slotsData: slotsData, // slots 테이블 데이터도 함께 반환
+        userRole: userRole, // 현재 사용자 권한
+        userDistributor: userDistributor, // 현재 사용자 소속 총판
+        currentUser: currentUser, // 현재 사용자명
       });
     }
 
@@ -280,7 +333,40 @@ export async function GET(request: NextRequest) {
       .eq('slot_type', '쿠팡') // 쿠팡 슬롯 타입만 필터링
       .order('created_at', { ascending: false });
 
-    // 특정 고객 필터링 (username으로 필터링)
+    // 🔥 권한 기반 필터링 적용 (slots 테이블)
+    if (userRole && currentUser) {
+      if (userRole === '최고관리자') {
+        // 최고관리자: 모든 슬롯 조회 (필터링 없음)
+        console.log('🔓 최고관리자 - 모든 슬롯 조회 (slots 테이블)');
+      } else if (userRole === '총판회원') {
+        // 총판회원: 자신의 슬롯 + 자신을 distributor로 가진 슬롯
+        console.log(
+          `👥 총판회원 - 자신의 슬롯 + 소속 회원 슬롯 조회 (slots 테이블, 소속: ${userDistributor})`
+        );
+
+        // 총판회원의 경우 소속 회원들의 슬롯도 조회해야 하므로
+        // 먼저 해당 distributor에 속한 사용자들을 조회
+        const { data: distributorUsers } = await supabase
+          .from('user_profiles')
+          .select('username')
+          .eq('distributor', userDistributor);
+
+        if (distributorUsers && distributorUsers.length > 0) {
+          const usernames = distributorUsers.map(user => user.username);
+          console.log(`📋 소속 회원 목록: ${usernames.join(', ')}`);
+          slotsQuery = slotsQuery.in('customer_id', usernames);
+        } else {
+          // 소속 회원이 없으면 자신의 슬롯만
+          slotsQuery = slotsQuery.eq('customer_id', currentUser);
+        }
+      } else {
+        // 일반회원: 자신의 슬롯만
+        console.log('👤 일반회원 - 자신의 슬롯만 조회 (slots 테이블)');
+        slotsQuery = slotsQuery.eq('customer_id', currentUser);
+      }
+    }
+
+    // 특정 고객 필터링 (username으로 필터링) - 권한 필터링과 별개로 동작
     if (username) {
       slotsQuery = slotsQuery.eq('customer_id', username);
     }
@@ -592,6 +678,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: filteredData,
+      userRole: userRole, // 현재 사용자 권한
+      userDistributor: userDistributor, // 현재 사용자 소속 총판
+      currentUser: currentUser, // 현재 사용자명
     });
   } catch (error) {
     console.error('슬롯 현황 조회 API 예외 발생:', error);
@@ -632,6 +721,25 @@ export async function POST(request: NextRequest) {
 
     console.log(
       `🎯 고객 ${customerId}에게 ${requestedSlotCount}개 슬롯 할당 요청`
+    );
+
+    // 🔥 사용자의 실제 distributor 정보 조회
+    const { data: userProfile, error: userProfileError } = await supabase
+      .from('user_profiles')
+      .select('username, distributor')
+      .eq('username', customerId)
+      .single();
+
+    if (userProfileError || !userProfile) {
+      console.error('사용자 프로필 조회 오류:', userProfileError);
+      return NextResponse.json(
+        { error: '사용자 정보를 찾을 수 없습니다.' },
+        { status: 404 }
+      );
+    }
+
+    console.log(
+      `👤 사용자 ${customerId}의 소속 총판: ${userProfile.distributor}`
     );
 
     // 1. slots 테이블에서 해당 고객의 쿠팡 슬롯만 조회 (usage_days 내림차순)
@@ -786,7 +894,7 @@ export async function POST(request: NextRequest) {
       const existingRecord = emptySlotStatus[i];
 
       const updateData = {
-        distributor: body.distributor || '일반',
+        distributor: userProfile.distributor || '일반', // ✅ 실제 사용자 distributor 사용
         work_group: body.work_group || '공통',
         keyword: body.keyword,
         link_url: body.link_url,

@@ -355,8 +355,14 @@ function SlotAddPageContent() {
       // customerName이 비어있으면 username을 사용
       const nameParam = customerName || username;
 
+      // 🔥 현재 로그인한 사용자 정보 가져오기
+      const currentUser = localStorage.getItem('user');
+      const currentUsername = currentUser
+        ? JSON.parse(currentUser).username
+        : null;
+
       const response = await fetch(
-        `/api/slot-coupangvip?customerId=${customerId}&username=${username}&name=${encodeURIComponent(nameParam)}`
+        `/api/slot-coupangvip?customerId=${customerId}&username=${username}&name=${encodeURIComponent(nameParam)}&currentUser=${currentUsername}`
       );
       const data = await response.json();
 

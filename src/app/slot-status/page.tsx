@@ -207,9 +207,11 @@ function SlotStatusPageContent() {
       // 현재 사용자 권한 확인
       const userStr = localStorage.getItem('user');
       let userDistributor = null;
+      let currentUsername = null;
 
       if (userStr) {
         const user = JSON.parse(userStr);
+        currentUsername = user.username;
         console.log('👤 현재 사용자:', user.username, user.grade);
 
         // 총판회원: 본인 소속 고객만 조회
@@ -225,90 +227,110 @@ function SlotStatusPageContent() {
       // 1. 쿠팡 슬롯 조회
       let coupangApiUrl = '/api/slot-status';
       if (isFilteredByCustomer && filteredCustomerInfo) {
-        coupangApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+        coupangApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}&currentUser=${currentUsername}`;
       } else if (userDistributor) {
-        coupangApiUrl += `?distributor=${encodeURIComponent(userDistributor)}`;
+        coupangApiUrl += `?distributor=${encodeURIComponent(userDistributor)}&currentUser=${currentUsername}`;
+      } else {
+        coupangApiUrl += `?currentUser=${currentUsername}`;
       }
       apiCalls.push(fetch(coupangApiUrl).then(res => res.json()));
 
       // 2. 쿠팡VIP 슬롯 조회
       let coupangVipApiUrl = '/api/slot-coupangvip';
       if (isFilteredByCustomer && filteredCustomerInfo) {
-        coupangVipApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+        coupangVipApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}&currentUser=${currentUsername}`;
       } else if (userDistributor) {
-        coupangVipApiUrl += `?distributor=${encodeURIComponent(userDistributor)}`;
+        coupangVipApiUrl += `?distributor=${encodeURIComponent(userDistributor)}&currentUser=${currentUsername}`;
+      } else {
+        coupangVipApiUrl += `?currentUser=${currentUsername}`;
       }
       apiCalls.push(fetch(coupangVipApiUrl).then(res => res.json()));
 
       // 3. 쿠팡APP 슬롯 조회
       let coupangAppApiUrl = '/api/slot-coupangapp';
       if (isFilteredByCustomer && filteredCustomerInfo) {
-        coupangAppApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+        coupangAppApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}&currentUser=${currentUsername}`;
       } else if (userDistributor) {
-        coupangAppApiUrl += `?distributor=${encodeURIComponent(userDistributor)}`;
+        coupangAppApiUrl += `?distributor=${encodeURIComponent(userDistributor)}&currentUser=${currentUsername}`;
+      } else {
+        coupangAppApiUrl += `?currentUser=${currentUsername}`;
       }
       apiCalls.push(fetch(coupangAppApiUrl).then(res => res.json()));
 
       // 4. 네이버쇼핑 슬롯 조회
       let naverApiUrl = '/api/slot-naver';
       if (isFilteredByCustomer && filteredCustomerInfo) {
-        naverApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+        naverApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}&currentUser=${currentUsername}`;
       } else if (userDistributor) {
-        naverApiUrl += `?distributor=${encodeURIComponent(userDistributor)}`;
+        naverApiUrl += `?distributor=${encodeURIComponent(userDistributor)}&currentUser=${currentUsername}`;
+      } else {
+        naverApiUrl += `?currentUser=${currentUsername}`;
       }
       apiCalls.push(fetch(naverApiUrl).then(res => res.json()));
 
       // 5. 플레이스 슬롯 조회
       let placeApiUrl = '/api/slot-place';
       if (isFilteredByCustomer && filteredCustomerInfo) {
-        placeApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+        placeApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}&currentUser=${currentUsername}`;
       } else if (userDistributor) {
-        placeApiUrl += `?distributor=${encodeURIComponent(userDistributor)}`;
+        placeApiUrl += `?distributor=${encodeURIComponent(userDistributor)}&currentUser=${currentUsername}`;
+      } else {
+        placeApiUrl += `?currentUser=${currentUsername}`;
       }
       apiCalls.push(fetch(placeApiUrl).then(res => res.json()));
 
       // 6. 오늘의집 슬롯 조회
       let todayhomeApiUrl = '/api/slot-todayhome';
       if (isFilteredByCustomer && filteredCustomerInfo) {
-        todayhomeApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+        todayhomeApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}&currentUser=${currentUsername}`;
       } else if (userDistributor) {
-        todayhomeApiUrl += `?distributor=${encodeURIComponent(userDistributor)}`;
+        todayhomeApiUrl += `?distributor=${encodeURIComponent(userDistributor)}&currentUser=${currentUsername}`;
+      } else {
+        todayhomeApiUrl += `?currentUser=${currentUsername}`;
       }
       apiCalls.push(fetch(todayhomeApiUrl).then(res => res.json()));
 
       // 7. 알리엑스프레스 슬롯 조회
       let aliexpressApiUrl = '/api/slot-aliexpress';
       if (isFilteredByCustomer && filteredCustomerInfo) {
-        aliexpressApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+        aliexpressApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}&currentUser=${currentUsername}`;
       } else if (userDistributor) {
-        aliexpressApiUrl += `?distributor=${encodeURIComponent(userDistributor)}`;
+        aliexpressApiUrl += `?distributor=${encodeURIComponent(userDistributor)}&currentUser=${currentUsername}`;
+      } else {
+        aliexpressApiUrl += `?currentUser=${currentUsername}`;
       }
       apiCalls.push(fetch(aliexpressApiUrl).then(res => res.json()));
 
       // 8. 쿠팡순위체크 슬롯 조회
       let copangrankApiUrl = '/api/slot-copangrank';
       if (isFilteredByCustomer && filteredCustomerInfo) {
-        copangrankApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+        copangrankApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}&currentUser=${currentUsername}`;
       } else if (userDistributor) {
-        copangrankApiUrl += `?distributor=${encodeURIComponent(userDistributor)}`;
+        copangrankApiUrl += `?distributor=${encodeURIComponent(userDistributor)}&currentUser=${currentUsername}`;
+      } else {
+        copangrankApiUrl += `?currentUser=${currentUsername}`;
       }
       apiCalls.push(fetch(copangrankApiUrl).then(res => res.json()));
 
       // 9. N쇼핑순위체크 슬롯 조회
       let naverrankApiUrl = '/api/slot-naverrank';
       if (isFilteredByCustomer && filteredCustomerInfo) {
-        naverrankApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+        naverrankApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}&currentUser=${currentUsername}`;
       } else if (userDistributor) {
-        naverrankApiUrl += `?distributor=${encodeURIComponent(userDistributor)}`;
+        naverrankApiUrl += `?distributor=${encodeURIComponent(userDistributor)}&currentUser=${currentUsername}`;
+      } else {
+        naverrankApiUrl += `?currentUser=${currentUsername}`;
       }
       apiCalls.push(fetch(naverrankApiUrl).then(res => res.json()));
 
       // 10. N플레이스순위체크 슬롯 조회
       let placerankApiUrl = '/api/slot-placerank';
       if (isFilteredByCustomer && filteredCustomerInfo) {
-        placerankApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}`;
+        placerankApiUrl += `?type=slot_status&customerId=${filteredCustomerInfo.id}&username=${filteredCustomerInfo.username}&name=${encodeURIComponent(filteredCustomerInfo.name)}&currentUser=${currentUsername}`;
       } else if (userDistributor) {
-        placerankApiUrl += `?distributor=${encodeURIComponent(userDistributor)}`;
+        placerankApiUrl += `?distributor=${encodeURIComponent(userDistributor)}&currentUser=${currentUsername}`;
+      } else {
+        placerankApiUrl += `?currentUser=${currentUsername}`;
       }
       apiCalls.push(fetch(placerankApiUrl).then(res => res.json()));
 

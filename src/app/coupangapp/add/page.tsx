@@ -371,8 +371,14 @@ function SlotAddPageContent() {
       // customerName이 비어있으면 username을 사용
       const nameParam = customerName || username;
 
+      // 🔥 현재 로그인한 사용자 정보 가져오기
+      const currentUser = localStorage.getItem('user');
+      const currentUsername = currentUser
+        ? JSON.parse(currentUser).username
+        : null;
+
       const response = await fetch(
-        `/api/slot-status?customerId=${customerId}&username=${username}&name=${encodeURIComponent(nameParam)}`
+        `/api/slot-status?customerId=${customerId}&username=${username}&name=${encodeURIComponent(nameParam)}&currentUser=${currentUsername}`
       );
       const data = await response.json();
 
@@ -592,10 +598,17 @@ function SlotAddPageContent() {
       const username = urlParams.get('username');
 
       // 개별 고객 페이지인 경우 해당 고객의 슬롯만 조회 (slots 테이블도 조회하여 최신 usage_days 반영)
+      // 🔥 현재 로그인한 사용자 정보 가져오기
+      const currentUser = localStorage.getItem('user');
+      const currentUsername = currentUser
+        ? JSON.parse(currentUser).username
+        : null;
+
       let apiUrl = '/api/slot-status?type=slot_status';
       if (customerId && username) {
-        apiUrl += `&customerId=${customerId}&username=${username}`;
+        apiUrl += `&customerId=${customerId}&username=${username}&currentUser=${currentUsername}`;
       } else {
+        apiUrl += `&currentUser=${currentUsername}`;
       }
 
       // slot_status 테이블에서 데이터 직접 조회
