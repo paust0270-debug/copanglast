@@ -3,7 +3,12 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { calculateRemainingTimeKST, calculateTrafficKST } from '@/lib/utils';
-import { calculateTrafficFromWorkStart } from '@/lib/utils';
+import {
+  calculateTrafficFromWorkStart,
+  calculateTrafficCounter,
+  getNextTrafficUpdate,
+  getTrafficResetTime,
+} from '@/lib/utils';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -139,6 +144,11 @@ function SlotAddPageContent() {
   const [customerData, setCustomerData] = useState<Record<string, unknown>[]>(
     []
   );
+
+  // 트래픽 카운터 상태
+  const [trafficCounter, setTrafficCounter] = useState(0);
+  const [nextUpdate, setNextUpdate] = useState(0);
+  const [resetTime, setResetTime] = useState('');
 
   // 순위 클릭 핸들러
   const handleRankClick = async (slot: CustomerSlot) => {
@@ -326,6 +336,27 @@ function SlotAddPageContent() {
     new Set()
   );
   const [selectAll, setSelectAll] = useState(false);
+
+  // 트래픽 카운터 업데이트 useEffect
+  useEffect(() => {
+    const updateTrafficCounter = () => {
+      const currentTraffic = calculateTrafficCounter();
+      const nextUpdateTime = getNextTrafficUpdate();
+      const resetTimeStr = getTrafficResetTime();
+
+      setTrafficCounter(currentTraffic);
+      setNextUpdate(nextUpdateTime);
+      setResetTime(resetTimeStr);
+    };
+
+    // 초기 설정
+    updateTrafficCounter();
+
+    // 1분마다 업데이트
+    const interval = setInterval(updateTrafficCounter, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // 컴포넌트 마운트 시 연결 테스트 후 고객 목록 로드
   useEffect(() => {
@@ -925,6 +956,9 @@ function SlotAddPageContent() {
       // 작업등록 상태 업데이트
       setHasWorkRegisteredSlots(true);
 
+      // 트래픽 카운터 초기화 (슬롯 등록 시)
+      setTrafficCounter(0);
+
       alert('슬롯이 성공적으로 등록되었습니다!');
     } catch (error: unknown) {
       console.error('❌ 슬롯 등록 실패 - 전체 오류 객체:', error);
@@ -1195,6 +1229,9 @@ function SlotAddPageContent() {
         );
         setHasWorkRegisteredSlots(hasRegisteredSlots);
 
+        // 트래픽 카운터 초기화 (개별삭제 시)
+        setTrafficCounter(0);
+
         alert(
           `슬롯이 성공적으로 삭제되었습니다.\n삭제된 슬롯 개수: ${customerToDelete.slotCount}개`
         );
@@ -1464,6 +1501,9 @@ function SlotAddPageContent() {
       );
       setHasWorkRegisteredSlots(hasRegisteredSlots);
 
+      // 트래픽 카운터 초기화 (선택삭제 시)
+      setTrafficCounter(0);
+
       alert(
         `${selectedIds.length}개 슬롯이 성공적으로 삭제되었습니다.\n삭제된 총 슬롯 개수: ${totalSlotsToDelete}개`
       );
@@ -1665,6 +1705,44 @@ function SlotAddPageContent() {
             {error}
           </div>
         )}
+
+        {/* 트래픽 카운터 헤더 */}
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl p-4 mb-6 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-white bg-opacity-20 rounded-lg p-3">
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold">트래픽 카운터</h2>
+                <p className="text-sm opacity-90">
+                  12분마다 1씩 증가 (최대 120)
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-3xl font-bold">{trafficCounter}</div>
+              <div className="text-sm opacity-90">
+                다음 업데이트: {nextUpdate}분 후
+              </div>
+              <div className="text-sm opacity-90">
+                자정 리셋까지: {resetTime}
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* 상단 슬롯 정보 헤더 - 1줄로 정렬하고 슬롯등록과 동일한 사이즈 */}
         <div className="bg-white border-2 border-dashed border-purple-300 rounded-2xl p-6 mb-6 shadow-sm">

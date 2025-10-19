@@ -205,3 +205,57 @@ export function calculateTrafficFromWorkStart(
 
   return traffic;
 }
+
+// 트래픽 카운터 관련 함수들
+export function getKSTDate(): Date {
+  const now = new Date();
+  const kstOffset = 9 * 60; // KST는 UTC+9
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  return new Date(utc + kstOffset * 60000);
+}
+
+export function getKSTMidnight(): Date {
+  const kstNow = getKSTDate();
+  const midnight = new Date(kstNow);
+  midnight.setHours(0, 0, 0, 0);
+  return midnight;
+}
+
+export function calculateTrafficCounter(): number {
+  const kstNow = getKSTDate();
+  const midnight = getKSTMidnight();
+
+  // 자정부터 경과된 시간 (분 단위)
+  const elapsedMinutes = Math.floor(
+    (kstNow.getTime() - midnight.getTime()) / (60 * 1000)
+  );
+
+  // 12분마다 1씩 증가, 최대 120까지
+  const traffic = Math.min(Math.floor(elapsedMinutes / 12), 120);
+
+  return Math.max(0, traffic);
+}
+
+export function getNextTrafficUpdate(): number {
+  const kstNow = getKSTDate();
+  const currentMinute = kstNow.getMinutes();
+
+  // 다음 12분 단위까지 남은 시간 계산
+  const nextUpdate = ((Math.floor(currentMinute / 12) + 1) * 12) % 60;
+  const remainingMinutes = nextUpdate - currentMinute;
+
+  return remainingMinutes > 0 ? remainingMinutes : 12;
+}
+
+export function getTrafficResetTime(): string {
+  const kstNow = getKSTDate();
+  const tomorrow = new Date(kstNow);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+
+  const remainingMs = tomorrow.getTime() - kstNow.getTime();
+  const hours = Math.floor(remainingMs / (60 * 60 * 1000));
+  const minutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+
+  return `${hours}시간 ${minutes}분`;
+}
