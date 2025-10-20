@@ -18,7 +18,10 @@
     "fix:schema-cache": "node fix-schema-cache.js",
     "diagnose:db": "node fix-schema-cache.js",
     "fix:schema-cache:advanced": "node fix-schema-cache-advanced.js",
-    "fix:schema-cache:complete": "node fix-schema-cache-advanced.js"
+    "fix:schema-cache:complete": "node fix-schema-cache-advanced.js",
+    "traffic:increment": "node traffic-scheduler.js increment",
+    "traffic:reset": "node traffic-scheduler.js daily_reset",
+    "traffic:auto": "node auto-traffic-scheduler.js start_scheduler"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

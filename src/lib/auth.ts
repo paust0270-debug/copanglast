@@ -367,7 +367,7 @@ export const getNavigationItems = (
     },
     {
       name: '정산관리',
-      href: '/settlement',
+      href: '/settlement/unsettled',
       roles: ['최고관리자', '총판회원'],
       subItems: [
         {

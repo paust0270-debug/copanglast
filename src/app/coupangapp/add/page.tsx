@@ -78,13 +78,14 @@ interface CustomerSlot {
   currentRank: string;
   startRank: string;
   slotCount: number;
-  traffic: string;
+  traffic: string | number; // 트래픽 카운터 (0-120)
   equipmentGroup: string;
   remainingDays: string;
   registrationDate: string;
   status: '작동중' | '만료' | '정지' | 'inactive';
   memo?: string;
   created_at?: string;
+  traffic_counter?: number; // 트래픽 카운터 필드 추가
 }
 
 // 순위 히스토리 인터페이스
@@ -699,13 +700,14 @@ function SlotAddPageContent() {
             currentRank: item.current_rank || '-',
             startRank: item.start_rank || '-',
             slotCount: item.slot_count || 1,
-            traffic: item.traffic || '0 (0/0)',
+            traffic: item.traffic_counter || 0, // 트래픽 카운터 사용
             equipmentGroup: item.equipment_group || '지정안함',
             remainingDays: remainingTimeString,
             registrationDate: registrationDateRange,
             status: item.status || '작동중',
             memo: item.memo || '',
             created_at: item.created_at,
+            traffic_counter: item.traffic_counter || 0, // 트래픽 카운터 필드 추가
           };
         }
       );
@@ -715,8 +717,8 @@ function SlotAddPageContent() {
       // workStartTimes는 기존 데이터 유지, 새로운 슬롯만 추가
       setWorkStartTimes(prev => {
         const newMap = new Map(prev);
-        // workStartTimes 업데이트
-        if (isDevMode) {
+        // workStartTimes 업데이트 (로그 최소화)
+        if (isDevMode && convertedData.length !== prev.size) {
           console.log('🔄 loadCustomers - workStartTimes 업데이트:', {
             prevWorkStartTimes: Array.from(prev.entries()),
             convertedDataLength: convertedData.length,
@@ -738,20 +740,13 @@ function SlotAddPageContent() {
                 });
               }
               newMap.set(slotId, workStartTime);
-            } else {
-              // 기존 슬롯 workStartTime 유지
-              if (isDevMode) {
-                console.log('🔄 기존 슬롯 workStartTime 유지:', {
-                  slotId,
-                  existingWorkStartTime: newMap.get(slotId),
-                });
-              }
             }
+            // 기존 슬롯은 workStartTime을 유지 (로그 제거로 성능 개선)
           }
         });
 
-        // 최종 workStartTimes 업데이트 완료
-        if (isDevMode) {
+        // 최종 workStartTimes 업데이트 완료 (로그 최소화)
+        if (isDevMode && convertedData.length !== prev.size) {
           console.log(
             '✅ loadCustomers - 최종 workStartTimes:',
             Array.from(newMap.entries())
@@ -802,6 +797,37 @@ function SlotAddPageContent() {
   const findCustomerInfo = (customerId: string) => {
     return customerData.find(c => c.username === customerId) || null;
   };
+
+  // 컴포넌트 마운트 시 연결 테스트 후 고객 목록 로드
+  useEffect(() => {
+    const initializeData = async () => {
+      try {
+        await loadCustomers();
+        await loadCustomerData();
+      } catch {
+        setError('시스템 초기화에 실패했습니다.');
+        setLoading(false);
+      }
+    };
+
+    initializeData();
+  }, []);
+
+  // 트래픽 카운터는 서버사이드에서 자동으로 처리됨
+  // 프론트엔드는 실시간 표시만 담당
+
+  // 트래픽 카운터 실시간 업데이트 (1분마다)
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        await loadCustomers(); // 트래픽 카운터 갱신
+      } catch (error) {
+        console.error('트래픽 카운터 업데이트 실패:', error);
+      }
+    }, 60000); // 1분마다
+
+    return () => clearInterval(interval);
+  }, []);
 
   // 작업그룹 옵션
   const workGroups = ['공통', 'VIP', '프리미엄', '기본'];
@@ -950,6 +976,8 @@ function SlotAddPageContent() {
         memo: '',
         equipmentGroup: '지정안함',
       });
+
+      // 트래픽 카운터는 개별 슬롯별로 독립적으로 관리 (새 슬롯은 0으로 시작)
 
       // 슬롯 등록 목록 새로고침
       await loadCustomers();
@@ -2635,9 +2663,7 @@ function SlotAddPageContent() {
                                 return <span className="text-gray-400">-</span>;
                               }
 
-                              const slotTraffic = calculateSlotTraffic(
-                                customer.created_at
-                              );
+                              const slotTraffic = customer.traffic_counter || 0;
                               const isExpired = isSlotExpired(
                                 customer.created_at
                               );

@@ -61,7 +61,9 @@ export async function GET(request: NextRequest) {
       // slot_status 테이블 조회 (쿠팡 앱 추가 페이지용) - 키워드가 있는 레코드만, 쿠팡 슬롯 타입만
       let slotStatusQuery = supabase
         .from('slot_status')
-        .select('*, slot_sequence') // slot_sequence 필드 명시적으로 포함
+        .select(
+          '*, slot_sequence, traffic_counter, last_traffic_update, traffic_reset_date'
+        ) // 트래픽 카운터 필드 포함
         .not('keyword', 'eq', '') // 키워드가 비어있지 않은 레코드만
         .eq('slot_type', '쿠팡') // 쿠팡 슬롯 타입만 필터링
         .order('created_at', { ascending: false });
@@ -302,7 +304,7 @@ export async function GET(request: NextRequest) {
           current_rank: slot.current_rank,
           start_rank: slot.start_rank,
           slot_count: slot.slot_count,
-          traffic: slot.traffic,
+          traffic: slot.traffic_counter || 0, // 트래픽 카운터 사용
           equipment_group: slot.equipment_group,
           remaining_days: remainingTimeString,
           registration_date: registrationDate,
@@ -311,6 +313,9 @@ export async function GET(request: NextRequest) {
           memo: slot.memo,
           created_at: slot.created_at,
           usage_days: slot.usage_days,
+          traffic_counter: slot.traffic_counter || 0, // 트래픽 카운터 필드 추가
+          last_traffic_update: slot.last_traffic_update,
+          traffic_reset_date: slot.traffic_reset_date,
         };
       });
 
