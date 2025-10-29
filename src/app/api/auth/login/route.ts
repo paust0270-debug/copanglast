@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
 
     if (!username || !password) {
       return NextResponse.json(
-        { error: '?꾩씠?붿? 鍮꾨?踰덊샇瑜??낅젰?댁＜?몄슂.' },
+        { error: '아이디와 비밀번호를 입력해주세요.' },
         { status: 400 }
       );
     }
@@ -27,12 +27,12 @@ export async function POST(request: NextRequest) {
 
     if (error || !user) {
       return NextResponse.json(
-        { error: '?꾩씠???먮뒗 鍮꾨?踰덊샇媛 ?щ컮瑜댁? ?딆뒿?덈떎.' },
+        { error: '비밀번호를 다시 입력해주세요.' },
         { status: 401 }
       );
     }
 
-    // Response ?앹꽦
+    // Response 생성
     const response = NextResponse.json({
       success: true,
       user: {
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // 荑좏궎 ?ㅼ젙
+    // 쿠키 설정
     const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60;
 
     response.cookies.set('isAuthenticated', 'true', {
@@ -82,9 +82,9 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('濡쒓렇???ㅻ쪟:', error);
+    console.error('로그인 오류:', error);
     return NextResponse.json(
-      { error: '濡쒓렇??以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.' },
+      { error: '로그인 중 오류가 발생했습니다.' },
       { status: 500 }
     );
   }

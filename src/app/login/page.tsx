@@ -23,12 +23,8 @@ export default function LoginPage() {
       const user = getSession();
       if (user && validateUserPermissions(user)) {
         console.log('✅ 이미 로그인된 사용자:', user.username);
-        // 권한에 따른 리다이렉트
-        if (user.grade === '일반회원') {
-          router.push('/dashboard');
-        } else {
-          router.push('/customer');
-        }
+        // 로그인 후 대시보드로 리다이렉트
+        router.push('/dashboard');
       }
     };
 
@@ -96,12 +92,8 @@ export default function LoginPage() {
 
         console.log('✅ 로그인 성공:', result.user.username);
 
-        // 권한에 따른 리다이렉트
-        if (result.user.grade === '일반회원') {
-          router.push('/dashboard');
-        } else {
-          router.push('/customer');
-        }
+        // 로그인 후 대시보드로 리다이렉트
+        router.push('/dashboard');
       } else {
         setError(result.error || '로그인에 실패했습니다.');
       }
@@ -119,10 +111,23 @@ export default function LoginPage() {
         {/* 메인 콘텐츠 */}
         <div className="max-w-md mx-auto mt-20">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              쿠팡 순위체크 서비스
-            </h1>
-            <p className="text-gray-600">계정에 로그인하세요</p>
+            {/* 애드팡팡 로고 */}
+            <div className="flex items-center justify-center gap-2 sm:gap-3 lg:gap-4 mb-6">
+              {/* AD 로고 */}
+              <div className="relative">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-purple-600 via-purple-500 to-pink-500 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform">
+                  <span className="text-white text-xl sm:text-2xl lg:text-3xl font-black tracking-tight">
+                    AD
+                  </span>
+                </div>
+                <div className="absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full animate-pulse"></div>
+              </div>
+
+              {/* 애드팡팡 텍스트 */}
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 bg-clip-text text-transparent pb-1">
+                애드팡팡
+              </h1>
+            </div>
           </div>
 
           {/* 에러 메시지 */}
