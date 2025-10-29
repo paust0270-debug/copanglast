@@ -465,6 +465,29 @@ function SlotStatusPageContent() {
   useEffect(() => {
     let filtered = slotData;
 
+    // 현재 사용자 정보 가져오기
+    const userStr = localStorage.getItem('user');
+    let userDistributor = null;
+
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        // 총판회원: 본인 소속 고객만 조회
+        if (user.grade === '총판회원' && user.username !== 'master') {
+          userDistributor = user.distributor;
+          console.log(`🎯 총판 필터 적용: ${userDistributor}`);
+        }
+      } catch (error) {
+        console.error('사용자 정보 파싱 오류:', error);
+      }
+    }
+
+    // 총판회원인 경우 소속 총판별 필터링
+    if (userDistributor) {
+      filtered = filtered.filter(slot => slot.userGroup === userDistributor);
+      console.log(`총판 필터링 결과: ${filtered.length}개`);
+    }
+
     // 고객별 필터링 (URL 파라미터로 전달된 경우)
     if (isFilteredByCustomer && filteredCustomerInfo) {
       filtered = filtered.filter(
