@@ -2,19 +2,53 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
+import {
+  isMasterAdmin,
+  isRegularUser as checkRegularUser,
+  canAccessRankingStatus,
+  canAccessTrafficStatus,
+  canAccessCustomerManagement,
+  canAccessSettlementManagement,
+  type UserPermissions,
+} from '@/lib/auth';
 
 export default function DashboardPage() {
-  const [userInfo, setUserInfo] = useState<any>(null);
+  const router = useRouter();
+  const [userInfo, setUserInfo] = useState<UserPermissions | null>(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setUserInfo(JSON.parse(storedUser));
+      try {
+        setUserInfo(JSON.parse(storedUser));
+      } catch (error) {
+        console.error('사용자 정보 파싱 오류:', error);
+      }
     }
   }, []);
 
-  const isRegularUser = userInfo?.grade === '일반회원';
+  const isRegularUser = checkRegularUser(userInfo);
+
+  // 권한 체크 후 이동 또는 팝업 표시
+  const handleCardClick = (
+    path: string,
+    hasAccess: boolean,
+    event?: React.MouseEvent
+  ) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    if (!hasAccess) {
+      alert('관리자만 접근 가능합니다.');
+      return;
+    }
+
+    router.push(path);
+  };
 
   // 서비스 링크 생성 함수
   const getServiceLink = (basePath: string, slotType: string) => {
@@ -375,9 +409,15 @@ export default function DashboardPage() {
 
         {/* 빠른 액션 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <Link
-            href="/customer"
-            className="group relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-5 lg:p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-blue-200 overflow-hidden"
+          <div
+            onClick={e =>
+              handleCardClick(
+                '/customer',
+                canAccessCustomerManagement(userInfo),
+                e
+              )
+            }
+            className="group relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-5 lg:p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-blue-200 overflow-hidden cursor-pointer"
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-200 rounded-full -mr-16 -mt-16 opacity-50 group-hover:scale-150 transition-transform duration-500"></div>
             <div className="relative z-10">
@@ -408,11 +448,17 @@ export default function DashboardPage() {
                 이동 →
               </div>
             </div>
-          </Link>
+          </div>
 
-          <Link
-            href="/settlement/unsettled"
-            className="group relative bg-gradient-to-br from-green-50 to-green-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-5 lg:p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-green-200 overflow-hidden"
+          <div
+            onClick={e =>
+              handleCardClick(
+                '/settlement/unsettled',
+                canAccessSettlementManagement(userInfo),
+                e
+              )
+            }
+            className="group relative bg-gradient-to-br from-green-50 to-green-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-5 lg:p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-green-200 overflow-hidden cursor-pointer"
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-green-200 rounded-full -mr-16 -mt-16 opacity-50 group-hover:scale-150 transition-transform duration-500"></div>
             <div className="relative z-10">
@@ -443,11 +489,17 @@ export default function DashboardPage() {
                 이동 →
               </div>
             </div>
-          </Link>
+          </div>
 
-          <Link
-            href="/admin/slots"
-            className="group relative bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-5 lg:p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-purple-200 overflow-hidden"
+          <div
+            onClick={e =>
+              handleCardClick(
+                '/admin/slots',
+                canAccessCustomerManagement(userInfo),
+                e
+              )
+            }
+            className="group relative bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-5 lg:p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-purple-200 overflow-hidden cursor-pointer"
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-purple-200 rounded-full -mr-16 -mt-16 opacity-50 group-hover:scale-150 transition-transform duration-500"></div>
             <div className="relative z-10">
@@ -478,11 +530,17 @@ export default function DashboardPage() {
                 이동 →
               </div>
             </div>
-          </Link>
+          </div>
 
-          <Link
-            href="/slot-status"
-            className="group relative bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-5 lg:p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-orange-200 overflow-hidden"
+          <div
+            onClick={e =>
+              handleCardClick(
+                '/slot-status',
+                canAccessCustomerManagement(userInfo),
+                e
+              )
+            }
+            className="group relative bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-5 lg:p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-orange-200 overflow-hidden cursor-pointer"
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-orange-200 rounded-full -mr-16 -mt-16 opacity-50 group-hover:scale-150 transition-transform duration-500"></div>
             <div className="relative z-10">
@@ -513,7 +571,7 @@ export default function DashboardPage() {
                 이동 →
               </div>
             </div>
-          </Link>
+          </div>
         </div>
 
         {/* 작업 관리 - 일반회원에게는 숨김 */}
@@ -542,9 +600,15 @@ export default function DashboardPage() {
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 lg:gap-6">
-              <Link
-                href="/ranking-status"
-                className="group relative bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-5 lg:p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-indigo-200 overflow-hidden"
+              <div
+                onClick={e =>
+                  handleCardClick(
+                    '/ranking-status',
+                    canAccessRankingStatus(userInfo),
+                    e
+                  )
+                }
+                className="group relative bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-5 lg:p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-indigo-200 overflow-hidden cursor-pointer"
               >
                 <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-200 rounded-full -mr-16 -mt-16 opacity-50 group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10">
@@ -575,11 +639,17 @@ export default function DashboardPage() {
                     순위체크현황 보기
                   </div>
                 </div>
-              </Link>
+              </div>
 
-              <Link
-                href="/traffic-status"
-                className="group relative bg-gradient-to-br from-cyan-50 to-cyan-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-5 lg:p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-cyan-200 overflow-hidden"
+              <div
+                onClick={e =>
+                  handleCardClick(
+                    '/traffic-status',
+                    canAccessTrafficStatus(userInfo),
+                    e
+                  )
+                }
+                className="group relative bg-gradient-to-br from-cyan-50 to-cyan-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-5 lg:p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-cyan-200 overflow-hidden cursor-pointer"
               >
                 <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-200 rounded-full -mr-16 -mt-16 opacity-50 group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10">
@@ -610,7 +680,7 @@ export default function DashboardPage() {
                     트래픽현황 보기
                   </div>
                 </div>
-              </Link>
+              </div>
             </div>
           </div>
         )}
