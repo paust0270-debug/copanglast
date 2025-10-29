@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -17,6 +17,22 @@ export default function Navigation() {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // ?몄쬆 泥댄겕
+  useEffect(() => {
+    if (!isClient) return;
+
+    const publicRoutes = ['/login', '/signup'];
+    if (publicRoutes.includes(pathname)) {
+      return; // 怨듦컻 ?섏씠吏??泥댄겕?섏? ?딆쓬
+    }
+
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+      console.log('???몄쬆 ?놁쓬 - 由щ떎?대젆??', pathname);
+      router.push('/login?redirectedFrom=' + encodeURIComponent(pathname));
+    }
+  }, [isClient, pathname, router]);
 
   // 사용자 정보 로드
   useEffect(() => {
