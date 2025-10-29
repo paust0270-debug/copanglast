@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
+import { isMasterAdmin, isDistributor, type UserPermissions } from '@/lib/auth';
 
 interface Settlement {
   id: number;
@@ -19,7 +20,8 @@ interface Settlement {
   slot_addition_date: string; // payment_date → slot_addition_date로 통합
   usage_days: number;
   memo: string;
-  status: string;
+  status: string; // 기존 상태 필드
+  approval_status?: string; // 승인 상태 필드 (승인대기/승인/취소)
   created_at: string;
   updated_at: string;
 }
@@ -31,6 +33,21 @@ export default function SettlementHistoryPage() {
   const [error, setError] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState<Set<number>>(new Set());
   const [deletingItem, setDeletingItem] = useState<Set<number>>(new Set());
+  const [userInfo, setUserInfo] = useState<UserPermissions | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUserInfo(JSON.parse(storedUser));
+      } catch (error) {
+        console.error('사용자 정보 파싱 오류:', error);
+      }
+    }
+  }, []);
+
+  const isAdmin = isMasterAdmin(userInfo);
+  const isDistributorUser = isDistributor(userInfo);
 
   // 매출 통계 상태
   const [salesStats, setSalesStats] = useState({
@@ -107,6 +124,8 @@ export default function SettlementHistoryPage() {
               : item.payment_type === 'deposit'
                 ? '입금'
                 : '일반',
+          // approval_status가 없으면 기본값으로 '승인대기' 설정
+          approval_status: item.approval_status || '승인대기',
         }));
         setSettlements(settlementsData);
         calculateSalesStats(settlementsData);
@@ -129,39 +148,57 @@ export default function SettlementHistoryPage() {
     }
   };
 
-  // 상태 업데이트 함수
+  // 상태 업데이트 함수 (최고관리자만 사용, 총판회원 상태로 변경)
   const handleStatusChange = async (
     settlementId: number,
     newStatus: string
   ) => {
+    if (!isAdmin) {
+      alert('최고관리자만 상태를 변경할 수 있습니다.');
+      return;
+    }
+
     try {
       setUpdatingStatus(prev => new Set(prev).add(settlementId));
 
+      // approval_status로 저장 (승인대기/승인/취소)
       const response = await fetch(`/api/settlements/${settlementId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ approval_status: newStatus }),
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `상태 업데이트 실패: ${response.status} ${response.statusText}`
-        );
+        let errorMessage = `상태 업데이트 실패: ${response.status} ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+          if (errorData.details) {
+            console.error('에러 상세:', errorData.details);
+          }
+        } catch (e) {
+          const errorText = await response.text();
+          console.error('에러 응답:', errorText);
+        }
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
 
       if (result.success) {
-        // 로컬 상태 업데이트
+        // 로컬 상태 업데이트 - approval_status 업데이트
         setSettlements(prev =>
           prev.map(item =>
-            item.id === settlementId ? { ...item, status: newStatus } : item
+            item.id === settlementId
+              ? { ...item, approval_status: newStatus }
+              : item
           )
         );
-        alert('상태가 성공적으로 업데이트되었습니다.');
+        // 상태 변경 성공 - alert 제거하여 더 부드러운 UX
       } else {
         throw new Error(result.error || '상태 업데이트에 실패했습니다.');
       }
@@ -181,6 +218,12 @@ export default function SettlementHistoryPage() {
 
   // 삭제 함수
   const handleDelete = async (settlementId: number) => {
+    // 총판회원은 삭제 불가
+    if (isDistributorUser && !isAdmin) {
+      alert('관리자에게 문의하세요.');
+      return;
+    }
+
     if (!confirm('정말로 이 정산 내역을 삭제하시겠습니까?')) {
       return;
     }
@@ -250,6 +293,20 @@ export default function SettlementHistoryPage() {
         return 'bg-green-100 text-green-800';
       case '취소':
       case 'inactive':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // 승인 상태 배지 색상 함수
+  const getApprovalStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case '승인대기':
+        return 'bg-yellow-100 text-yellow-800';
+      case '승인':
+        return 'bg-green-100 text-green-800';
+      case '취소':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -580,6 +637,11 @@ export default function SettlementHistoryPage() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                     메모
                   </th>
+                  {isAdmin && (
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                      상태 변경
+                    </th>
+                  )}
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                     상태
                   </th>
@@ -663,29 +725,41 @@ export default function SettlementHistoryPage() {
                         {item.memo || '-'}
                       </span>
                     </td>
-                    {/* 상태 */}
+                    {/* 상태 변경 (최고관리자만 보임) */}
+                    {isAdmin && (
+                      <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
+                        <select
+                          value={item.approval_status || '승인대기'}
+                          onChange={e =>
+                            handleStatusChange(item.id, e.target.value)
+                          }
+                          disabled={updatingStatus.has(item.id)}
+                          className={`text-xs px-2 py-1 rounded border ${
+                            updatingStatus.has(item.id)
+                              ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                              : 'bg-white border-gray-300 hover:border-gray-400'
+                          }`}
+                        >
+                          <option value="승인대기">승인대기</option>
+                          <option value="승인">승인</option>
+                          <option value="취소">취소</option>
+                        </select>
+                        {updatingStatus.has(item.id) && (
+                          <div className="mt-1">
+                            <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600"></div>
+                          </div>
+                        )}
+                      </td>
+                    )}
+                    {/* 상태 (모든 사용자에게 표시) */}
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
-                      <select
-                        value={item.status || '승인대기'}
-                        onChange={e =>
-                          handleStatusChange(item.id, e.target.value)
-                        }
-                        disabled={updatingStatus.has(item.id)}
-                        className={`text-xs px-2 py-1 rounded border ${
-                          updatingStatus.has(item.id)
-                            ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                            : 'bg-white border-gray-300 hover:border-gray-400'
-                        }`}
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${getApprovalStatusBadgeColor(
+                          item.approval_status || '승인대기'
+                        )}`}
                       >
-                        <option value="승인대기">승인대기</option>
-                        <option value="승인">승인</option>
-                        <option value="취소">취소</option>
-                      </select>
-                      {updatingStatus.has(item.id) && (
-                        <div className="mt-1">
-                          <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600"></div>
-                        </div>
-                      )}
+                        {item.approval_status || '승인대기'}
+                      </span>
                     </td>
                     {/* 작업 */}
                     <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">

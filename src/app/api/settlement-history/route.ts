@@ -117,6 +117,7 @@ export async function GET(request: NextRequest) {
         usage_days,
         memo,
         status,
+        approval_status,
         payment_type,
         created_at,
         completed_at,
@@ -231,6 +232,7 @@ export async function GET(request: NextRequest) {
         usage_days: item.usage_days || 0,
         memo: item.memo || '',
         status: item.status,
+        approval_status: item.approval_status || '승인대기', // approval_status 필드 추가
         payment_type: item.payment_type,
         created_at: item.created_at,
         completed_at: item.completed_at,

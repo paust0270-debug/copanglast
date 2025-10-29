@@ -153,6 +153,7 @@ export async function PATCH(
       'usage_days',
       'memo',
       'status',
+      'approval_status', // 총판회원 승인 상태 필드 추가
       'payer_name',
       'slot_addition_date',
     ];
@@ -198,10 +199,17 @@ export async function PATCH(
 
     if (error) {
       console.error('정산 데이터 수정 오류:', error);
+      console.error('에러 상세:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
       return NextResponse.json(
         {
           success: false,
-          error: '정산 데이터를 수정하는 중 오류가 발생했습니다.',
+          error: `정산 데이터를 수정하는 중 오류가 발생했습니다: ${error.message}`,
+          details: error.details || null,
         },
         { status: 500 }
       );
