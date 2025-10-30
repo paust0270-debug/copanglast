@@ -27,5 +27,6 @@ jobs:
         with:
           tag_name: ${{ steps.pkg.outputs.tag }}
           generate_release_notes: true
+          body_path: .github/RELEASE_NOTES.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
