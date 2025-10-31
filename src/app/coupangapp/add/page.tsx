@@ -425,33 +425,34 @@ function SlotAddPageContent() {
     }
   };
 
-  // 순위갱신 쿨다운 체크 useEffect
+  // 순위갱신 쿨다운 체크 useEffect (서버에서 쿨다운 정보 가져오기)
   useEffect(() => {
-    const checkCooldown = () => {
+    const fetchCooldown = async () => {
       const urlParams = new URLSearchParams(window.location.search);
-      const slotType = urlParams.get('slotType') || '쿠팡';
       const username = urlParams.get('username');
 
       if (!username) return;
 
-      const lastUpdate = localStorage.getItem(
-        `rankUpdate_${slotType}_${username}`
-      );
-      if (lastUpdate) {
-        const elapsed = Date.now() - parseInt(lastUpdate);
-        const remaining = Math.max(0, 3600000 - elapsed); // 1시간 = 3600000ms
-        setRankUpdateCooldown(Math.ceil(remaining / 1000)); // 초 단위
+      try {
+        // 서버에서 쿨다운 정보 가져오기
+        const response = await fetch(
+          `/api/rank-update/cooldown?username=${encodeURIComponent(username)}`
+        );
+        const result = await response.json();
 
-        if (remaining === 0) {
-          localStorage.removeItem(`rankUpdate_${slotType}_${username}`);
+        if (result.success && result.cooldownRemaining) {
+          setRankUpdateCooldown(Math.ceil(result.cooldownRemaining));
+        } else {
+          setRankUpdateCooldown(0);
         }
-      } else {
+      } catch (error) {
+        console.error('쿨다운 정보 조회 오류:', error);
         setRankUpdateCooldown(0);
       }
     };
 
-    checkCooldown();
-    const interval = setInterval(checkCooldown, 1000); // 1초마다 체크
+    fetchCooldown();
+    const interval = setInterval(fetchCooldown, 1000); // 1초마다 서버에서 확인
     return () => clearInterval(interval);
   }, []);
 
@@ -1437,15 +1438,22 @@ function SlotAddPageContent() {
       if (result.success) {
         alert(`✅ ${result.count}개의 슬롯이 순위갱신 될 예정입니다.`);
 
-        // 쿨다운 시작
-        const now = Date.now();
-        localStorage.setItem(
-          `rankUpdate_${slotType}_${username}`,
-          now.toString()
+        // 서버에서 쿨다운이 설정되었으므로 즉시 다시 조회하여 쿨다운 상태 업데이트
+        const cooldownResponse = await fetch(
+          `/api/rank-update/cooldown?username=${encodeURIComponent(username)}`
         );
-        setRankUpdateCooldown(3600); // 1시간
+        const cooldownResult = await cooldownResponse.json();
+        if (cooldownResult.success && cooldownResult.cooldownRemaining) {
+          setRankUpdateCooldown(Math.ceil(cooldownResult.cooldownRemaining));
+        } else {
+          setRankUpdateCooldown(3600); // 1시간
+        }
       } else {
-        alert(`❌ 순위갱신 실패: ${result.error}`);
+        // 쿨다운 에러인 경우 서버에서 받은 남은 시간 사용
+        if (result.cooldownRemaining !== undefined) {
+          setRankUpdateCooldown(Math.ceil(result.cooldownRemaining));
+        }
+        alert(`❌ 순위갱신 실패: ${result.message || result.error}`);
       }
     } catch (error) {
       console.error('순위갱신 오류:', error);

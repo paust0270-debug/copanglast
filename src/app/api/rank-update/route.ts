@@ -29,6 +29,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 서버 사이드 쿨다운 체크 (1시간 = 3600000ms)
+    const { data: lastRankUpdate, error: cooldownFetchError } = await supabase
+      .from('keywords')
+      .select('created_at')
+      .eq('customer_id', username)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (!cooldownFetchError && lastRankUpdate && lastRankUpdate.created_at) {
+      const lastUpdate = new Date(lastRankUpdate.created_at);
+      const now = new Date();
+      const elapsedMs = now.getTime() - lastUpdate.getTime();
+      const oneHourMs = 60 * 60 * 1000; // 1시간
+
+      if (elapsedMs < oneHourMs) {
+        const remainingMs = oneHourMs - elapsedMs;
+        const remainingMinutes = Math.floor(remainingMs / (60 * 1000));
+        const remainingSeconds = Math.floor((remainingMs % (60 * 1000)) / 1000);
+
+        return NextResponse.json(
+          {
+            success: false,
+            error: '쿨다운',
+            cooldownRemaining: remainingMs / 1000, // 초 단위
+            message: `순위갱신은 1시간마다 사용할 수 있습니다. 남은 시간: ${remainingMinutes}분 ${remainingSeconds}초`,
+          },
+          { status: 429 }
+        );
+      }
+    }
+
     const tableName = getTableName(slotType);
 
     // 해당 테이블에서 해당 고객의 모든 슬롯 조회 (키워드가 있는 것만)

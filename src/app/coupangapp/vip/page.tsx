@@ -327,6 +327,9 @@ function SlotAddPageContent() {
   );
   const [selectAll, setSelectAll] = useState(false);
 
+  // 순위갱신 쿨다운 상태 관리
+  const [rankUpdateCooldown, setRankUpdateCooldown] = useState<number>(0); // 남은 초
+
   // 컴포넌트 마운트 시 연결 테스트 후 고객 목록 로드
   useEffect(() => {
     const initializeData = async () => {
@@ -483,6 +486,133 @@ function SlotAddPageContent() {
 
     return () => clearInterval(timer);
   }, []);
+
+  // 순위갱신 쿨다운 체크 useEffect (서버에서 쿨다운 정보 가져오기)
+  useEffect(() => {
+    const fetchCooldown = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const username = urlParams.get('username');
+
+      if (!username) return;
+
+      try {
+        // 서버에서 쿨다운 정보 가져오기
+        const response = await fetch(
+          `/api/rank-update/cooldown?username=${encodeURIComponent(username)}`
+        );
+        const result = await response.json();
+
+        if (result.success && result.cooldownRemaining) {
+          setRankUpdateCooldown(Math.ceil(result.cooldownRemaining));
+        } else {
+          setRankUpdateCooldown(0);
+        }
+      } catch (error) {
+        console.error('쿨다운 정보 조회 오류:', error);
+        setRankUpdateCooldown(0);
+      }
+    };
+
+    fetchCooldown();
+    const interval = setInterval(fetchCooldown, 1000); // 1초마다 서버에서 확인
+    return () => clearInterval(interval);
+  }, []);
+
+  // 순위갱신 핸들러 함수
+  const handleRankUpdate = async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    let slotType = urlParams.get('slotType') || '쿠팡VIP';
+    let username = urlParams.get('username');
+    let customerId = urlParams.get('customerId');
+
+    // URL 파라미터에 없으면 customers 배열에서 첫 번째 항목 사용
+    if ((!username || !customerId) && customers.length > 0) {
+      const firstCustomer = customers[0];
+      username =
+        username || firstCustomer.customer || firstCustomer.customerId || '';
+      customerId =
+        customerId || firstCustomer.customerId || firstCustomer.customer || '';
+    }
+
+    // searchParams hook도 사용해보기
+    if (!username || !customerId) {
+      username = username || searchParams.get('username') || '';
+      customerId = customerId || searchParams.get('customerId') || '';
+    }
+
+    if (!username || !customerId) {
+      alert(
+        '고객 정보를 찾을 수 없습니다. URL 파라미터 또는 등록된 슬롯 데이터를 확인해주세요.'
+      );
+      return;
+    }
+
+    if (rankUpdateCooldown > 0) {
+      const minutes = Math.floor(rankUpdateCooldown / 60);
+      const seconds = rankUpdateCooldown % 60;
+      alert(
+        `순위갱신은 1시간마다 사용할 수 있습니다.\n남은 시간: ${minutes}분 ${seconds}초`
+      );
+      return;
+    }
+
+    if (customers.length === 0) {
+      alert('등록된 슬롯이 없습니다.');
+      return;
+    }
+
+    if (!confirm(`${customers.length}개의 슬롯을 순위갱신 하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      // API 호출
+      const response = await fetch('/api/rank-update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customerId,
+          slotType,
+          username,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert(`✅ ${result.count}개의 슬롯이 순위갱신 될 예정입니다.`);
+
+        // 서버에서 쿨다운이 설정되었으므로 즉시 다시 조회하여 쿨다운 상태 업데이트
+        const cooldownResponse = await fetch(
+          `/api/rank-update/cooldown?username=${encodeURIComponent(username)}`
+        );
+        const cooldownResult = await cooldownResponse.json();
+        if (cooldownResult.success && cooldownResult.cooldownRemaining) {
+          setRankUpdateCooldown(Math.ceil(cooldownResult.cooldownRemaining));
+        } else {
+          setRankUpdateCooldown(3600); // 1시간
+        }
+      } else {
+        // 쿨다운 에러인 경우 서버에서 받은 남은 시간 사용
+        if (result.cooldownRemaining !== undefined) {
+          setRankUpdateCooldown(Math.ceil(result.cooldownRemaining));
+        }
+        alert(`❌ 순위갱신 실패: ${result.message || result.error}`);
+      }
+    } catch (error) {
+      console.error('순위갱신 오류:', error);
+      alert('순위갱신 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 쿨다운 남은 시간 포맷팅
+  const getRemainingCooldown = () => {
+    const minutes = Math.floor(rankUpdateCooldown / 60);
+    const seconds = rankUpdateCooldown % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   // 숫자만 추출하는 함수
   const extractRankNumber = (
@@ -2208,10 +2338,17 @@ function SlotAddPageContent() {
                   </SelectContent>
                 </Select>
 
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="rankUpdate" />
-                  <Label htmlFor="rankUpdate">순위갱신</Label>
-                </div>
+                <Button
+                  onClick={handleRankUpdate}
+                  disabled={rankUpdateCooldown > 0}
+                  variant="outline"
+                  size="sm"
+                  className="min-w-[120px]"
+                >
+                  {rankUpdateCooldown > 0
+                    ? `순위갱신 (${getRemainingCooldown()})`
+                    : '순위갱신'}
+                </Button>
               </div>
 
               <div className="flex items-center space-x-4">

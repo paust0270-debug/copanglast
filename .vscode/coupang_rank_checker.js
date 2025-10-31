@@ -263,10 +263,11 @@ class CoupangRankChecker {
     try {
       console.log('📋 키워드 작업 가져오기...');
       
+      // ✅ 모든 slot_type 조회 (쿠팡, 쿠팡VIP, 쿠팡APP, 쿠팡순위체크)
       const { data: keywords, error } = await supabase
         .from('keywords')
         .select('*')
-        .eq('slot_type', 'coupang')
+        .in('slot_type', ['쿠팡', '쿠팡VIP', '쿠팡APP', '쿠팡순위체크'])
         .order('id', { ascending: true })
         .limit(1); // 한 번에 하나씩 처리
       
@@ -280,7 +281,7 @@ class CoupangRankChecker {
         return null;
       }
       
-      console.log(`✅ 키워드 작업 발견: ${keywords[0].keyword}`);
+      console.log(`✅ 키워드 작업 발견: ${keywords[0].keyword} (${keywords[0].slot_type})`);
       return keywords[0];
       
     } catch (error) {
@@ -289,21 +290,37 @@ class CoupangRankChecker {
     }
   }
 
-  // slot_status 테이블 업데이트
+  // slot_type별 테이블 매핑 함수
+  getTableName(slotType) {
+    const mapping = {
+      '쿠팡': 'slot_status',
+      '쿠팡VIP': 'slot_coupangvip',
+      '쿠팡APP': 'slot_coupangapp',
+      '쿠팡순위체크': 'slot_copangrank',
+    };
+    return mapping[slotType] || 'slot_status';
+  }
+
+  // slot_type별 테이블 업데이트 (slot_type + keyword + link_url + slot_sequence로 매칭)
   async updateSlotStatus(keyword, rank) {
     try {
-      console.log(`📊 slot_status 업데이트: ${keyword.keyword} - ${rank}위`);
+      const slotType = keyword.slot_type || '쿠팡';
+      const tableName = this.getTableName(slotType);
       
-      // 기존 start_rank 확인
+      console.log(`📊 ${tableName} 업데이트: ${keyword.keyword} - ${rank}위 (${slotType})`);
+      
+      // ✅ slot_type + keyword + link_url + slot_sequence로 기존 start_rank 확인
       const { data: existingSlotStatus, error: fetchError } = await supabase
-        .from('slot_status')
+        .from(tableName)
         .select('start_rank')
+        .eq('slot_type', slotType)
         .eq('keyword', keyword.keyword)
         .eq('link_url', keyword.link_url)
+        .eq('slot_sequence', keyword.slot_sequence || 1)
         .single();
       
       if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error('❌ slot_status 조회 실패:', fetchError);
+        console.error(`❌ ${tableName} 조회 실패:`, fetchError);
         throw fetchError;
       }
       
@@ -318,22 +335,25 @@ class CoupangRankChecker {
         console.log(`🆕 시작 순위 설정: ${rank}위`);
       }
       
+      // ✅ slot_type + keyword + link_url + slot_sequence로 매칭하여 업데이트
       const { error: updateError } = await supabase
-        .from('slot_status')
+        .from(tableName)
         .update(updatePayload)
+        .eq('slot_type', slotType)
         .eq('keyword', keyword.keyword)
-        .eq('link_url', keyword.link_url);
+        .eq('link_url', keyword.link_url)
+        .eq('slot_sequence', keyword.slot_sequence || 1);
       
       if (updateError) {
-        console.error('❌ slot_status 업데이트 실패:', updateError);
+        console.error(`❌ ${tableName} 업데이트 실패:`, updateError);
         throw updateError;
       }
       
-      console.log(`✅ slot_status 업데이트 완료: ${keyword.keyword}`);
+      console.log(`✅ ${tableName} 업데이트 완료: ${keyword.keyword}`);
       return updatePayload;
       
     } catch (error) {
-      console.error('❌ slot_status 업데이트 오류:', error);
+      console.error('❌ 테이블 업데이트 오류:', error);
       throw error;
     }
   }
@@ -341,18 +361,23 @@ class CoupangRankChecker {
   // rank_history 테이블에 순위 기록 저장
   async saveRankHistory(keyword, rank, startRank) {
     try {
-      console.log(`📝 rank_history 저장: ${keyword.keyword} - ${rank}위`);
+      const slotType = keyword.slot_type || '쿠팡';
+      const tableName = this.getTableName(slotType);
       
-      // slot_status 테이블에서 해당 레코드 ID 찾기
+      console.log(`📝 rank_history 저장: ${keyword.keyword} - ${rank}위 (${slotType})`);
+      
+      // ✅ slot_type + keyword + link_url + slot_sequence로 해당 레코드 ID 찾기
       const { data: slotStatus, error: findError } = await supabase
-        .from('slot_status')
+        .from(tableName)
         .select('id')
+        .eq('slot_type', slotType)
         .eq('keyword', keyword.keyword)
         .eq('link_url', keyword.link_url)
+        .eq('slot_sequence', keyword.slot_sequence || 1)
         .single();
       
       if (findError || !slotStatus) {
-        console.log(`⚠️ slot_status 레코드를 찾을 수 없음: ${keyword.keyword}`);
+        console.log(`⚠️ ${tableName} 레코드를 찾을 수 없음: ${keyword.keyword}`);
         return;
       }
       
