@@ -134,6 +134,15 @@ export const canAccessRankingStatus = (
 };
 
 /**
+ * 환경설정 접근 권한
+ * 최고관리자만 접근 가능
+ */
+export const canAccessSettings = (user: UserPermissions | null): boolean => {
+  if (!user) return false;
+  return isMasterAdmin(user);
+};
+
+/**
  * 슬롯 추가 접근 권한
  * 모든 로그인 사용자 접근 가능
  */
@@ -194,6 +203,7 @@ export const canAccessPage = (
       '/settlement/status': canAccessSettlementManagement,
       '/traffic-status': canAccessTrafficStatus,
       '/ranking-status': canAccessRankingStatus,
+      '/coupangapp/settings': canAccessSettings,
       '/coupangapp': canAccessMainService,
       '/dashboard': canAccessFreeService,
       '/notices': canAccessNotices,
@@ -414,6 +424,11 @@ export const getNavigationItems = (
               name: '슬롯추가',
               href: '/slot-add',
               roles: ['최고관리자', '총판회원'],
+            },
+            {
+              name: '환경설정',
+              href: '/coupangapp/settings',
+              roles: ['최고관리자'],
             },
           ],
     },

@@ -12,14 +12,28 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { keyword, link_url, slot_type, current_rank, slot_sequence } = body;
 
-    console.log('🔄 순위 업데이트 요청:', { keyword, link_url, slot_type, current_rank });
+    console.log('🔄 순위 업데이트 요청:', {
+      keyword,
+      link_url,
+      slot_type,
+      current_rank,
+    });
 
     // 필수 필드 검증
-    if (!keyword || !link_url || !slot_type || current_rank === undefined || !slot_sequence) {
-      return NextResponse.json({
-        success: false,
-        error: '필수 필드가 누락되었습니다.'
-      }, { status: 400 });
+    if (
+      !keyword ||
+      !link_url ||
+      !slot_type ||
+      current_rank === undefined ||
+      !slot_sequence
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: '필수 필드가 누락되었습니다.',
+        },
+        { status: 400 }
+      );
     }
 
     // 1. 상품 ID 추출 함수
@@ -42,11 +56,14 @@ export async function POST(request: NextRequest) {
 
     if (keywordError || !keywordData) {
       console.error('❌ 키워드 매칭 실패:', keywordError);
-      return NextResponse.json({
-        success: false,
-        error: '매칭되는 키워드를 찾을 수 없습니다.',
-        details: { keyword, link_url, slot_type, slot_sequence }
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '매칭되는 키워드를 찾을 수 없습니다.',
+          details: { keyword, link_url, slot_type, slot_sequence },
+        },
+        { status: 404 }
+      );
     }
 
     console.log('✅ 키워드 매칭 성공:', keywordData);
@@ -61,29 +78,35 @@ export async function POST(request: NextRequest) {
 
     if (statusError) {
       console.error('❌ slot_status 조회 실패:', statusError);
-      return NextResponse.json({
-        success: false,
-        error: 'slot_status 레코드를 찾을 수 없습니다.'
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'slot_status 레코드를 찾을 수 없습니다.',
+        },
+        { status: 404 }
+      );
     }
 
     // 4. 순위 변동 계산
     const isFirstCheck = !slotStatus.start_rank || slotStatus.start_rank === '';
     const rankFormat = `${current_rank} [0]`; // 기존 포맷 유지
-    
+
     // 이전 순위 추출 (숫자만)
     const extractRankNumber = (rankStr: string) => {
       if (!rankStr) return null;
       const match = rankStr.match(/(\d+)/);
       return match ? parseInt(match[1]) : null;
     };
-    
+
     const previousRank = extractRankNumber(slotStatus.current_rank);
     const startRankNumber = extractRankNumber(slotStatus.start_rank);
-    
+
     // 등락폭 계산
     const rankChange = previousRank ? current_rank - previousRank : 0;
     const startRankDiff = startRankNumber ? current_rank - startRankNumber : 0;
+
+    // 같은 순위인지 확인
+    const isSameRank = previousRank !== null && previousRank === current_rank;
 
     // 5. slot_status 업데이트
     const { error: updateError } = await supabase
@@ -91,46 +114,55 @@ export async function POST(request: NextRequest) {
       .update({
         current_rank: rankFormat,
         start_rank: isFirstCheck ? rankFormat : slotStatus.start_rank,
-        updated_at: getTimestampWithoutMs()
+        updated_at: getTimestampWithoutMs(),
       })
       .eq('customer_id', keywordData.customer_id)
       .eq('slot_sequence', keywordData.slot_sequence);
 
     if (updateError) {
       console.error('❌ slot_status 업데이트 실패:', updateError);
-      return NextResponse.json({
-        success: false,
-        error: 'slot_status 업데이트에 실패했습니다.'
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'slot_status 업데이트에 실패했습니다.',
+        },
+        { status: 500 }
+      );
     }
 
-    // 6. 순위 히스토리 저장
-    const { error: historyError } = await supabase
-      .from('slot_rank_history')
-      .insert([{
-        customer_id: keywordData.customer_id,
-        slot_sequence: keywordData.slot_sequence,
-        keyword: keyword,
-        link_url: link_url,
-        current_rank: rankFormat,
-        start_rank: isFirstCheck ? rankFormat : slotStatus.start_rank,
-        rank_date: new Date().toISOString(),
-        rank_change: rankChange,
-        start_rank_diff: startRankDiff
-      }]);
+    // 6. 순위가 변경되었을 때만 히스토리 저장 (같은 순위면 저장하지 않음)
+    if (!isSameRank) {
+      const { error: historyError } = await supabase
+        .from('slot_rank_history')
+        .insert([
+          {
+            customer_id: keywordData.customer_id,
+            slot_sequence: keywordData.slot_sequence,
+            keyword: keyword,
+            link_url: link_url,
+            current_rank: rankFormat,
+            start_rank: isFirstCheck ? rankFormat : slotStatus.start_rank,
+            rank_date: new Date().toISOString(),
+            rank_change: rankChange,
+            start_rank_diff: startRankDiff,
+          },
+        ]);
 
-    if (historyError) {
-      console.error('❌ 순위 히스토리 저장 실패:', historyError);
-      // 히스토리 저장 실패는 치명적이지 않으므로 계속 진행
+      if (historyError) {
+        console.error('❌ 순위 히스토리 저장 실패:', historyError);
+        // 히스토리 저장 실패는 치명적이지 않으므로 계속 진행
+      } else {
+        console.log('✅ 순위 히스토리 저장 완료');
+      }
     } else {
-      console.log('✅ 순위 히스토리 저장 완료');
+      console.log('⏭️ 같은 순위이므로 히스토리 저장 건너뛰기');
     }
 
     console.log('✅ 순위 업데이트 완료:', {
       customer_id: keywordData.customer_id,
       slot_sequence: keywordData.slot_sequence,
       current_rank: rankFormat,
-      start_rank: isFirstCheck ? rankFormat : slotStatus.start_rank
+      start_rank: isFirstCheck ? rankFormat : slotStatus.start_rank,
     });
 
     return NextResponse.json({
@@ -140,15 +172,17 @@ export async function POST(request: NextRequest) {
         slot_sequence: keywordData.slot_sequence,
         current_rank: rankFormat,
         start_rank: isFirstCheck ? rankFormat : slotStatus.start_rank,
-        is_first_check: isFirstCheck
-      }
+        is_first_check: isFirstCheck,
+      },
     });
-
   } catch (error) {
     console.error('❌ 순위 업데이트 예외:', error);
-    return NextResponse.json({
-      success: false,
-      error: '서버 오류가 발생했습니다.'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: '서버 오류가 발생했습니다.',
+      },
+      { status: 500 }
+    );
   }
 }

@@ -1,0 +1,227 @@
+{
+  "withLogin": false,
+  "results": [
+    {
+      "page": "/",
+      "status": "public",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fdashboard",
+      "ok": true
+    },
+    {
+      "page": "/login",
+      "status": "public",
+      "url": "http://localhost:3000/login",
+      "ok": true
+    },
+    {
+      "page": "/signup",
+      "status": "public",
+      "url": "http://localhost:3000/signup",
+      "ok": true
+    },
+    {
+      "page": "/dashboard",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fdashboard",
+      "ok": true
+    },
+    {
+      "page": "/customer",
+      "status": "redirected",
+      "url": "http://localhost:3000/login",
+      "ok": true
+    },
+    {
+      "page": "/slot-add",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fslot-add",
+      "ok": true
+    },
+    {
+      "page": "/slot-add-forms",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fslot-add-forms",
+      "ok": true
+    },
+    {
+      "page": "/slot-status",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fslot-status",
+      "ok": true
+    },
+    {
+      "page": "/slot-management",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fslot-management",
+      "ok": true
+    },
+    {
+      "page": "/coupangapp",
+      "status": "issue_not_protected",
+      "url": "http://localhost:3000/coupangapp",
+      "ok": false
+    },
+    {
+      "page": "/coupangapp/add",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fcoupangapp%2Fadd",
+      "ok": true
+    },
+    {
+      "page": "/coupangapp/copangrank",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fcoupangapp%2Fcopangrank",
+      "ok": true
+    },
+    {
+      "page": "/coupangapp/vip",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fcoupangapp%2Fvip",
+      "ok": true
+    },
+    {
+      "page": "/coupang-app",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fcoupang-app",
+      "ok": true
+    },
+    {
+      "page": "/coupangapp/naver",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fcoupangapp%2Fnaver",
+      "ok": true
+    },
+    {
+      "page": "/coupangapp/naverrank",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fcoupangapp%2Fnaverrank",
+      "ok": true
+    },
+    {
+      "page": "/coupangapp/place",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fcoupangapp%2Fplace",
+      "ok": true
+    },
+    {
+      "page": "/coupangapp/placerank",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fcoupangapp%2Fplacerank",
+      "ok": true
+    },
+    {
+      "page": "/coupangapp/todayhome",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fcoupangapp%2Ftodayhome",
+      "ok": true
+    },
+    {
+      "page": "/coupangapp/aliexpress",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fcoupangapp%2Faliexpress",
+      "ok": true
+    },
+    {
+      "page": "/notices",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fnotices",
+      "ok": true
+    },
+    {
+      "page": "/notices/write",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fnotices%2Fwrite",
+      "ok": true
+    },
+    {
+      "page": "/settlement-management",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fsettlement-management",
+      "ok": true
+    },
+    {
+      "page": "/settlement",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fsettlement",
+      "ok": true
+    },
+    {
+      "page": "/settlement/edit",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fsettlement%2Fedit",
+      "ok": true
+    },
+    {
+      "page": "/settlement/request",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fsettlement%2Frequest",
+      "ok": true
+    },
+    {
+      "page": "/settlement/status",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fsettlement%2Fstatus",
+      "ok": true
+    },
+    {
+      "page": "/settlement/history",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fsettlement%2Fhistory",
+      "ok": true
+    },
+    {
+      "page": "/settlement/unsettled",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fsettlement%2Funsettled",
+      "ok": true
+    },
+    {
+      "page": "/settlement-completed",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fsettlement-completed",
+      "ok": true
+    },
+    {
+      "page": "/settlement-pending",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fsettlement-pending",
+      "ok": true
+    },
+    {
+      "page": "/settlement-request",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fsettlement-request",
+      "ok": true
+    },
+    {
+      "page": "/ranking-status",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Franking-status",
+      "ok": true
+    },
+    {
+      "page": "/traffic-status",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Ftraffic-status",
+      "ok": true
+    },
+    {
+      "page": "/distributor-add",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fdistributor-add",
+      "ok": true
+    },
+    {
+      "page": "/distributor-add/add",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fdistributor-add%2Fadd",
+      "ok": true
+    },
+    {
+      "page": "/admin/slots",
+      "status": "redirected",
+      "url": "http://localhost:3000/login?redirectedFrom=%2Fadmin%2Fslots",
+      "ok": true
+    }
+  ]
+}

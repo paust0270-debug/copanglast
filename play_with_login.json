@@ -1,0 +1,227 @@
+{
+  "withLogin": true,
+  "results": [
+    {
+      "page": "/",
+      "status": "public",
+      "url": "http://localhost:3000/dashboard",
+      "ok": true
+    },
+    {
+      "page": "/login",
+      "status": "public",
+      "url": "http://localhost:3000/customer",
+      "ok": true
+    },
+    {
+      "page": "/signup",
+      "status": "public",
+      "url": "http://localhost:3000/signup",
+      "ok": true
+    },
+    {
+      "page": "/dashboard",
+      "status": "access",
+      "url": "http://localhost:3000/dashboard",
+      "ok": true
+    },
+    {
+      "page": "/customer",
+      "status": "access",
+      "url": "http://localhost:3000/customer",
+      "ok": true
+    },
+    {
+      "page": "/slot-add",
+      "status": "access",
+      "url": "http://localhost:3000/slot-add",
+      "ok": true
+    },
+    {
+      "page": "/slot-add-forms",
+      "status": "access",
+      "url": "http://localhost:3000/slot-add-forms",
+      "ok": true
+    },
+    {
+      "page": "/slot-status",
+      "status": "access",
+      "url": "http://localhost:3000/slot-status",
+      "ok": true
+    },
+    {
+      "page": "/slot-management",
+      "status": "access",
+      "url": "http://localhost:3000/slot-management",
+      "ok": true
+    },
+    {
+      "page": "/coupangapp",
+      "status": "access",
+      "url": "http://localhost:3000/coupangapp",
+      "ok": true
+    },
+    {
+      "page": "/coupangapp/add",
+      "status": "access",
+      "url": "http://localhost:3000/coupangapp/add",
+      "ok": true
+    },
+    {
+      "page": "/coupangapp/copangrank",
+      "status": "access",
+      "url": "http://localhost:3000/coupangapp/copangrank",
+      "ok": true
+    },
+    {
+      "page": "/coupangapp/vip",
+      "status": "access",
+      "url": "http://localhost:3000/coupangapp/vip",
+      "ok": true
+    },
+    {
+      "page": "/coupang-app",
+      "status": "access",
+      "url": "http://localhost:3000/coupang-app",
+      "ok": true
+    },
+    {
+      "page": "/coupangapp/naver",
+      "status": "access",
+      "url": "http://localhost:3000/coupangapp/naver",
+      "ok": true
+    },
+    {
+      "page": "/coupangapp/naverrank",
+      "status": "access",
+      "url": "http://localhost:3000/coupangapp/naverrank",
+      "ok": true
+    },
+    {
+      "page": "/coupangapp/place",
+      "status": "access",
+      "url": "http://localhost:3000/coupangapp/place",
+      "ok": true
+    },
+    {
+      "page": "/coupangapp/placerank",
+      "status": "access",
+      "url": "http://localhost:3000/coupangapp/placerank",
+      "ok": true
+    },
+    {
+      "page": "/coupangapp/todayhome",
+      "status": "access",
+      "url": "http://localhost:3000/coupangapp/todayhome",
+      "ok": true
+    },
+    {
+      "page": "/coupangapp/aliexpress",
+      "status": "access",
+      "url": "http://localhost:3000/coupangapp/aliexpress",
+      "ok": true
+    },
+    {
+      "page": "/notices",
+      "status": "access",
+      "url": "http://localhost:3000/notices",
+      "ok": true
+    },
+    {
+      "page": "/notices/write",
+      "status": "access",
+      "url": "http://localhost:3000/notices/write",
+      "ok": true
+    },
+    {
+      "page": "/settlement-management",
+      "status": "access",
+      "url": "http://localhost:3000/settlement-management",
+      "ok": true
+    },
+    {
+      "page": "/settlement",
+      "status": "access",
+      "url": "http://localhost:3000/settlement",
+      "ok": true
+    },
+    {
+      "page": "/settlement/edit",
+      "status": "access",
+      "url": "http://localhost:3000/settlement/edit",
+      "ok": true
+    },
+    {
+      "page": "/settlement/request",
+      "status": "access",
+      "url": "http://localhost:3000/settlement/request",
+      "ok": true
+    },
+    {
+      "page": "/settlement/status",
+      "status": "access",
+      "url": "http://localhost:3000/settlement/status",
+      "ok": true
+    },
+    {
+      "page": "/settlement/history",
+      "status": "access",
+      "url": "http://localhost:3000/settlement/history",
+      "ok": true
+    },
+    {
+      "page": "/settlement/unsettled",
+      "status": "access",
+      "url": "http://localhost:3000/settlement/unsettled",
+      "ok": true
+    },
+    {
+      "page": "/settlement-completed",
+      "status": "access",
+      "url": "http://localhost:3000/settlement-completed",
+      "ok": true
+    },
+    {
+      "page": "/settlement-pending",
+      "status": "access",
+      "url": "http://localhost:3000/settlement-pending",
+      "ok": true
+    },
+    {
+      "page": "/settlement-request",
+      "status": "access",
+      "url": "http://localhost:3000/settlement-request",
+      "ok": true
+    },
+    {
+      "page": "/ranking-status",
+      "status": "access",
+      "url": "http://localhost:3000/ranking-status",
+      "ok": true
+    },
+    {
+      "page": "/traffic-status",
+      "status": "access",
+      "url": "http://localhost:3000/traffic-status",
+      "ok": true
+    },
+    {
+      "page": "/distributor-add",
+      "status": "access",
+      "url": "http://localhost:3000/distributor-add",
+      "ok": true
+    },
+    {
+      "page": "/distributor-add/add",
+      "status": "access",
+      "url": "http://localhost:3000/distributor-add/add",
+      "ok": true
+    },
+    {
+      "page": "/admin/slots",
+      "status": "access",
+      "url": "http://localhost:3000/admin/slots",
+      "ok": true
+    }
+  ]
+}

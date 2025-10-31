@@ -92,7 +92,8 @@ interface CustomerSlot {
 interface RankHistory {
   sequence: number;
   changeDate: string;
-  rank: string;
+  rank: number | null;
+  previousChange: number; // 이전 대비 값
   rankChange: number;
   startRankDiff: number;
   keyword: string;
@@ -150,37 +151,10 @@ function SlotAddPageContent() {
   const handleRankClick = async (slot: CustomerSlot) => {
     if (slot.customerId && slot.slotSequence) {
       setSelectedSlot(slot);
+      setShowRankChart(true); // 모달 먼저 열기
 
-      // 임시 데이터 설정 (테스트용)
-      const tempRankHistory = [
-        {
-          sequence: 1,
-          changeDate: '2025-10-14',
-          rank: 36,
-          rankChange: 233,
-          startRankDiff: 233,
-        },
-        {
-          sequence: 2,
-          changeDate: '2025-10-13',
-          rank: 269,
-          rankChange: 0,
-          startRankDiff: 0,
-        },
-        {
-          sequence: 3,
-          changeDate: '2025-10-12',
-          rank: 269,
-          rankChange: 0,
-          startRankDiff: 0,
-        },
-      ];
-
-      setRankHistory(tempRankHistory as any);
-      setShowRankChart(true); // 모달창 열기
-
-      // 실제 API 호출은 주석 처리 (테스트용)
-      // await fetchRankHistoryFromAPI(slot.customerId, slot.slotSequence);
+      // 실제 API 호출
+      await fetchRankHistoryFromAPI(slot.customerId, slot.slotSequence);
     }
   };
 
@@ -2887,40 +2861,52 @@ function SlotAddPageContent() {
                             현재 순위
                           </th>
                           <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 rounded-r-lg">
-                            전일 대비
+                            이전 대비
                           </th>
                         </tr>
                       </thead>
                       <tbody className="space-y-2">
                         {rankHistory.map((item, index) => {
-                          // 전일 대비 등락폭 계산
-                          const previousItem = rankHistory[index + 1];
-                          const dailyChange = previousItem
-                            ? Number(previousItem.rank) - Number(item.rank)
-                            : 0;
+                          // 이전 대비 계산 (API에서 계산된 값 사용)
+                          const previousChange = item.previousChange || 0;
+
+                          // 첫 등록인지 확인 (마지막 항목이면서 이전 항목이 없거나 이전 대비가 0)
+                          const isFirstEntry =
+                            index === rankHistory.length - 1 &&
+                            previousChange === 0;
 
                           // 등락폭 표시 로직
-                          const getChangeDisplay = (change: number) => {
-                            if (change === 0)
+                          const getChangeDisplay = (
+                            change: number,
+                            isFirst: boolean
+                          ) => {
+                            if (isFirst || change === 0) {
                               return {
                                 text: '변동없음',
                                 color: 'text-gray-500',
                                 icon: '➖',
                               };
-                            if (change > 0)
+                            }
+                            if (change < 0) {
+                              // 음수 = 순위가 올라감 (숫자가 작아짐) = 상승
                               return {
-                                text: `▲${change}위 상승`,
+                                text: `▲${Math.abs(change)}위 상승`,
                                 color: 'text-red-500',
                                 icon: '📈',
                               };
+                            }
+                            // 양수 = 순위가 내려감 (숫자가 커짐) = 하락
                             return {
-                              text: `▼${Math.abs(change)}위 하락`,
+                              text: `▼${change}위 하락`,
                               color: 'text-blue-500',
                               icon: '📉',
                             };
                           };
 
-                          const changeDisplay = getChangeDisplay(dailyChange);
+                          const changeDisplay = getChangeDisplay(
+                            previousChange,
+                            isFirstEntry
+                          );
 
                           return (
                             <tr
@@ -2956,10 +2942,10 @@ function SlotAddPageContent() {
                 <div className="text-center py-16">
                   <div className="text-6xl mb-4">📊</div>
                   <h4 className="text-xl font-semibold text-gray-700 mb-2">
-                    순위 변동 데이터가 없습니다
+                    현재 순위를 찾을수 없습니다
                   </h4>
                   <p className="text-gray-500">
-                    아직 순위 체크가 진행되지 않았습니다.
+                    1000등내 있는 키워드 인지 확인해주세요.
                   </p>
                 </div>
               )}

@@ -1,0 +1,88 @@
+{
+  "timestamp": "2025-10-29T11:43:39.351Z",
+  "totalTables": 13,
+  "successfulBackups": 10,
+  "failedBackups": 1,
+  "emptyTables": 2,
+  "totalRecords": 1804,
+  "tables": [
+    {
+      "table": "slots",
+      "count": 100,
+      "status": "success",
+      "error": null
+    },
+    {
+      "table": "slot_status",
+      "count": 231,
+      "status": "success",
+      "error": null
+    },
+    {
+      "table": "slot_copangrank",
+      "count": 0,
+      "status": "empty",
+      "error": null
+    },
+    {
+      "table": "slot_naverrank",
+      "count": 0,
+      "status": "empty",
+      "error": null
+    },
+    {
+      "table": "slot_placerank",
+      "count": 1,
+      "status": "success",
+      "error": null
+    },
+    {
+      "table": "settlements",
+      "count": 183,
+      "status": "success",
+      "error": null
+    },
+    {
+      "table": "settlement_history",
+      "count": 9,
+      "status": "success",
+      "error": null
+    },
+    {
+      "table": "user_profiles",
+      "count": 10,
+      "status": "success",
+      "error": null
+    },
+    {
+      "table": "keywords",
+      "count": 159,
+      "status": "success",
+      "error": null
+    },
+    {
+      "table": "traffic",
+      "count": 1090,
+      "status": "success",
+      "error": null
+    },
+    {
+      "table": "notices",
+      "count": 15,
+      "status": "success",
+      "error": null
+    },
+    {
+      "table": "distributors",
+      "count": 6,
+      "status": "success",
+      "error": null
+    },
+    {
+      "table": "users",
+      "count": 0,
+      "status": "failed",
+      "error": "Could not find the table 'public.users' in the schema cache"
+    }
+  ]
+}
