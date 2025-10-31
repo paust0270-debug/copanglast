@@ -492,26 +492,36 @@ function SlotAddPageContent() {
     return () => clearInterval(timer);
   }, []);
 
+  // 숫자만 추출하는 함수
+  const extractRankNumber = (
+    rankStr: string | number | null | undefined
+  ): number | null => {
+    if (rankStr === null || rankStr === undefined) return null;
+
+    // 이미 숫자인 경우
+    if (typeof rankStr === 'number') return rankStr;
+
+    // 문자열인 경우 숫자 추출
+    if (rankStr === '-' || rankStr === '') return null;
+    const match = rankStr.toString().match(/^(\d+)/);
+    return match ? parseInt(match[1]) : null;
+  };
+
+  // 순위 표시 포맷 함수 (숫자만 표시)
+  const formatRankDisplay = (
+    rankStr: string | number | null | undefined
+  ): string => {
+    const num = extractRankNumber(rankStr);
+    return num !== null ? num.toString() : '-';
+  };
+
   // 순위 변동폭 계산 함수
-  const calculateRankChange = (currentRank: string, startRank: string) => {
-    // 빈 문자열이거나 "-"인 경우
-    if (
-      !currentRank ||
-      currentRank === '-' ||
-      !startRank ||
-      startRank === '-'
-    ) {
-      return { text: '[-]', color: 'text-gray-500' };
-    }
-
-    // 숫자 추출 (예: "5위" -> 5, "10 [0]" -> 10)
-    const extractNumber = (rankStr: string) => {
-      const match = rankStr.match(/(\d+)/);
-      return match ? parseInt(match[1]) : null;
-    };
-
-    const current = extractNumber(currentRank);
-    const start = extractNumber(startRank);
+  const calculateRankChange = (
+    currentRank: string | number | null | undefined,
+    startRank: string | number | null | undefined
+  ) => {
+    const current = extractRankNumber(currentRank);
+    const start = extractRankNumber(startRank);
 
     if (current === null || start === null) {
       return { text: '[-]', color: 'text-gray-500' };
@@ -2558,7 +2568,7 @@ function SlotAddPageContent() {
                             className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
                             title="클릭하여 순위 변동 히스토리 보기"
                           >
-                            {customer.currentRank}{' '}
+                            {formatRankDisplay(customer.currentRank)}{' '}
                             <span
                               className={
                                 calculateRankChange(
@@ -2577,7 +2587,7 @@ function SlotAddPageContent() {
                           </button>
                         </td>
                         <td className="border border-gray-300 p-1 text-center text-xs">
-                          {customer.startRank}
+                          {formatRankDisplay(customer.startRank)}
                         </td>
                         <td className="border border-gray-300 p-1 text-center text-xs">
                           {editingCustomer?.id === customer.id ? (

@@ -869,8 +869,18 @@ export async function POST(request: NextRequest) {
         work_group: body.work_group || '공통',
         keyword: body.keyword,
         link_url: body.link_url,
-        current_rank: body.current_rank || '',
-        start_rank: body.start_rank || '',
+        current_rank:
+          body.current_rank === '' || body.current_rank === undefined
+            ? null
+            : typeof body.current_rank === 'number'
+              ? body.current_rank
+              : parseInt(body.current_rank) || null,
+        start_rank:
+          body.start_rank === '' || body.start_rank === undefined
+            ? null
+            : typeof body.start_rank === 'number'
+              ? body.start_rank
+              : parseInt(body.start_rank) || null,
         traffic: body.traffic || '0 (0/0)',
         equipment_group: body.equipment_group || '지정안함',
         status: body.status || '작동중',

@@ -400,8 +400,8 @@ export async function POST(request: NextRequest) {
           keyword: '', // NOT NULL 제약조건을 위해 빈 문자열로 설정
           link_url: '', // NOT NULL 제약조건을 위해 빈 문자열로 설정
           memo: '', // 기본값
-          current_rank: '', // 기본값
-          start_rank: '', // 기본값
+          current_rank: null, // INTEGER 타입이므로 null로 설정
+          start_rank: null, // INTEGER 타입이므로 null로 설정
           traffic: '', // 기본값
           created_at: formatSlotStatusDate(now).replace('T', ' '), // slots 테이블과 동일한 등록일 (공백으로 변경)
           updated_at: formatSlotStatusDate(expiryDate).replace('T', ' '), // slots 테이블과 동일한 만료일 (공백으로 변경)

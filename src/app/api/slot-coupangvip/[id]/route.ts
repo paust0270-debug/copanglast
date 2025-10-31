@@ -42,8 +42,8 @@ export async function DELETE(
       work_group: 'VIP',
       keyword: '', // 빈 문자열로 리셋
       link_url: '', // 빈 문자열로 리셋
-      current_rank: '',
-      start_rank: '',
+      current_rank: null,
+      start_rank: null,
       traffic: '',
       equipment_group: '지정안함',
       status: '작동중',

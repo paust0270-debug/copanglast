@@ -9,7 +9,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    
+
     if (!id) {
       return NextResponse.json(
         { success: false, error: '슬롯 ID가 필요합니다.' },
@@ -42,14 +42,14 @@ export async function DELETE(
       work_group: '공통',
       keyword: '', // 빈 문자열로 리셋
       link_url: '', // 빈 문자열로 리셋
-      current_rank: '',
-      start_rank: '',
+      current_rank: null,
+      start_rank: null,
       traffic: '',
       equipment_group: '지정안함',
       status: '작동중',
       memo: '',
       slot_type: '쿠팡',
-      updated_at: getTimestampWithoutMs() // 초기화 시 업데이트 시간 갱신
+      updated_at: getTimestampWithoutMs(), // 초기화 시 업데이트 시간 갱신
       // usage_days, created_at, expiry_date는 보존 (변경하지 않음)
     };
 
@@ -65,7 +65,10 @@ export async function DELETE(
     if (resetError) {
       console.error('슬롯 초기화 오류:', resetError);
       return NextResponse.json(
-        { success: false, error: `슬롯 초기화 중 오류가 발생했습니다: ${resetError.message}` },
+        {
+          success: false,
+          error: `슬롯 초기화 중 오류가 발생했습니다: ${resetError.message}`,
+        },
         { status: 500 }
       );
     }
@@ -75,7 +78,7 @@ export async function DELETE(
     // keywords 테이블에서 해당 키워드 정리
     try {
       console.log('🔄 keywords 테이블에서 키워드 정리 중...');
-      
+
       if (slotInfo.keyword) {
         const { data: keywordsToDelete, error: findError } = await supabase
           .from('keywords')
@@ -95,7 +98,9 @@ export async function DELETE(
           if (deleteError) {
             console.error('keywords 테이블 삭제 오류:', deleteError);
           } else {
-            console.log(`✅ keywords 테이블에서 키워드 정리 완료: ${slotInfo.keyword}`);
+            console.log(
+              `✅ keywords 테이블에서 키워드 정리 완료: ${slotInfo.keyword}`
+            );
           }
         }
       }
@@ -103,7 +108,7 @@ export async function DELETE(
       console.error('keywords 테이블 정리 예외:', keywordError);
       console.log('⚠️ keywords 정리 실패했지만 슬롯 초기화는 성공');
     }
-    
+
     return NextResponse.json({
       success: true,
       data: {
@@ -112,11 +117,10 @@ export async function DELETE(
         keyword: slotInfo.keyword,
         usage_days: slotInfo.usage_days,
         created_at: slotInfo.created_at,
-        updated_at: slotInfo.updated_at
+        updated_at: slotInfo.updated_at,
       },
-      message: '슬롯이 성공적으로 초기화되었습니다. (날짜 정보 보존)'
+      message: '슬롯이 성공적으로 초기화되었습니다. (날짜 정보 보존)',
     });
-
   } catch (error) {
     console.error('슬롯 초기화 API 예외 발생:', error);
     return NextResponse.json(
@@ -133,7 +137,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    
+
     if (!id) {
       return NextResponse.json(
         { success: false, error: '슬롯 ID가 필요합니다.' },
@@ -160,9 +164,8 @@ export async function GET(
     return NextResponse.json({
       success: true,
       data: data,
-      message: '슬롯 조회 성공'
+      message: '슬롯 조회 성공',
     });
-
   } catch (error) {
     console.error('슬롯 조회 API 예외 발생:', error);
     return NextResponse.json(
@@ -179,7 +182,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    
+
     if (!id) {
       return NextResponse.json(
         { success: false, error: '슬롯 ID가 필요합니다.' },
@@ -206,8 +209,11 @@ export async function PUT(
     }
 
     // 잔여기간/등록일/만료일은 기존 값으로 보존
-    const { usage_days, created_at, updated_at, expiry_date, ...updateData } = body;
-    console.log(`🔒 보존되는 필드: usage_days=${existingData.usage_days}, created_at=${existingData.created_at}, updated_at=${existingData.updated_at}`);
+    const { usage_days, created_at, updated_at, expiry_date, ...updateData } =
+      body;
+    console.log(
+      `🔒 보존되는 필드: usage_days=${existingData.usage_days}, created_at=${existingData.created_at}, updated_at=${existingData.updated_at}`
+    );
     console.log(`📝 업데이트되는 필드:`, updateData);
 
     // 기존의 잔여기간/등록일/만료일을 명시적으로 포함하여 업데이트
@@ -218,7 +224,7 @@ export async function PUT(
         usage_days: existingData.usage_days,
         created_at: existingData.created_at,
         updated_at: getTimestampWithoutMs(),
-        expiry_date: existingData.expiry_date
+        expiry_date: existingData.expiry_date,
       })
       .eq('id', id)
       .select()
@@ -227,7 +233,10 @@ export async function PUT(
     if (error) {
       console.error('슬롯 수정 오류:', error);
       return NextResponse.json(
-        { success: false, error: `슬롯 수정 중 오류가 발생했습니다: ${error.message}` },
+        {
+          success: false,
+          error: `슬롯 수정 중 오류가 발생했습니다: ${error.message}`,
+        },
         { status: 500 }
       );
     }
@@ -238,7 +247,7 @@ export async function PUT(
     if (body.keyword || body.link_url) {
       try {
         console.log('🔄 keywords 테이블 동기화 중...');
-        
+
         const { data: existingKeywords, error: findError } = await supabase
           .from('keywords')
           .select('*')
@@ -253,7 +262,7 @@ export async function PUT(
             .update({
               keyword: data.keyword,
               link_url: data.link_url,
-              slot_type: data.slot_type || 'coupang'
+              slot_type: data.slot_type || 'coupang',
             })
             .eq('id', existingKeywords[0].id);
 
@@ -271,7 +280,11 @@ export async function PUT(
               link_url: data.link_url,
               slot_count: 1,
               current_rank: null,
-              last_check_date: new Date(new Date().getTime() + 9 * 60 * 60 * 1000).toISOString().split('.')[0]
+              last_check_date: new Date(
+                new Date().getTime() + 9 * 60 * 60 * 1000
+              )
+                .toISOString()
+                .split('.')[0],
             });
 
           if (insertError) {
@@ -285,13 +298,12 @@ export async function PUT(
         console.log('⚠️ keywords 동기화 실패했지만 슬롯 수정은 성공');
       }
     }
-    
+
     return NextResponse.json({
       success: true,
       data: data,
-      message: '슬롯이 성공적으로 수정되었습니다.'
+      message: '슬롯이 성공적으로 수정되었습니다.',
     });
-
   } catch (error) {
     console.error('슬롯 수정 API 예외 발생:', error);
     return NextResponse.json(
