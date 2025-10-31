@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Read package version
         id: pkg
@@ -21,12 +23,47 @@ jobs:
           VERSION_TAG="${GITHUB_REF_NAME}"
           echo "tag=${VERSION_TAG}" >> $GITHUB_OUTPUT
 
+      - name: Create backup archive
+        run: |
+          # 타임스탬프 생성
+          TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+
+          # .git 폴더 제외하고 압축
+          zip -r "backup-${TIMESTAMP}.zip" . \
+            -x "*.git*" \
+            -x "node_modules/*" \
+            -x ".next/*" \
+            -x "*.log" \
+            -x ".env*" \
+            -x "backup-*.zip"
+
+          echo "ARCHIVE_FILE=backup-${TIMESTAMP}.zip" >> $GITHUB_ENV
+          echo "✅ 백업 압축 파일 생성 완료: backup-${TIMESTAMP}.zip"
+
       - name: Generate release notes
         id: notes
+        run: |
+          if [ -f .github/RELEASE_NOTES.md ]; then
+            cat .github/RELEASE_NOTES.md
+          else
+            echo "## 백업 릴리스"
+            echo ""
+            echo "전체 프로젝트 백업 압축 파일이 포함된 릴리스입니다."
+            echo ""
+            echo "### 포함 내용"
+            echo "- 전체 소스 코드"
+            echo "- 환경 설정 파일"
+            echo "- 문서 및 스키마 파일"
+          fi > release_notes.txt
+
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.pkg.outputs.tag }}
-          generate_release_notes: true
-          body_path: .github/RELEASE_NOTES.md
+          name: '백업 릴리스 ${{ steps.pkg.outputs.tag }}'
+          body_path: release_notes.txt
+          files: ${{ env.ARCHIVE_FILE }}
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
