@@ -9,28 +9,8 @@ const supabase = createClient(
 // 환경설정 조회
 export async function GET(request: NextRequest) {
   try {
-    // 1. slot_status 테이블에서 고유한 slot_type 목록 가져오기
-    const { data: slotTypes, error: slotTypesError } = await supabase
-      .from('slot_status')
-      .select('slot_type')
-      .not('slot_type', 'is', null)
-      .not('slot_type', 'eq', '');
-
-    if (slotTypesError) {
-      console.error('slot_type 조회 오류:', slotTypesError);
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'slot_type 조회에 실패했습니다.',
-        },
-        { status: 500 }
-      );
-    }
-
-    // 고유한 slot_type 추출
-    const uniqueSlotTypes = [
-      ...new Set((slotTypes || []).map((s: any) => s.slot_type)),
-    ].filter(Boolean) as string[];
+    // 항상 표시할 슬롯 타입 목록 (각각 다른 테이블에 있음)
+    const requiredSlotTypes = ['쿠팡', '쿠팡APP', '쿠팡VIP', '쿠팡순위체크'];
 
     // 2. 기존 설정 조회
     const { data: settings, error: settingsError } = await supabase
@@ -40,7 +20,23 @@ export async function GET(request: NextRequest) {
 
     if (settingsError) {
       console.error('환경설정 조회 오류:', settingsError);
-      // 설정 조회 실패해도 계속 진행
+      // 테이블이 없을 수 있으므로 빈 배열로 처리
+      if (
+        settingsError.code === 'PGRST116' ||
+        settingsError.message?.includes('does not exist')
+      ) {
+        // 테이블이 없는 경우 빈 설정 반환
+        const result = requiredSlotTypes.map(slotType => ({
+          slot_type: slotType,
+          interval_hours: 0,
+        }));
+        return NextResponse.json({
+          success: true,
+          data: result,
+        });
+      }
+      // 다른 에러는 500 반환
+      throw settingsError;
     }
 
     // 3. slot_type별로 설정값 매핑 (기존 설정이 있으면 사용, 없으면 0)
@@ -48,8 +44,8 @@ export async function GET(request: NextRequest) {
       (settings || []).map((s: any) => [s.slot_type, s.interval_hours || 0])
     );
 
-    // 4. 모든 고유한 slot_type에 대한 설정값 반환
-    const result = uniqueSlotTypes.map(slotType => ({
+    // 4. 필수 슬롯 타입에 대한 설정값 반환 (항상 표시)
+    const result = requiredSlotTypes.map(slotType => ({
       slot_type: slotType,
       interval_hours: settingsMap.get(slotType) || 0,
     }));
@@ -86,33 +82,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 기존 설정 삭제 후 새로 삽입
-    const { error: deleteError } = await supabase
-      .from('slot_type_settings')
-      .delete()
-      .neq('id', 0); // 모든 레코드 삭제
-
-    if (deleteError) {
-      console.error('기존 설정 삭제 오류:', deleteError);
-    }
-
-    // 새 설정 삽입
-    const insertData = settings.map((s: any) => ({
+    // upsert 방식으로 변경 (더 안전하고 효율적)
+    const upsertData = settings.map((s: any) => ({
       slot_type: s.slot_type,
       interval_hours: s.interval_hours || 0,
       updated_at: new Date().toISOString(),
     }));
 
-    const { error: insertError } = await supabase
+    const { error: upsertError } = await supabase
       .from('slot_type_settings')
-      .insert(insertData);
+      .upsert(upsertData, {
+        onConflict: 'slot_type',
+        ignoreDuplicates: false,
+      });
 
-    if (insertError) {
-      console.error('환경설정 저장 오류:', insertError);
+    if (upsertError) {
+      console.error('환경설정 저장 오류:', upsertError);
+
+      // 테이블이 없는 경우 에러 메시지 반환
+      if (
+        upsertError.code === 'PGRST116' ||
+        upsertError.message?.includes('does not exist')
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              'slot_type_settings 테이블이 존재하지 않습니다. create-scheduler-tables.sql 파일을 실행해주세요.',
+          },
+          { status: 500 }
+        );
+      }
+
       return NextResponse.json(
         {
           success: false,
-          error: '환경설정 저장에 실패했습니다.',
+          error: `환경설정 저장에 실패했습니다: ${upsertError.message}`,
         },
         { status: 500 }
       );

@@ -307,6 +307,9 @@ function SlotAddPageContent() {
   );
   const [selectAll, setSelectAll] = useState(false);
 
+  // 순위갱신 쿨다운 상태 관리
+  const [rankUpdateCooldown, setRankUpdateCooldown] = useState<number>(0); // 남은 초
+
   // 만료된 슬롯들 자동 처리 useEffect
   useEffect(() => {
     const checkExpiredSlots = () => {
@@ -422,6 +425,36 @@ function SlotAddPageContent() {
     }
   };
 
+  // 순위갱신 쿨다운 체크 useEffect
+  useEffect(() => {
+    const checkCooldown = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const slotType = urlParams.get('slotType') || '쿠팡';
+      const username = urlParams.get('username');
+
+      if (!username) return;
+
+      const lastUpdate = localStorage.getItem(
+        `rankUpdate_${slotType}_${username}`
+      );
+      if (lastUpdate) {
+        const elapsed = Date.now() - parseInt(lastUpdate);
+        const remaining = Math.max(0, 3600000 - elapsed); // 1시간 = 3600000ms
+        setRankUpdateCooldown(Math.ceil(remaining / 1000)); // 초 단위
+
+        if (remaining === 0) {
+          localStorage.removeItem(`rankUpdate_${slotType}_${username}`);
+        }
+      } else {
+        setRankUpdateCooldown(0);
+      }
+    };
+
+    checkCooldown();
+    const interval = setInterval(checkCooldown, 1000); // 1초마다 체크
+    return () => clearInterval(interval);
+  }, []);
+
   // URL 파라미터에서 고객 정보 확인
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -497,26 +530,36 @@ function SlotAddPageContent() {
     return () => clearInterval(timer);
   }, []);
 
+  // 숫자만 추출하는 함수
+  const extractRankNumber = (
+    rankStr: string | number | null | undefined
+  ): number | null => {
+    if (rankStr === null || rankStr === undefined) return null;
+
+    // 이미 숫자인 경우
+    if (typeof rankStr === 'number') return rankStr;
+
+    // 문자열인 경우 숫자 추출
+    if (rankStr === '-' || rankStr === '') return null;
+    const match = rankStr.toString().match(/^(\d+)/);
+    return match ? parseInt(match[1]) : null;
+  };
+
+  // 순위 표시 포맷 함수 (숫자만 표시)
+  const formatRankDisplay = (
+    rankStr: string | number | null | undefined
+  ): string => {
+    const num = extractRankNumber(rankStr);
+    return num !== null ? num.toString() : '-';
+  };
+
   // 순위 변동폭 계산 함수
-  const calculateRankChange = (currentRank: string, startRank: string) => {
-    // 빈 문자열이거나 "-"인 경우
-    if (
-      !currentRank ||
-      currentRank === '-' ||
-      !startRank ||
-      startRank === '-'
-    ) {
-      return { text: '[-]', color: 'text-gray-500' };
-    }
-
-    // 숫자 추출 (예: "5위" -> 5, "10 [0]" -> 10)
-    const extractNumber = (rankStr: string) => {
-      const match = rankStr.match(/(\d+)/);
-      return match ? parseInt(match[1]) : null;
-    };
-
-    const current = extractNumber(currentRank);
-    const start = extractNumber(startRank);
+  const calculateRankChange = (
+    currentRank: string | number | null | undefined,
+    startRank: string | number | null | undefined
+  ) => {
+    const current = extractRankNumber(currentRank);
+    const start = extractRankNumber(startRank);
 
     if (current === null || start === null) {
       return { text: '[-]', color: 'text-gray-500' };
@@ -1343,6 +1386,78 @@ function SlotAddPageContent() {
   const handleCancelBulkEdit = () => {
     setBulkEditMode(false);
     setBulkEditForm({});
+  };
+
+  // 순위갱신 핸들러 함수
+  const handleRankUpdate = async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const slotType = urlParams.get('slotType') || '쿠팡';
+    const username = urlParams.get('username');
+    const customerId = urlParams.get('customerId');
+
+    if (!username || !customerId) {
+      alert('고객 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    if (rankUpdateCooldown > 0) {
+      const minutes = Math.floor(rankUpdateCooldown / 60);
+      const seconds = rankUpdateCooldown % 60;
+      alert(
+        `순위갱신은 1시간마다 사용할 수 있습니다.\n남은 시간: ${minutes}분 ${seconds}초`
+      );
+      return;
+    }
+
+    if (customers.length === 0) {
+      alert('등록된 슬롯이 없습니다.');
+      return;
+    }
+
+    if (!confirm(`${customers.length}개의 슬롯을 순위갱신 하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      // API 호출
+      const response = await fetch('/api/rank-update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customerId,
+          slotType,
+          username,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert(`✅ ${result.count}개의 슬롯이 순위갱신 될 예정입니다.`);
+
+        // 쿨다운 시작
+        const now = Date.now();
+        localStorage.setItem(
+          `rankUpdate_${slotType}_${username}`,
+          now.toString()
+        );
+        setRankUpdateCooldown(3600); // 1시간
+      } else {
+        alert(`❌ 순위갱신 실패: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('순위갱신 오류:', error);
+      alert('순위갱신 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 쿨다운 남은 시간 포맷팅
+  const getRemainingCooldown = () => {
+    const minutes = Math.floor(rankUpdateCooldown / 60);
+    const seconds = rankUpdateCooldown % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
   // 전체 수정 저장
@@ -2211,10 +2326,17 @@ function SlotAddPageContent() {
                   </SelectContent>
                 </Select>
 
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="rankUpdate" />
-                  <Label htmlFor="rankUpdate">순위갱신</Label>
-                </div>
+                <Button
+                  onClick={handleRankUpdate}
+                  disabled={rankUpdateCooldown > 0}
+                  variant="outline"
+                  size="sm"
+                  className="min-w-[120px]"
+                >
+                  {rankUpdateCooldown > 0
+                    ? `순위갱신 (${getRemainingCooldown()})`
+                    : '순위갱신'}
+                </Button>
               </div>
 
               <div className="flex items-center space-x-4">
@@ -2590,7 +2712,7 @@ function SlotAddPageContent() {
                             className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
                             title="클릭하여 순위 변동 히스토리 보기"
                           >
-                            {customer.currentRank}{' '}
+                            {formatRankDisplay(customer.currentRank)}{' '}
                             <span
                               className={
                                 calculateRankChange(
@@ -2609,7 +2731,7 @@ function SlotAddPageContent() {
                           </button>
                         </td>
                         <td className="border border-gray-300 p-1 text-center text-xs">
-                          {customer.startRank}
+                          {formatRankDisplay(customer.startRank)}
                         </td>
                         <td className="border border-gray-300 p-1 text-center text-xs">
                           {editingCustomer?.id === customer.id ? (

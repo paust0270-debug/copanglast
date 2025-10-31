@@ -70,29 +70,51 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // slot_status에서 해당 타입의 활성 슬롯 조회
-      const { data: slotStatus, error: statusError } = await supabase
-        .from('slot_status')
-        .select('id, slot_type, keyword, link_url, customer_id, slot_sequence')
-        .eq('slot_type', setting.slot_type)
+      // 슬롯 타입별로 다른 테이블 조회
+      let tableName: string;
+
+      if (setting.slot_type === '쿠팡') {
+        tableName = 'slot_status';
+      } else if (setting.slot_type === '쿠팡APP') {
+        tableName = 'slot_coupangapp';
+      } else if (setting.slot_type === '쿠팡VIP') {
+        tableName = 'slot_coupangvip';
+      } else if (setting.slot_type === '쿠팡순위체크') {
+        tableName = 'slot_copangrank';
+      } else {
+        console.log(`⚠️ 알 수 없는 슬롯 타입: ${setting.slot_type}`);
+        continue;
+      }
+
+      // 해당 테이블에서 활성 슬롯 조회
+      let query = supabase
+        .from(tableName)
+        .select('id, keyword, link_url, customer_id, slot_sequence')
         .not('keyword', 'eq', '')
         .not('keyword', 'is', null);
+
+      // slot_status 테이블인 경우에만 slot_type 필터 적용
+      if (setting.slot_type === '쿠팡') {
+        query = query.eq('slot_type', '쿠팡');
+      }
+
+      const { data: slotStatus, error: statusError } = await query;
 
       if (statusError || !slotStatus || slotStatus.length === 0) {
         console.log(`ℹ️ ${setting.slot_type}: 활성 슬롯이 없습니다.`);
         continue;
       }
 
-      // keywords 테이블에 추가
-      const keywordRecords = slotStatus.map(slot => ({
+      // keywords 테이블에 추가 (슬롯 등록과 동일한 구조)
+      const keywordRecords = slotStatus.map((slot: any) => ({
         keyword: slot.keyword,
         link_url: slot.link_url,
-        slot_type: slot.slot_type,
+        slot_type: setting.slot_type, // 설정에서 가져온 슬롯 타입 사용
         slot_count: 1,
-        current_rank: null,
+        current_rank: null, // 스케줄러는 null, 순위 체크에서 업데이트
         slot_sequence: slot.slot_sequence,
         customer_id: slot.customer_id,
-        slot_id: slot.id || null, // slot_status의 id를 slot_id로 사용
+        slot_id: slot.id,
       }));
 
       const { error: insertError } = await supabase
