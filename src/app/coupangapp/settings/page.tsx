@@ -51,23 +51,12 @@ function SettingsPageContent() {
       if (result.success && result.data && result.data.length > 0) {
         setSettings(result.data);
       } else {
-        // 기본 설정값
-        const defaultSettings: SlotTypeSettings[] = [
-          { slot_type: '쿠팡', interval_hours: 0 },
-          { slot_type: '쿠팡app', interval_hours: 0 },
-          { slot_type: '쿠팡vip', interval_hours: 0 },
-        ];
-        setSettings(defaultSettings);
+        // slot_status 테이블에 데이터가 없을 경우 빈 배열
+        setSettings([]);
       }
     } catch (error) {
       console.error('환경설정 로드 오류:', error);
-      // 기본 설정값
-      const defaultSettings: SlotTypeSettings[] = [
-        { slot_type: '쿠팡', interval_hours: 0 },
-        { slot_type: '쿠팡app', interval_hours: 0 },
-        { slot_type: '쿠팡vip', interval_hours: 0 },
-      ];
-      setSettings(defaultSettings);
+      setSettings([]);
     } finally {
       setLoading(false);
     }
@@ -131,34 +120,41 @@ function SettingsPageContent() {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {settings.map((setting, index) => (
-                <div
-                  key={setting.slot_type}
-                  className="flex items-center justify-between p-4 border rounded-lg"
-                >
-                  <Label className="text-lg font-medium w-32">
-                    {setting.slot_type}
-                  </Label>
-                  <div className="flex items-center space-x-2 flex-1">
-                    <Input
-                      type="number"
-                      min="0"
-                      value={setting.interval_hours}
-                      onChange={e =>
-                        handleChange(index, parseInt(e.target.value) || 0)
-                      }
-                      className="w-32"
-                      placeholder="시간"
-                    />
-                    <span className="text-gray-600">시간</span>
-                  </div>
+              {settings.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  slot_status 테이블에 등록된 슬롯 타입이 없습니다.
                 </div>
-              ))}
+              ) : (
+                settings.map((setting, index) => (
+                  <div
+                    key={setting.slot_type}
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <Label className="text-lg font-medium w-40">
+                      {setting.slot_type}
+                    </Label>
+                    <div className="flex items-center space-x-2 flex-1">
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={setting.interval_hours}
+                        onChange={e =>
+                          handleChange(index, parseInt(e.target.value) || 0)
+                        }
+                        className="w-32"
+                        placeholder="시간"
+                      />
+                      <span className="text-gray-600">시간</span>
+                    </div>
+                  </div>
+                ))
+              )}
 
               <div className="flex justify-end space-x-4 mt-8">
                 <Button
                   onClick={handleSave}
-                  disabled={saving}
+                  disabled={saving || settings.length === 0}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
                   {saving ? '저장 중...' : '저장'}

@@ -73,9 +73,7 @@ export async function POST(request: NextRequest) {
       // slot_status에서 해당 타입의 활성 슬롯 조회
       const { data: slotStatus, error: statusError } = await supabase
         .from('slot_status')
-        .select(
-          'slot_type, keyword, link_url, customer_id, slot_sequence, slot_id'
-        )
+        .select('id, slot_type, keyword, link_url, customer_id, slot_sequence')
         .eq('slot_type', setting.slot_type)
         .not('keyword', 'eq', '')
         .not('keyword', 'is', null);
@@ -94,7 +92,7 @@ export async function POST(request: NextRequest) {
         current_rank: null,
         slot_sequence: slot.slot_sequence,
         customer_id: slot.customer_id,
-        slot_id: slot.slot_id || null,
+        slot_id: slot.id || null, // slot_status의 id를 slot_id로 사용
       }));
 
       const { error: insertError } = await supabase

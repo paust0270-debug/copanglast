@@ -9,25 +9,54 @@ const supabase = createClient(
 // 환경설정 조회
 export async function GET(request: NextRequest) {
   try {
-    const { data, error } = await supabase
-      .from('slot_type_settings')
-      .select('*')
-      .order('slot_type', { ascending: true });
+    // 1. slot_status 테이블에서 고유한 slot_type 목록 가져오기
+    const { data: slotTypes, error: slotTypesError } = await supabase
+      .from('slot_status')
+      .select('slot_type')
+      .not('slot_type', 'is', null)
+      .not('slot_type', 'eq', '');
 
-    if (error) {
-      console.error('환경설정 조회 오류:', error);
+    if (slotTypesError) {
+      console.error('slot_type 조회 오류:', slotTypesError);
       return NextResponse.json(
         {
           success: false,
-          error: '환경설정 조회에 실패했습니다.',
+          error: 'slot_type 조회에 실패했습니다.',
         },
         { status: 500 }
       );
     }
 
+    // 고유한 slot_type 추출
+    const uniqueSlotTypes = [
+      ...new Set((slotTypes || []).map((s: any) => s.slot_type)),
+    ].filter(Boolean) as string[];
+
+    // 2. 기존 설정 조회
+    const { data: settings, error: settingsError } = await supabase
+      .from('slot_type_settings')
+      .select('*')
+      .order('slot_type', { ascending: true });
+
+    if (settingsError) {
+      console.error('환경설정 조회 오류:', settingsError);
+      // 설정 조회 실패해도 계속 진행
+    }
+
+    // 3. slot_type별로 설정값 매핑 (기존 설정이 있으면 사용, 없으면 0)
+    const settingsMap = new Map(
+      (settings || []).map((s: any) => [s.slot_type, s.interval_hours || 0])
+    );
+
+    // 4. 모든 고유한 slot_type에 대한 설정값 반환
+    const result = uniqueSlotTypes.map(slotType => ({
+      slot_type: slotType,
+      interval_hours: settingsMap.get(slotType) || 0,
+    }));
+
     return NextResponse.json({
       success: true,
-      data: data || [],
+      data: result,
     });
   } catch (error) {
     console.error('환경설정 조회 예외:', error);
