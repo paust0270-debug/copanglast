@@ -567,6 +567,42 @@ function SlotAddPageContent() {
     }
   };
 
+  // 잔여일수 계산 함수 (배경색용)
+  const getRemainingDays = (registrationDate: string): number => {
+    try {
+      const dateRange = registrationDate.split(' ~ ');
+      if (dateRange.length !== 2) return 30;
+
+      const expiryDateStr = dateRange[1];
+      const expiryDate = new Date(expiryDateStr);
+
+      if (isNaN(expiryDate.getTime())) return 30;
+
+      const now = currentTime;
+      const diffMs = expiryDate.getTime() - now.getTime();
+
+      if (diffMs <= 0) {
+        return 0;
+      }
+
+      return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    } catch {
+      return 30;
+    }
+  };
+
+  // 잔여일수에 따른 배경색 반환 함수
+  const getRowBackgroundColor = (registrationDate: string): string => {
+    const remainingDays = getRemainingDays(registrationDate);
+    if (remainingDays <= 2) {
+      return 'bg-red-100';
+    } else if (remainingDays <= 5) {
+      return 'bg-yellow-100';
+    } else {
+      return 'bg-white';
+    }
+  };
+
   // 등록일과 만료일 생성 함수 (시간/분/초 포함)
   const generateRegistrationDateRange = () => {
     const now = new Date();
@@ -1654,9 +1690,67 @@ function SlotAddPageContent() {
       <Navigation />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* 페이지 제목 */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">{pageTitle}</h1>
+        {/* 페이지 제목 - 모던 미니멀 스타일 */}
+        <div className="mb-8">
+          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="px-8 py-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div className="flex items-center space-x-5">
+                  <div className="relative">
+                    <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-100">
+                      <svg
+                        className="w-8 h-8 text-indigo-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                        />
+                      </svg>
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white"></div>
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold text-gray-900">
+                      {pageTitle.split(' - ')[0]}
+                    </h1>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col items-center justify-center min-w-[80px] py-3 px-4 bg-gray-50 rounded-xl border border-gray-200">
+                    <div className="text-gray-500 text-xs font-medium mb-1">
+                      총 슬롯
+                    </div>
+                    <div className="text-gray-900 text-2xl font-bold">
+                      {customerSlotStatus.totalSlots}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center justify-center min-w-[80px] py-3 px-4 bg-orange-50 rounded-xl border border-orange-200">
+                    <div className="text-orange-600 text-xs font-medium mb-1">
+                      사용 중
+                    </div>
+                    <div className="text-orange-600 text-2xl font-bold">
+                      {customerSlotStatus.usedSlots}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center justify-center min-w-[80px] py-3 px-4 bg-emerald-50 rounded-xl border border-emerald-200">
+                    <div className="text-emerald-600 text-xs font-medium mb-1">
+                      사용 가능
+                    </div>
+                    <div className="text-emerald-600 text-2xl font-bold">
+                      {customerSlotStatus.remainingSlots}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {/* 하단 악센트 라인 */}
+            <div className="h-1 bg-gradient-to-r from-indigo-500 via-blue-500 to-indigo-500"></div>
+          </div>
         </div>
 
         {/* 에러 메시지 표시 */}
@@ -1666,131 +1760,175 @@ function SlotAddPageContent() {
           </div>
         )}
 
-        {/* 상단 슬롯 정보 헤더 - 1줄로 정렬하고 슬롯등록과 동일한 사이즈 */}
-        <div className="bg-white border-2 border-dashed border-purple-300 rounded-2xl p-6 mb-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-8">
-              {/* 고객 정보 */}
-              {(() => {
-                const customerId = searchParams.get('customerId');
-                const username = searchParams.get('username');
-                const customerName = searchParams.get('customerName');
+        {/* 상단 슬롯 정보 헤더 - 타일 스타일 */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          {/* 고객 정보 타일 */}
+          {(() => {
+            const customerId = searchParams.get('customerId');
+            const username = searchParams.get('username');
+            const customerName = searchParams.get('customerName');
 
-                if (username) {
-                  // slots 테이블에서 실제 고객명 찾기
-                  const actualCustomerName =
-                    customerSlotStatus.customerName ||
-                    (customerName
-                      ? decodeURIComponent(customerName)
-                      : username);
+            if (username) {
+              const actualCustomerName =
+                customerSlotStatus.customerName ||
+                (customerName ? decodeURIComponent(customerName) : username);
 
-                  return (
-                    <div className="flex items-center space-x-3">
-                      <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full">
-                        <svg
-                          className="w-6 h-6 text-blue-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                          />
-                        </svg>
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-gray-800">
-                          고객 ID: {username}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          고객명: {actualCustomerName}
-                        </div>
-                      </div>
+              return (
+                <div className="bg-white rounded-lg border-l-4 border-blue-500 p-4 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="p-2 bg-blue-50 rounded-lg">
+                      <svg
+                        className="w-5 h-5 text-blue-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
+                      </svg>
                     </div>
-                  );
-                }
-                return null;
-              })()}
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      고객 정보
+                    </div>
+                    <div className="text-sm font-bold text-gray-900 truncate">
+                      {username}
+                    </div>
+                    <div className="text-xs text-gray-600 truncate">
+                      {actualCustomerName}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
 
-              <div className="flex items-center space-x-3">
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full">
-                  <svg
-                    className="w-6 h-6 text-purple-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-800">
-                    사용 가능한 슬롯
-                  </h2>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600">
-                    {hasWorkRegisteredSlots
-                      ? customerSlotStatus.remainingSlots
-                      : customerSlotStatus.totalSlots}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    사용 가능{' '}
-                    {hasWorkRegisteredSlots
-                      ? customerSlotStatus.remainingSlots
-                      : customerSlotStatus.totalSlots}
-                    개
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-red-600">
-                    {customerSlotStatus.usedSlots}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    사용 중 {customerSlotStatus.usedSlots}개
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600">
-                    {customerSlotStatus.totalSlots}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    총 {customerSlotStatus.totalSlots}개
-                  </div>
-                </div>
+          {/* 사용 가능한 슬롯 타일 */}
+          <div className="bg-white rounded-lg border-l-4 border-emerald-500 p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between mb-3">
+              <div className="p-2 bg-emerald-50 rounded-lg">
+                <svg
+                  className="w-5 h-5 text-emerald-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
               </div>
             </div>
+            <div className="space-y-1">
+              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                사용 가능
+              </div>
+              <div className="text-2xl font-bold text-emerald-600">
+                {hasWorkRegisteredSlots
+                  ? customerSlotStatus.remainingSlots
+                  : customerSlotStatus.totalSlots}
+              </div>
+              <div className="text-xs text-gray-600">
+                {hasWorkRegisteredSlots
+                  ? customerSlotStatus.remainingSlots
+                  : customerSlotStatus.totalSlots}
+                개 사용 가능
+              </div>
+            </div>
+          </div>
 
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-              <span className="text-sm text-gray-500">사용 가능</span>
-              <div className="w-3 h-3 bg-red-400 rounded-full ml-3"></div>
-              <span className="text-sm text-gray-500">사용 중</span>
+          {/* 사용 중 슬롯 타일 */}
+          <div className="bg-white rounded-lg border-l-4 border-red-500 p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between mb-3">
+              <div className="p-2 bg-red-50 rounded-lg">
+                <svg
+                  className="w-5 h-5 text-red-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                사용 중
+              </div>
+              <div className="text-2xl font-bold text-red-600">
+                {customerSlotStatus.usedSlots}
+              </div>
+              <div className="text-xs text-gray-600">
+                {customerSlotStatus.usedSlots}개 사용 중
+              </div>
+            </div>
+          </div>
+
+          {/* 전체 슬롯 타일 */}
+          <div className="bg-white rounded-lg border-l-4 border-indigo-500 p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between mb-3">
+              <div className="p-2 bg-indigo-50 rounded-lg">
+                <svg
+                  className="w-5 h-5 text-indigo-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
+                </svg>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                전체
+              </div>
+              <div className="text-2xl font-bold text-indigo-600">
+                {customerSlotStatus.totalSlots}
+              </div>
+              <div className="text-xs text-gray-600">
+                총 {customerSlotStatus.totalSlots}개 슬롯
+              </div>
             </div>
           </div>
         </div>
 
-        {/* 슬롯 등록 폼 - 1줄로 정렬, 링크주소 늘리고 사용슬롯 줄이기 */}
-        <Card className="mb-6">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">슬롯 등록</CardTitle>
+        {/* 슬롯 등록 폼 - 모던 스타일 */}
+        <Card className="mb-6 shadow-lg border-0 overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-indigo-100 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-1 h-8 bg-gradient-to-b from-indigo-500 to-blue-600 rounded-full"></div>
+              <CardTitle className="text-xl font-bold text-gray-900">
+                슬롯 등록
+              </CardTitle>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6 bg-white">
             <form onSubmit={handleSubmit}>
-              <div className="flex items-end space-x-4 mb-4">
-                <div className="flex-1">
-                  <Label htmlFor="workGroup" className="text-sm">
+              <div className="flex flex-wrap items-end gap-4 mb-6">
+                <div className="flex-1 min-w-[120px]">
+                  <Label
+                    htmlFor="workGroup"
+                    className="text-sm font-semibold text-gray-700 mb-2 block"
+                  >
                     작업그룹
                   </Label>
                   <Select
@@ -1799,7 +1937,7 @@ function SlotAddPageContent() {
                       handleInputChange('workGroup', value)
                     }
                   >
-                    <SelectTrigger className="h-9">
+                    <SelectTrigger className="h-10 bg-white border-gray-300 hover:border-indigo-400 focus:border-indigo-500 focus:ring-indigo-500 transition-colors shadow-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1812,40 +1950,49 @@ function SlotAddPageContent() {
                   </Select>
                 </div>
 
-                <div className="flex-1">
-                  <Label htmlFor="keyword" className="text-sm">
+                <div className="flex-1 min-w-[140px]">
+                  <Label
+                    htmlFor="keyword"
+                    className="text-sm font-semibold text-gray-700 mb-2 block"
+                  >
                     검색어
                   </Label>
                   <Input
                     id="keyword"
-                    placeholder="검색어"
+                    placeholder="검색어를 입력하세요"
                     value={form.keyword}
                     onChange={e => handleInputChange('keyword', e.target.value)}
-                    className="h-9"
+                    className="h-10 bg-white border-gray-300 hover:border-indigo-400 focus:border-indigo-500 focus:ring-indigo-500 transition-colors shadow-sm"
                   />
                 </div>
 
-                <div className="flex-[2]">
-                  <Label htmlFor="linkUrl" className="text-sm">
+                <div className="flex-[2] min-w-[200px]">
+                  <Label
+                    htmlFor="linkUrl"
+                    className="text-sm font-semibold text-gray-700 mb-2 block"
+                  >
                     링크주소
                   </Label>
                   <Input
                     id="linkUrl"
-                    placeholder="링크주소"
+                    placeholder="https://..."
                     value={form.linkUrl}
                     onChange={e => handleInputChange('linkUrl', e.target.value)}
-                    className="h-9"
+                    className="h-10 bg-white border-gray-300 hover:border-indigo-400 focus:border-indigo-500 focus:ring-indigo-500 transition-colors shadow-sm"
                   />
                 </div>
 
-                <div className="w-20">
-                  <Label htmlFor="slotCount" className="text-sm">
+                <div className="w-24 min-w-[100px]">
+                  <Label
+                    htmlFor="slotCount"
+                    className="text-sm font-semibold text-gray-700 mb-2 block"
+                  >
                     사용슬롯
                   </Label>
                   <Input
                     id="slotCount"
                     type="number"
-                    placeholder="슬롯수"
+                    placeholder="1"
                     value={form.slotCount}
                     onChange={e =>
                       handleInputChange(
@@ -1853,25 +2000,31 @@ function SlotAddPageContent() {
                         parseInt(e.target.value) || 1
                       )
                     }
-                    className="h-9"
+                    className="h-10 bg-white border-gray-300 hover:border-indigo-400 focus:border-indigo-500 focus:ring-indigo-500 transition-colors shadow-sm text-center"
                   />
                 </div>
 
-                <div className="flex-1">
-                  <Label htmlFor="memo" className="text-sm">
+                <div className="flex-1 min-w-[140px]">
+                  <Label
+                    htmlFor="memo"
+                    className="text-sm font-semibold text-gray-700 mb-2 block"
+                  >
                     메모
                   </Label>
                   <Input
                     id="memo"
-                    placeholder="메모"
+                    placeholder="메모를 입력하세요"
                     value={form.memo}
                     onChange={e => handleInputChange('memo', e.target.value)}
-                    className="h-9"
+                    className="h-10 bg-white border-gray-300 hover:border-indigo-400 focus:border-indigo-500 focus:ring-indigo-500 transition-colors shadow-sm"
                   />
                 </div>
 
-                <div className="flex-1">
-                  <Label htmlFor="equipmentGroup" className="text-sm">
+                <div className="flex-1 min-w-[140px]">
+                  <Label
+                    htmlFor="equipmentGroup"
+                    className="text-sm font-semibold text-gray-700 mb-2 block"
+                  >
                     장비그룹
                   </Label>
                   <Select
@@ -1880,7 +2033,7 @@ function SlotAddPageContent() {
                       handleInputChange('equipmentGroup', value)
                     }
                   >
-                    <SelectTrigger className="h-9">
+                    <SelectTrigger className="h-10 bg-white border-gray-300 hover:border-indigo-400 focus:border-indigo-500 focus:ring-indigo-500 transition-colors shadow-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1894,10 +2047,10 @@ function SlotAddPageContent() {
                 </div>
               </div>
 
-              <div className="flex justify-center space-x-3">
+              <div className="flex justify-center gap-3 pt-4 border-t border-gray-200">
                 <Button
                   type="submit"
-                  className="bg-purple-600 hover:bg-purple-700 px-6 h-9"
+                  className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white px-8 h-11 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-md"
                   disabled={
                     (hasWorkRegisteredSlots
                       ? customerSlotStatus.remainingSlots
@@ -1914,7 +2067,7 @@ function SlotAddPageContent() {
                   type="button"
                   variant="outline"
                   onClick={() => setShowBulkModal(true)}
-                  className="px-6 h-9"
+                  className="px-8 h-11 rounded-lg font-semibold border-2 border-gray-300 hover:border-indigo-400 hover:bg-indigo-50 text-gray-700 hover:text-indigo-700 transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={
                     (hasWorkRegisteredSlots
                       ? customerSlotStatus.remainingSlots
@@ -2055,8 +2208,33 @@ function SlotAddPageContent() {
 
         {/* 슬롯 등록 목록 */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">{listTitle}</CardTitle>
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-1 h-8 bg-gradient-to-b from-indigo-500 to-blue-600 rounded-full"></div>
+                <CardTitle className="text-xl font-bold text-gray-900">
+                  {listTitle}
+                </CardTitle>
+              </div>
+              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-indigo-50 rounded-lg border border-indigo-100">
+                <svg
+                  className="w-4 h-4 text-indigo-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                <span className="text-xs font-medium text-indigo-700">
+                  총 {customers.length}개
+                </span>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {/* 전체 수정 모드 폼 */}
@@ -2338,142 +2516,306 @@ function SlotAddPageContent() {
                     </tr>
                   </thead>
                   <tbody>
-                    {getSortedCustomers(customers).map((customer, index) => (
-                      <tr
-                        key={`customer-${customer.id || index}`}
-                        className={
-                          customer.status === 'inactive'
-                            ? 'bg-orange-50'
-                            : index === 0
-                              ? 'bg-pink-100'
-                              : ''
-                        }
-                      >
-                        <td className="border border-gray-300 p-1 text-center text-xs">
-                          <Checkbox
-                            checked={selectedCustomers.has(customer.id || 0)}
-                            onCheckedChange={checked =>
-                              handleSelectCustomer(
-                                customer.id || 0,
-                                checked as boolean
-                              )
-                            }
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-1 text-center text-xs">
-                          {customer.id}
-                        </td>
-                        <td className="border border-gray-300 p-1 text-center text-xs">
-                          {(() => {
-                            // URL 파라미터에서 customerId와 username 확인
-                            const urlParams = new URLSearchParams(
-                              window.location.search
+                    {getSortedCustomers(customers).map((customer, index) => {
+                      // 잔여기간에 따른 배경색 계산
+                      const bgColor =
+                        customer.status === 'inactive'
+                          ? 'bg-orange-50'
+                          : getRowBackgroundColor(
+                              customer.registrationDate || ''
                             );
-                            const customerId = urlParams.get('customerId');
-                            const username = urlParams.get('username');
 
-                            // 개별 고객 페이지인지 확인
-                            const isIndividualCustomerPage =
-                              customerId && username;
-
-                            if (isIndividualCustomerPage) {
-                              // 개별 고객 페이지에서는 링크 없이 일반 텍스트로 표시
-                              return (
-                                <>
-                                  <div className="font-bold text-xs">
-                                    {customer.customer}
-                                  </div>
-                                  {(() => {
-                                    const customerInfo = findCustomerInfo(
-                                      customer.customer
-                                    );
-                                    return customerInfo ? (
-                                      <>
-                                        <div className="text-xs text-gray-600">
-                                          ({customerInfo.name as string})
-                                        </div>
-                                        <div className="text-xs text-gray-500">
-                                          {customerInfo.distributor as string}
-                                        </div>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <div className="text-xs text-gray-600">
-                                          ({customer.nickname})
-                                        </div>
-                                        <div className="text-xs text-gray-500">
-                                          {customer.distributor || '-'}
-                                        </div>
-                                      </>
-                                    );
-                                  })()}
-                                </>
+                      return (
+                        <tr
+                          key={`customer-${customer.id || index}`}
+                          className={bgColor}
+                        >
+                          <td className="border border-gray-300 p-1 text-center text-xs">
+                            <Checkbox
+                              checked={selectedCustomers.has(customer.id || 0)}
+                              onCheckedChange={checked =>
+                                handleSelectCustomer(
+                                  customer.id || 0,
+                                  checked as boolean
+                                )
+                              }
+                            />
+                          </td>
+                          <td className="border border-gray-300 p-1 text-center text-xs">
+                            {customer.id}
+                          </td>
+                          <td className="border border-gray-300 p-1 text-center text-xs">
+                            {(() => {
+                              // URL 파라미터에서 customerId와 username 확인
+                              const urlParams = new URLSearchParams(
+                                window.location.search
                               );
-                            } else {
-                              // 관리자 페이지에서는 클릭 가능한 링크로 표시
-                              return (
-                                <>
-                                  <button
-                                    onClick={() => {
-                                      // 고객 정보에서 customerId 찾기
+                              const customerId = urlParams.get('customerId');
+                              const username = urlParams.get('username');
+
+                              // 개별 고객 페이지인지 확인
+                              const isIndividualCustomerPage =
+                                customerId && username;
+
+                              if (isIndividualCustomerPage) {
+                                // 개별 고객 페이지에서는 링크 없이 일반 텍스트로 표시
+                                return (
+                                  <>
+                                    <div className="font-bold text-xs">
+                                      {customer.customer}
+                                    </div>
+                                    {(() => {
                                       const customerInfo = findCustomerInfo(
                                         customer.customer
                                       );
-                                      if (customerInfo) {
-                                        // 개별 고객 페이지로 이동
-                                        const url = `/coupangapp/add?customerId=${customerInfo.id}&username=${customerInfo.username}&slotCount=10&customerName=${encodeURIComponent(customerInfo.name as string)}&slotType=coupang`;
-                                        window.open(url, '_blank');
-                                      } else {
-                                        // 고객 정보가 없으면 기본값으로 이동
-                                        const url = `/coupangapp/add?customerId=unknown&username=${customer.customer}&slotCount=10&customerName=${encodeURIComponent(customer.customer)}&slotType=coupang`;
-                                        window.open(url, '_blank');
-                                      }
-                                    }}
-                                    className="font-bold text-xs text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
-                                    title="클릭하여 개별 고객 페이지로 이동"
-                                  >
-                                    {customer.customer}
-                                  </button>
-                                  {(() => {
-                                    const customerInfo = findCustomerInfo(
-                                      customer.customer
-                                    );
-                                    return customerInfo ? (
-                                      <>
-                                        <div className="text-xs text-gray-600">
-                                          ({customerInfo.name as string})
-                                        </div>
-                                        <div className="text-xs text-gray-500">
-                                          {customerInfo.distributor as string}
-                                        </div>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <div className="text-xs text-gray-600">
-                                          ({customer.nickname})
-                                        </div>
-                                        <div className="text-xs text-gray-500">
-                                          {customer.distributor || '-'}
-                                        </div>
-                                      </>
-                                    );
-                                  })()}
-                                </>
-                              );
-                            }
-                          })()}
-                        </td>
-                        <td className="border border-gray-300 p-1 text-center text-xs">
-                          <div className="mb-1">
+                                      return customerInfo ? (
+                                        <>
+                                          <div className="text-xs text-gray-600">
+                                            ({customerInfo.name as string})
+                                          </div>
+                                          <div className="text-xs text-gray-500">
+                                            {customerInfo.distributor as string}
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <div className="text-xs text-gray-600">
+                                            ({customer.nickname})
+                                          </div>
+                                          <div className="text-xs text-gray-500">
+                                            {customer.distributor || '-'}
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
+                                  </>
+                                );
+                              } else {
+                                // 관리자 페이지에서는 클릭 가능한 링크로 표시
+                                return (
+                                  <>
+                                    <button
+                                      onClick={() => {
+                                        // 고객 정보에서 customerId 찾기
+                                        const customerInfo = findCustomerInfo(
+                                          customer.customer
+                                        );
+                                        if (customerInfo) {
+                                          // 개별 고객 페이지로 이동
+                                          const url = `/coupangapp/add?customerId=${customerInfo.id}&username=${customerInfo.username}&slotCount=10&customerName=${encodeURIComponent(customerInfo.name as string)}&slotType=coupang`;
+                                          window.open(url, '_blank');
+                                        } else {
+                                          // 고객 정보가 없으면 기본값으로 이동
+                                          const url = `/coupangapp/add?customerId=unknown&username=${customer.customer}&slotCount=10&customerName=${encodeURIComponent(customer.customer)}&slotType=coupang`;
+                                          window.open(url, '_blank');
+                                        }
+                                      }}
+                                      className="font-bold text-xs text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                                      title="클릭하여 개별 고객 페이지로 이동"
+                                    >
+                                      {customer.customer}
+                                    </button>
+                                    {(() => {
+                                      const customerInfo = findCustomerInfo(
+                                        customer.customer
+                                      );
+                                      return customerInfo ? (
+                                        <>
+                                          <div className="text-xs text-gray-600">
+                                            ({customerInfo.name as string})
+                                          </div>
+                                          <div className="text-xs text-gray-500">
+                                            {customerInfo.distributor as string}
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <div className="text-xs text-gray-600">
+                                            ({customer.nickname})
+                                          </div>
+                                          <div className="text-xs text-gray-500">
+                                            {customer.distributor || '-'}
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
+                                  </>
+                                );
+                              }
+                            })()}
+                          </td>
+                          <td className="border border-gray-300 p-1 text-center text-xs">
+                            <div className="mb-1">
+                              <Select
+                                value={
+                                  editingCustomer?.id === customer.id
+                                    ? editForm.workGroup
+                                    : customer.workGroup
+                                }
+                                onValueChange={value =>
+                                  editingCustomer?.id === customer.id
+                                    ? handleEditInputChange('workGroup', value)
+                                    : undefined
+                                }
+                                disabled={editingCustomer?.id !== customer.id}
+                              >
+                                <SelectTrigger className="w-20 h-6 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {workGroups.map(group => (
+                                    <SelectItem key={group} value={group}>
+                                      {group}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <Input
+                              value={
+                                editingCustomer?.id === customer.id
+                                  ? editForm.keyword
+                                  : customer.keyword
+                              }
+                              onChange={e =>
+                                editingCustomer?.id === customer.id
+                                  ? handleEditInputChange(
+                                      'keyword',
+                                      e.target.value
+                                    )
+                                  : undefined
+                              }
+                              className="w-full h-6 text-xs"
+                              readOnly={editingCustomer?.id !== customer.id}
+                            />
+                          </td>
+                          <td className="border border-gray-300 p-1 text-center text-xs">
+                            <div className="mb-1">
+                              <Input
+                                value={
+                                  editingCustomer?.id === customer.id
+                                    ? editForm.linkUrl
+                                    : customer.linkUrl
+                                }
+                                onChange={e =>
+                                  editingCustomer?.id === customer.id
+                                    ? handleEditInputChange(
+                                        'linkUrl',
+                                        e.target.value
+                                      )
+                                    : undefined
+                                }
+                                className="w-full h-6 text-xs text-ellipsis"
+                                readOnly={editingCustomer?.id !== customer.id}
+                                title={customer.linkUrl}
+                              />
+                            </div>
+                            <Input
+                              value={
+                                editingCustomer?.id === customer.id
+                                  ? editForm.memo
+                                  : customer.memo || ''
+                              }
+                              onChange={e =>
+                                editingCustomer?.id === customer.id
+                                  ? handleEditInputChange(
+                                      'memo',
+                                      e.target.value
+                                    )
+                                  : undefined
+                              }
+                              className="w-full h-6 text-xs text-ellipsis"
+                              readOnly={editingCustomer?.id !== customer.id}
+                              title={customer.memo || ''}
+                              placeholder="메모를 입력하세요"
+                            />
+                          </td>
+                          <td className="border border-gray-300 p-1 text-center text-xs">
+                            <button
+                              onClick={e => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleRankClick(customer);
+                              }}
+                              className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                              title="클릭하여 순위 변동 히스토리 보기"
+                            >
+                              {customer.currentRank}{' '}
+                              <span
+                                className={
+                                  calculateRankChange(
+                                    customer.currentRank,
+                                    customer.startRank
+                                  ).color
+                                }
+                              >
+                                {
+                                  calculateRankChange(
+                                    customer.currentRank,
+                                    customer.startRank
+                                  ).text
+                                }
+                              </span>
+                            </button>
+                          </td>
+                          <td className="border border-gray-300 p-1 text-center text-xs">
+                            {customer.startRank}
+                          </td>
+                          <td className="border border-gray-300 p-1 text-center text-xs">
+                            {editingCustomer?.id === customer.id ? (
+                              <Input
+                                type="number"
+                                value={editForm.slotCount}
+                                onChange={e =>
+                                  handleEditInputChange(
+                                    'slotCount',
+                                    parseInt(e.target.value) || 1
+                                  )
+                                }
+                                className="w-12 h-6 text-xs text-center"
+                              />
+                            ) : (
+                              <span className="text-xs font-medium">
+                                {customer.slotCount}
+                              </span>
+                            )}
+                          </td>
+                          <td className="border border-gray-300 p-1 text-center text-xs">
+                            <div className="text-xs">
+                              {(() => {
+                                const slotId = customer.id?.toString() || '';
+                                const workStartTime =
+                                  workStartTimes.get(slotId);
+                                const traffic =
+                                  calculateTrafficFromWorkStart(workStartTime);
+                                // 트래픽 계산
+                                if (isDevMode) {
+                                  console.log('📊 트래픽 계산:', {
+                                    slotId,
+                                    workStartTime,
+                                    traffic,
+                                    allWorkStartTimes: Array.from(
+                                      workStartTimes.entries()
+                                    ),
+                                  });
+                                }
+                                return traffic;
+                              })()}
+                            </div>
+                          </td>
+                          <td className="border border-gray-300 p-1 text-center text-xs">
                             <Select
                               value={
                                 editingCustomer?.id === customer.id
-                                  ? editForm.workGroup
-                                  : customer.workGroup
+                                  ? editForm.equipmentGroup
+                                  : customer.equipmentGroup
                               }
                               onValueChange={value =>
                                 editingCustomer?.id === customer.id
-                                  ? handleEditInputChange('workGroup', value)
+                                  ? handleEditInputChange(
+                                      'equipmentGroup',
+                                      value
+                                    )
                                   : undefined
                               }
                               disabled={editingCustomer?.id !== customer.id}
@@ -2482,278 +2824,125 @@ function SlotAddPageContent() {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                {workGroups.map(group => (
+                                {equipmentGroups.map(group => (
                                   <SelectItem key={group} value={group}>
                                     {group}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
-                          </div>
-                          <Input
-                            value={
-                              editingCustomer?.id === customer.id
-                                ? editForm.keyword
-                                : customer.keyword
-                            }
-                            onChange={e =>
-                              editingCustomer?.id === customer.id
-                                ? handleEditInputChange(
-                                    'keyword',
-                                    e.target.value
-                                  )
-                                : undefined
-                            }
-                            className="w-full h-6 text-xs"
-                            readOnly={editingCustomer?.id !== customer.id}
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-1 text-center text-xs">
-                          <div className="mb-1">
-                            <Input
-                              value={
-                                editingCustomer?.id === customer.id
-                                  ? editForm.linkUrl
-                                  : customer.linkUrl
-                              }
-                              onChange={e =>
-                                editingCustomer?.id === customer.id
-                                  ? handleEditInputChange(
-                                      'linkUrl',
-                                      e.target.value
-                                    )
-                                  : undefined
-                              }
-                              className="w-full h-6 text-xs text-ellipsis"
-                              readOnly={editingCustomer?.id !== customer.id}
-                              title={customer.linkUrl}
-                            />
-                          </div>
-                          <Input
-                            value={
-                              editingCustomer?.id === customer.id
-                                ? editForm.memo
-                                : customer.memo || ''
-                            }
-                            onChange={e =>
-                              editingCustomer?.id === customer.id
-                                ? handleEditInputChange('memo', e.target.value)
-                                : undefined
-                            }
-                            className="w-full h-6 text-xs text-ellipsis"
-                            readOnly={editingCustomer?.id !== customer.id}
-                            title={customer.memo || ''}
-                            placeholder="메모를 입력하세요"
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-1 text-center text-xs">
-                          <button
-                            onClick={e => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleRankClick(customer);
-                            }}
-                            className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
-                            title="클릭하여 순위 변동 히스토리 보기"
-                          >
-                            {customer.currentRank}{' '}
-                            <span
-                              className={
-                                calculateRankChange(
-                                  customer.currentRank,
-                                  customer.startRank
-                                ).color
-                              }
-                            >
-                              {
-                                calculateRankChange(
-                                  customer.currentRank,
-                                  customer.startRank
-                                ).text
-                              }
+                          </td>
+                          <td className="border border-gray-300 p-1 text-center text-xs">
+                            <span className="inline-block px-1 py-0.5 bg-purple-100 text-black text-xs rounded">
+                              {customer.remainingDays}
                             </span>
-                          </button>
-                        </td>
-                        <td className="border border-gray-300 p-1 text-center text-xs">
-                          {customer.startRank}
-                        </td>
-                        <td className="border border-gray-300 p-1 text-center text-xs">
-                          {editingCustomer?.id === customer.id ? (
-                            <Input
-                              type="number"
-                              value={editForm.slotCount}
-                              onChange={e =>
-                                handleEditInputChange(
-                                  'slotCount',
-                                  parseInt(e.target.value) || 1
-                                )
-                              }
-                              className="w-12 h-6 text-xs text-center"
-                            />
-                          ) : (
-                            <span className="text-xs font-medium">
-                              {customer.slotCount}
-                            </span>
-                          )}
-                        </td>
-                        <td className="border border-gray-300 p-1 text-center text-xs">
-                          <div className="text-xs">
-                            {(() => {
-                              const slotId = customer.id?.toString() || '';
-                              const workStartTime = workStartTimes.get(slotId);
-                              const traffic =
-                                calculateTrafficFromWorkStart(workStartTime);
-                              // 트래픽 계산
-                              if (isDevMode) {
-                                console.log('📊 트래픽 계산:', {
-                                  slotId,
-                                  workStartTime,
-                                  traffic,
-                                  allWorkStartTimes: Array.from(
-                                    workStartTimes.entries()
-                                  ),
-                                });
-                              }
-                              return traffic;
-                            })()}
-                          </div>
-                        </td>
-                        <td className="border border-gray-300 p-1 text-center text-xs">
-                          <Select
-                            value={
-                              editingCustomer?.id === customer.id
-                                ? editForm.equipmentGroup
-                                : customer.equipmentGroup
-                            }
-                            onValueChange={value =>
-                              editingCustomer?.id === customer.id
-                                ? handleEditInputChange('equipmentGroup', value)
-                                : undefined
-                            }
-                            disabled={editingCustomer?.id !== customer.id}
-                          >
-                            <SelectTrigger className="w-20 h-6 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {equipmentGroups.map(group => (
-                                <SelectItem key={group} value={group}>
-                                  {group}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="border border-gray-300 p-1 text-center text-xs">
-                          <span className="inline-block px-1 py-0.5 bg-red-100 text-red-800 text-xs rounded">
-                            {customer.remainingDays}
-                          </span>
-                        </td>
-                        <td className="border border-gray-300 p-1 text-center text-xs">
-                          {customer.registrationDate}
-                        </td>
-                        <td className="border border-gray-300 p-1 text-center text-xs">
-                          {getStatusBadge(customer.status)}
-                        </td>
-                        <td className="border border-gray-300 p-1 text-center text-xs">
-                          <div className="flex justify-center space-x-2">
-                            {editingCustomer?.id === customer.id ? (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={handleSaveEdit}
-                                  className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
-                                  title="저장"
-                                >
-                                  <svg
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
+                          </td>
+                          <td className="border border-gray-300 p-1 text-center text-xs">
+                            {customer.registrationDate}
+                          </td>
+                          <td className="border border-gray-300 p-1 text-center text-xs">
+                            {getStatusBadge(customer.status)}
+                          </td>
+                          <td className="border border-gray-300 p-1 text-center text-xs">
+                            <div className="flex justify-center space-x-2">
+                              {editingCustomer?.id === customer.id ? (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleSaveEdit}
+                                    className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
+                                    title="저장"
                                   >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M5 13l4 4L19 7"
-                                    />
-                                  </svg>
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={handleCancelEdit}
-                                  className="h-6 w-6 p-0 text-gray-600 hover:text-gray-800"
-                                  title="취소"
-                                >
-                                  <svg
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
+                                    <svg
+                                      className="w-4 h-4"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M5 13l4 4L19 7"
+                                      />
+                                    </svg>
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleCancelEdit}
+                                    className="h-6 w-6 p-0 text-gray-600 hover:text-gray-800"
+                                    title="취소"
                                   >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M6 18L18 6M6 6l12 12"
-                                    />
-                                  </svg>
-                                </Button>
-                              </>
-                            ) : (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleEditCustomer(customer)}
-                                  className="h-6 w-6 p-0"
-                                  title="수정"
-                                >
-                                  <svg
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
+                                    <svg
+                                      className="w-4 h-4"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M6 18L18 6M6 6l12 12"
+                                      />
+                                    </svg>
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditCustomer(customer)}
+                                    className="h-6 w-6 p-0"
+                                    title="수정"
                                   >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                    />
-                                  </svg>
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleDeleteCustomer(customer.id)
-                                  }
-                                  className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
-                                  title="삭제"
-                                >
-                                  <svg
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
+                                    <svg
+                                      className="w-4 h-4"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                      />
+                                    </svg>
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleDeleteCustomer(customer.id)
+                                    }
+                                    className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
+                                    title="삭제"
                                   >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                    />
-                                  </svg>
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                                    <svg
+                                      className="w-4 h-4"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                      />
+                                    </svg>
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
