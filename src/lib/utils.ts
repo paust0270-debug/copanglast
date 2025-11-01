@@ -77,20 +77,27 @@ export function calculateRemainingTimeKST(
   minutes: number;
   string: string;
 } {
-  // 현재 시간 (한국 시간 기준)
+  // 🔥 현재 시간을 명시적으로 한국 시간(KST)으로 계산
+  // Vercel 서버는 UTC 시간대이므로 한국시간으로 변환 필요
   const now = new Date();
+  const kstOffset = 9 * 60 * 60 * 1000; // UTC+9 (9시간 = 9 * 60 * 60 * 1000 밀리초)
+  const kstNow = new Date(now.getTime() + kstOffset);
 
-  // created_at을 로컬 시간으로 해석 (DB에 한국시간으로 저장되어 있음)
+  // 🔥 created_at을 Date 객체로 변환
   const createdDate = new Date(createdAt);
+
+  // 🔥 created_at이 UTC로 저장되어 있다면 한국시간으로 변환
+  // Supabase는 일반적으로 UTC로 저장하므로 한국시간으로 변환
+  const createdDateKST = new Date(createdDate.getTime() + kstOffset);
 
   // 만료일 계산 (created_at + usage_days, 72시간 방식)
   // 예: 3일이면 등록일부터 72시간 후 만료
   const expiryDate = new Date(
-    createdDate.getTime() + usageDays * 24 * 60 * 60 * 1000
+    createdDateKST.getTime() + usageDays * 24 * 60 * 60 * 1000
   );
 
-  // 잔여 시간 계산 (밀리초)
-  const remainingMs = Math.max(0, expiryDate.getTime() - now.getTime());
+  // 잔여 시간 계산 (밀리초) - 한국시간 기준으로 계산
+  const remainingMs = Math.max(0, expiryDate.getTime() - kstNow.getTime());
 
   // 잔여 시간을 일, 시간, 분으로 변환
   const days = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
@@ -306,12 +313,18 @@ export function getNextTrafficUpdateFromReset(
 
 // 슬롯별 생명주기 관련 함수들
 export function calculateSlotTraffic(createdAt: string): number {
-  const kstNow = getKSTDate();
-  const createdDate = new Date(createdAt);
+  // 🔥 한국 시간(KST) 기준으로 계산
+  const now = new Date();
+  const kstOffset = 9 * 60 * 60 * 1000; // UTC+9
+  const kstNow = new Date(now.getTime() + kstOffset);
 
-  // 슬롯 생성 시점부터 경과된 시간 (분 단위)
+  const createdDate = new Date(createdAt);
+  // 🔥 created_at이 UTC로 저장되어 있다면 한국시간으로 변환
+  const createdDateKST = new Date(createdDate.getTime() + kstOffset);
+
+  // 슬롯 생성 시점부터 경과된 시간 (분 단위) - 한국시간 기준
   const elapsedMinutes = Math.floor(
-    (kstNow.getTime() - createdDate.getTime()) / (60 * 1000)
+    (kstNow.getTime() - createdDateKST.getTime()) / (60 * 1000)
   );
 
   // 12분마다 1씩 증가, 최대 120까지 (24시간 = 1440분)
@@ -321,12 +334,18 @@ export function calculateSlotTraffic(createdAt: string): number {
 }
 
 export function getSlotRemainingTime(createdAt: string): string {
-  const kstNow = getKSTDate();
-  const createdDate = new Date(createdAt);
+  // 🔥 한국 시간(KST) 기준으로 계산
+  const now = new Date();
+  const kstOffset = 9 * 60 * 60 * 1000; // UTC+9
+  const kstNow = new Date(now.getTime() + kstOffset);
 
-  // 슬롯 생성 시점부터 경과된 시간 (분 단위)
+  const createdDate = new Date(createdAt);
+  // 🔥 created_at이 UTC로 저장되어 있다면 한국시간으로 변환
+  const createdDateKST = new Date(createdDate.getTime() + kstOffset);
+
+  // 슬롯 생성 시점부터 경과된 시간 (분 단위) - 한국시간 기준
   const elapsedMinutes = Math.floor(
-    (kstNow.getTime() - createdDate.getTime()) / (60 * 1000)
+    (kstNow.getTime() - createdDateKST.getTime()) / (60 * 1000)
   );
 
   // 24시간(1440분) 후 만료
@@ -344,12 +363,18 @@ export function getSlotRemainingTime(createdAt: string): string {
 }
 
 export function isSlotExpired(createdAt: string): boolean {
-  const kstNow = getKSTDate();
-  const createdDate = new Date(createdAt);
+  // 🔥 한국 시간(KST) 기준으로 계산
+  const now = new Date();
+  const kstOffset = 9 * 60 * 60 * 1000; // UTC+9
+  const kstNow = new Date(now.getTime() + kstOffset);
 
-  // 슬롯 생성 시점부터 경과된 시간 (분 단위)
+  const createdDate = new Date(createdAt);
+  // 🔥 created_at이 UTC로 저장되어 있다면 한국시간으로 변환
+  const createdDateKST = new Date(createdDate.getTime() + kstOffset);
+
+  // 슬롯 생성 시점부터 경과된 시간 (분 단위) - 한국시간 기준
   const elapsedMinutes = Math.floor(
-    (kstNow.getTime() - createdDate.getTime()) / (60 * 1000)
+    (kstNow.getTime() - createdDateKST.getTime()) / (60 * 1000)
   );
 
   // 24시간(1440분) 후 만료
@@ -357,12 +382,18 @@ export function isSlotExpired(createdAt: string): boolean {
 }
 
 export function getNextSlotTrafficUpdate(createdAt: string): number {
-  const kstNow = getKSTDate();
-  const createdDate = new Date(createdAt);
+  // 🔥 한국 시간(KST) 기준으로 계산
+  const now = new Date();
+  const kstOffset = 9 * 60 * 60 * 1000; // UTC+9
+  const kstNow = new Date(now.getTime() + kstOffset);
 
-  // 슬롯 생성 시점부터 경과된 시간 (분 단위)
+  const createdDate = new Date(createdAt);
+  // 🔥 created_at이 UTC로 저장되어 있다면 한국시간으로 변환
+  const createdDateKST = new Date(createdDate.getTime() + kstOffset);
+
+  // 슬롯 생성 시점부터 경과된 시간 (분 단위) - 한국시간 기준
   const elapsedMinutes = Math.floor(
-    (kstNow.getTime() - createdDate.getTime()) / (60 * 1000)
+    (kstNow.getTime() - createdDateKST.getTime()) / (60 * 1000)
   );
 
   // 다음 12분 단위까지 남은 시간

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { calculateRemainingTimeKST, calculateTrafficKST } from '@/lib/utils';
 import {
@@ -10,6 +10,23 @@ import {
   getNextSlotTrafficUpdate,
 } from '@/lib/utils';
 import Navigation from '@/components/Navigation';
+import dynamic from 'next/dynamic';
+
+// 순위갱신 버튼을 완전히 클라이언트 사이드에서만 렌더링 (SSR 완전 비활성화)
+const RankUpdateButton = dynamic(
+  () => import('@/components/RankUpdateButton'),
+  {
+    ssr: false, // 서버 사이드 렌더링 완전 비활성화
+    loading: () => (
+      <button
+        disabled
+        className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 min-w-[120px]"
+      >
+        순위갱신
+      </button>
+    ),
+  }
+);
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -308,7 +325,95 @@ function SlotAddPageContent() {
   const [selectAll, setSelectAll] = useState(false);
 
   // 순위갱신 쿨다운 상태 관리
-  const [rankUpdateCooldown, setRankUpdateCooldown] = useState<number>(0); // 남은 초
+  // 서버와 클라이언트 모두 동일한 초기값 사용 (hydration 오류 방지)
+  const [rankUpdateCooldown, setRankUpdateCooldown] = useState<number>(0);
+  const [isButtonDisabled, setIsButtonDisabled] = useState<boolean>(true); // 서버/클라이언트 모두 true로 시작
+  const [isCooldownChecked, setIsCooldownChecked] = useState<boolean>(false);
+
+  // 순위갱신 쿨다운 통합 체크 - useLayoutEffect로 DOM 업데이트 전에 즉시 실행
+  useLayoutEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const username = urlParams.get('username');
+
+    if (!username) {
+      setIsButtonDisabled(false);
+      setRankUpdateCooldown(0);
+      setIsCooldownChecked(true);
+      return;
+    }
+
+    const storageKey = `rankUpdateCooldown_${username}`;
+    const COOLDOWN_TIME = 60 * 60 * 1000; // 1시간 (밀리초)
+
+    // 로컬 스토리지 쿨다운 계산 함수
+    const getLocalCooldown = (): number => {
+      const lastClickTime = localStorage.getItem(storageKey);
+      if (!lastClickTime) return 0;
+
+      const timePassed = Date.now() - parseInt(lastClickTime);
+      const remainingTime = COOLDOWN_TIME - timePassed;
+
+      if (remainingTime > 0) {
+        return Math.ceil(remainingTime / 1000);
+      } else {
+        // 만료된 쿨타임 제거
+        localStorage.removeItem(storageKey);
+        return 0;
+      }
+    };
+
+    // 🔥 즉시 동기적으로 로컬 스토리지 체크 (DOM 업데이트 전에 실행)
+    const immediateLocalCooldown = getLocalCooldown();
+    if (immediateLocalCooldown > 0) {
+      // 로컬 스토리지에 쿨다운이 있으면 즉시 비활성화
+      setRankUpdateCooldown(immediateLocalCooldown);
+      setIsButtonDisabled(true);
+      setIsCooldownChecked(true);
+    } else {
+      // 쿨다운이 없으면 일단 비활성화 상태 유지 (서버 확인 후 활성화)
+      setRankUpdateCooldown(0);
+      setIsButtonDisabled(true);
+      setIsCooldownChecked(false); // 서버 확인 전까지는 false
+    }
+
+    // 통합 쿨다운 체크 함수 (로컬 스토리지 + 서버)
+    const checkCooldown = async () => {
+      // 서버 쿨다운 체크 (비동기)
+      let serverCooldown = 0;
+      try {
+        const response = await fetch(
+          `/api/rank-update/cooldown?username=${encodeURIComponent(username)}`
+        );
+        const result = await response.json();
+
+        if (result.success && result.cooldownRemaining) {
+          serverCooldown = Math.ceil(result.cooldownRemaining);
+        }
+      } catch (error) {
+        console.error('쿨다운 정보 조회 오류:', error);
+        // 에러 발생 시 서버 쿨다운은 0으로 유지
+      }
+
+      // 로컬 스토리지 재체크 (서버 요청 중 시간이 지났을 수 있음)
+      const updatedLocalCooldown = getLocalCooldown();
+
+      // 로컬 스토리지와 서버 쿨다운 중 더 큰 값 사용
+      const finalCooldown = Math.max(updatedLocalCooldown, serverCooldown);
+
+      // 최종 상태 업데이트
+      setRankUpdateCooldown(finalCooldown);
+      setIsButtonDisabled(finalCooldown > 0);
+      setIsCooldownChecked(true); // 체크 완료
+    };
+
+    // 서버 쿨다운 체크 (비동기) - useLayoutEffect 이후에 실행
+    checkCooldown();
+
+    // 1초마다 쿨다운 체크 및 업데이트
+    const interval = setInterval(checkCooldown, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // 만료된 슬롯들 자동 처리 useEffect
   useEffect(() => {
@@ -424,37 +529,6 @@ function SlotAddPageContent() {
       });
     }
   };
-
-  // 순위갱신 쿨다운 체크 useEffect (서버에서 쿨다운 정보 가져오기)
-  useEffect(() => {
-    const fetchCooldown = async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const username = urlParams.get('username');
-
-      if (!username) return;
-
-      try {
-        // 서버에서 쿨다운 정보 가져오기
-        const response = await fetch(
-          `/api/rank-update/cooldown?username=${encodeURIComponent(username)}`
-        );
-        const result = await response.json();
-
-        if (result.success && result.cooldownRemaining) {
-          setRankUpdateCooldown(Math.ceil(result.cooldownRemaining));
-        } else {
-          setRankUpdateCooldown(0);
-        }
-      } catch (error) {
-        console.error('쿨다운 정보 조회 오류:', error);
-        setRankUpdateCooldown(0);
-      }
-    };
-
-    fetchCooldown();
-    const interval = setInterval(fetchCooldown, 1000); // 1초마다 서버에서 확인
-    return () => clearInterval(interval);
-  }, []);
 
   // URL 파라미터에서 고객 정보 확인
   useEffect(() => {
@@ -589,9 +663,16 @@ function SlotAddPageContent() {
 
       if (isNaN(expiryDate.getTime())) return '30일';
 
-      // 현재 시간 (로컬 시간 기준)
-      const now = currentTime;
-      const diffMs = expiryDate.getTime() - now.getTime();
+      // 🔥 현재 시간을 한국 시간(KST) 기준으로 계산
+      // 클라이언트 사이드에서는 브라우저 로컬 시간을 사용하지만, 명시적으로 한국시간으로 계산
+      const now = new Date();
+      const kstOffset = 9 * 60 * 60 * 1000; // UTC+9
+      const kstNow = new Date(now.getTime() + kstOffset);
+
+      // 만료일도 한국시간 기준으로 계산
+      const expiryDateKST = new Date(expiryDate.getTime() + kstOffset);
+
+      const diffMs = expiryDateKST.getTime() - kstNow.getTime();
 
       if (diffMs <= 0) {
         return '만료됨';
@@ -1401,7 +1482,8 @@ function SlotAddPageContent() {
       return;
     }
 
-    if (rankUpdateCooldown > 0) {
+    // 버튼이 이미 비활성화되어 있으면 리턴
+    if (isButtonDisabled || rankUpdateCooldown > 0) {
       const minutes = Math.floor(rankUpdateCooldown / 60);
       const seconds = rankUpdateCooldown % 60;
       alert(
@@ -1418,6 +1500,13 @@ function SlotAddPageContent() {
     if (!confirm(`${customers.length}개의 슬롯을 순위갱신 하시겠습니까?`)) {
       return;
     }
+
+    // 🔥 즉시 버튼 비활성화 및 로컬 스토리지에 클릭 시간 저장
+    setIsButtonDisabled(true);
+    const currentTime = Date.now();
+    const storageKey = `rankUpdateCooldown_${username}`;
+    localStorage.setItem(storageKey, currentTime.toString());
+    setRankUpdateCooldown(3600); // 1시간 = 3600초
 
     try {
       // API 호출
@@ -1444,20 +1533,29 @@ function SlotAddPageContent() {
         );
         const cooldownResult = await cooldownResponse.json();
         if (cooldownResult.success && cooldownResult.cooldownRemaining) {
-          setRankUpdateCooldown(Math.ceil(cooldownResult.cooldownRemaining));
+          // 서버 쿨다운과 로컬 스토리지 쿨다운 중 더 큰 값 사용
+          const serverCooldown = Math.ceil(cooldownResult.cooldownRemaining);
+          setRankUpdateCooldown(Math.max(3600, serverCooldown));
         } else {
+          // 로컬 스토리지 쿨다운은 이미 설정되었으므로 유지
           setRankUpdateCooldown(3600); // 1시간
         }
       } else {
         // 쿨다운 에러인 경우 서버에서 받은 남은 시간 사용
         if (result.cooldownRemaining !== undefined) {
-          setRankUpdateCooldown(Math.ceil(result.cooldownRemaining));
+          const serverCooldown = Math.ceil(result.cooldownRemaining);
+          setRankUpdateCooldown(Math.max(3600, serverCooldown));
+        } else {
+          // 에러가 발생했지만 이미 로컬 스토리지에 저장했으므로 쿨다운 유지
+          setRankUpdateCooldown(3600);
         }
         alert(`❌ 순위갱신 실패: ${result.message || result.error}`);
       }
     } catch (error) {
       console.error('순위갱신 오류:', error);
       alert('순위갱신 중 오류가 발생했습니다.');
+      // 에러 발생 시에도 쿨다운은 유지 (남용 방지)
+      setRankUpdateCooldown(3600);
     }
   };
 
@@ -2334,17 +2432,16 @@ function SlotAddPageContent() {
                   </SelectContent>
                 </Select>
 
-                <Button
-                  onClick={handleRankUpdate}
-                  disabled={rankUpdateCooldown > 0}
-                  variant="outline"
-                  size="sm"
-                  className="min-w-[120px]"
-                >
-                  {rankUpdateCooldown > 0
-                    ? `순위갱신 (${getRemainingCooldown()})`
-                    : '순위갱신'}
-                </Button>
+                <RankUpdateButton
+                  username={searchParams.get('username')}
+                  customerId={searchParams.get('customerId')}
+                  slotType={searchParams.get('slotType') || '쿠팡'}
+                  customers={customers}
+                  selectedCustomers={selectedCustomers}
+                  onRankUpdate={count => {
+                    // 성공 후 필요한 작업 (필요시)
+                  }}
+                />
               </div>
 
               <div className="flex items-center space-x-4">

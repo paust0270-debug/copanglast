@@ -20,11 +20,23 @@ const getTableName = (slotType: string) => {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { customerId, slotType, username } = body;
+    const { customerId, slotType, username, slotIds } = body; // 🔥 slotIds 추가
 
-    if (!customerId || !slotType || !username) {
+    // 🔥 username과 slotType은 필수, customerId는 선택적 (slotIds가 있으면 불필요)
+    if (!username || !slotType) {
       return NextResponse.json(
-        { success: false, error: '필수 파라미터가 누락되었습니다.' },
+        {
+          success: false,
+          error: '필수 파라미터가 누락되었습니다. (username, slotType 필수)',
+        },
+        { status: 400 }
+      );
+    }
+
+    // 🔥 slotIds가 없고 customerId도 없으면 오류
+    if (!slotIds && !customerId) {
+      return NextResponse.json(
+        { success: false, error: 'customerId 또는 slotIds가 필요합니다.' },
         { status: 400 }
       );
     }
@@ -63,14 +75,39 @@ export async function POST(request: NextRequest) {
 
     const tableName = getTableName(slotType);
 
-    // 해당 테이블에서 해당 고객의 모든 슬롯 조회 (키워드가 있는 것만)
-    const { data: slotStatusData, error: fetchError } = await supabase
+    // 🔥 선택된 슬롯 ID가 있으면 해당 슬롯만 조회, 없으면 전체 조회
+    let query = supabase
       .from(tableName)
       .select('id, keyword, link_url, slot_sequence, customer_id, current_rank')
       .eq('customer_id', username)
       .not('keyword', 'eq', '')
-      .not('keyword', 'is', null)
-      .order('slot_sequence', { ascending: true });
+      .not('keyword', 'is', null);
+
+    // 🔥 선택된 슬롯 ID가 있으면 필터링
+    if (slotIds && Array.isArray(slotIds) && slotIds.length > 0) {
+      // ID를 숫자로 변환 (문자열일 수 있음)
+      const numericSlotIds = slotIds
+        .map(id => (typeof id === 'string' ? parseInt(id) : id))
+        .filter(id => !isNaN(id));
+      console.log('🔵 필터링할 슬롯 ID:', numericSlotIds);
+
+      if (numericSlotIds.length > 0) {
+        query = query.in('id', numericSlotIds);
+      } else {
+        console.error('🔴 유효한 슬롯 ID가 없습니다:', slotIds);
+        return NextResponse.json(
+          { success: false, error: '유효하지 않은 슬롯 ID입니다.' },
+          { status: 400 }
+        );
+      }
+    }
+
+    const { data: slotStatusData, error: fetchError } = await query.order(
+      'slot_sequence',
+      { ascending: true }
+    );
+
+    console.log('🔵 조회된 슬롯 개수:', slotStatusData?.length || 0);
 
     if (fetchError) {
       console.error('슬롯 데이터 조회 오류:', fetchError);
@@ -98,6 +135,11 @@ export async function POST(request: NextRequest) {
       return null;
     };
 
+    // 🔥 현재 시간 (한국 시간 기준, UTC+9)
+    const currentDateKST = new Date(
+      new Date().getTime() + 9 * 60 * 60 * 1000
+    ).toISOString();
+
     // keywords 테이블에 삽입할 데이터 생성 (슬롯 등록과 동일한 구조)
     const keywordRecords = slotStatusData.map(slot => ({
       keyword: slot.keyword,
@@ -108,6 +150,8 @@ export async function POST(request: NextRequest) {
       slot_sequence: slot.slot_sequence,
       customer_id: slot.customer_id,
       slot_id: slot.id,
+      // 🔥 이전 체크일 기록 (순위갱신 요청 시점)
+      last_check_date: currentDateKST,
     }));
 
     // keywords 테이블에 저장
