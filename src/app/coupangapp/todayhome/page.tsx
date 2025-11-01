@@ -2541,6 +2541,17 @@ function SlotAddPageContent() {
                               const customerId = urlParams.get('customerId');
                               const username = urlParams.get('username');
 
+                              // 현재 사용자 역할 확인
+                              const currentUserStr =
+                                localStorage.getItem('user');
+                              const currentUser = currentUserStr
+                                ? JSON.parse(currentUserStr)
+                                : null;
+                              const userGrade = currentUser?.grade || '';
+
+                              // 일반회원일 때만 소속총판 숨김
+                              const hideDistributor = userGrade === '일반회원';
+
                               // 개별 고객 페이지인지 확인
                               const isIndividualCustomerPage =
                                 customerId && username;
@@ -2561,18 +2572,24 @@ function SlotAddPageContent() {
                                           <div className="text-xs text-gray-600">
                                             ({customerInfo.name as string})
                                           </div>
-                                          <div className="text-xs text-gray-500">
-                                            {customerInfo.distributor as string}
-                                          </div>
+                                          {!hideDistributor && (
+                                            <div className="text-xs text-gray-500">
+                                              {
+                                                customerInfo.distributor as string
+                                              }
+                                            </div>
+                                          )}
                                         </>
                                       ) : (
                                         <>
                                           <div className="text-xs text-gray-600">
                                             ({customer.nickname})
                                           </div>
-                                          <div className="text-xs text-gray-500">
-                                            {customer.distributor || '-'}
-                                          </div>
+                                          {!hideDistributor && (
+                                            <div className="text-xs text-gray-500">
+                                              {customer.distributor || '-'}
+                                            </div>
+                                          )}
                                         </>
                                       );
                                     })()}
@@ -2612,18 +2629,24 @@ function SlotAddPageContent() {
                                           <div className="text-xs text-gray-600">
                                             ({customerInfo.name as string})
                                           </div>
-                                          <div className="text-xs text-gray-500">
-                                            {customerInfo.distributor as string}
-                                          </div>
+                                          {!hideDistributor && (
+                                            <div className="text-xs text-gray-500">
+                                              {
+                                                customerInfo.distributor as string
+                                              }
+                                            </div>
+                                          )}
                                         </>
                                       ) : (
                                         <>
                                           <div className="text-xs text-gray-600">
                                             ({customer.nickname})
                                           </div>
-                                          <div className="text-xs text-gray-500">
-                                            {customer.distributor || '-'}
-                                          </div>
+                                          {!hideDistributor && (
+                                            <div className="text-xs text-gray-500">
+                                              {customer.distributor || '-'}
+                                            </div>
+                                          )}
                                         </>
                                       );
                                     })()}
