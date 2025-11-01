@@ -4,7 +4,16 @@ import { supabase } from '@/lib/supabase';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { username, password, name, email, phone, kakaoId } = body;
+    const {
+      username,
+      password,
+      name,
+      email,
+      phone,
+      kakaoId,
+      registrantType,
+      registrantDistributor,
+    } = body;
 
     console.log('회원가입 요청 데이터:', {
       username,
@@ -12,6 +21,8 @@ export async function POST(request: NextRequest) {
       email,
       phone,
       kakaoId,
+      registrantType,
+      registrantDistributor,
     });
 
     // 필수 필드 검증
@@ -116,12 +127,21 @@ export async function POST(request: NextRequest) {
       username: username, // 아이디
       password: password, // 비밀번호 추가
       name: name, // 고객명
-      status: 'pending', // 승인 대기 상태
-      grade: '일반회원',
-      distributor: '일반',
+      grade: '일반회원', // 항상 일반회원으로 설정
       slot_used: 0,
       additional_count: 0,
     };
+
+    // 🔥 총판회원이 등록하는 경우
+    if (registrantType === 'distributor' && registrantDistributor) {
+      profileData.distributor = registrantDistributor; // 총판회원의 소속총판
+      profileData.status = 'active'; // 승인 없이 바로 활성화
+      profileData.approved_at = new Date().toISOString(); // 승인일 현재 시간으로 설정
+    } else {
+      // 일반 회원가입
+      profileData.status = 'pending'; // 승인 대기
+      profileData.distributor = '일반'; // 기본값
+    }
 
     // 선택사항 필드들 추가 (값이 있는 경우에만)
     if (email && email.trim()) {
@@ -214,14 +234,20 @@ export async function POST(request: NextRequest) {
 
         console.log('✅ username 없이 프로필 저장 성공:', retryProfile);
 
+        // 총판회원이 등록한 경우와 일반 회원가입의 메시지 구분
+        const message =
+          registrantType === 'distributor'
+            ? '회원가입이 완료되었습니다. 바로 이용하실 수 있습니다.'
+            : '가입신청이 완료되었습니다. 관리자 승인 후 이용 가능합니다.';
+
         return NextResponse.json({
           success: true,
-          message: '가입신청이 완료되었습니다. 관리자 승인 후 이용 가능합니다.',
+          message: message,
           user: {
             id: authData.user.id,
             username: username,
             name: name,
-            status: 'pending',
+            status: registrantType === 'distributor' ? 'active' : 'pending',
           },
         });
       }
@@ -252,14 +278,20 @@ export async function POST(request: NextRequest) {
 
     console.log('프로필 저장 성공:', profile);
 
+    // 총판회원이 등록한 경우와 일반 회원가입의 메시지 구분
+    const message =
+      registrantType === 'distributor'
+        ? '회원가입이 완료되었습니다. 바로 이용하실 수 있습니다.'
+        : '가입신청이 완료되었습니다. 관리자 승인 후 이용 가능합니다.';
+
     return NextResponse.json({
       success: true,
-      message: '가입신청이 완료되었습니다. 관리자 승인 후 이용 가능합니다.',
+      message: message,
       user: {
         id: authData.user.id,
         username: username,
         name: name,
-        status: 'pending',
+        status: registrantType === 'distributor' ? 'active' : 'pending',
       },
     });
   } catch (error) {

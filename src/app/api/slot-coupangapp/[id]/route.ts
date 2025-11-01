@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getTimestampWithoutMs } from '@/lib/utils';
+import { normalizeSlotType, getSlotTypeVariants } from '@/lib/slot-type-utils';
 
 // 특정 쿠팡APP 슬롯 삭제 (날짜 정보 보존)
 export async function DELETE(
@@ -85,7 +86,7 @@ export async function DELETE(
           .select('*')
           .eq('keyword', slotInfo.keyword)
           .eq('link_url', slotInfo.link_url)
-          .eq('slot_type', '쿠팡APP');
+          .in('slot_type', getSlotTypeVariants('쿠팡APP')); // 쿠팡APP 슬롯 타입 (영문/한글 모두 포함)
 
         if (findError) {
           console.error('keywords 테이블 조회 오류:', findError);
@@ -95,7 +96,7 @@ export async function DELETE(
             .delete()
             .eq('keyword', slotInfo.keyword)
             .eq('link_url', slotInfo.link_url)
-            .eq('slot_type', '쿠팡APP');
+            .in('slot_type', getSlotTypeVariants('쿠팡APP')); // 쿠팡APP 슬롯 타입 (영문/한글 모두 포함)
 
           if (deleteError) {
             console.error('keywords 테이블 삭제 오류:', deleteError);
@@ -121,7 +122,7 @@ export async function DELETE(
           .select('*')
           .eq('keyword', slotInfo.keyword)
           .eq('link_url', slotInfo.link_url)
-          .eq('slot_type', '쿠팡APP');
+          .in('slot_type', getSlotTypeVariants('쿠팡APP')); // 쿠팡APP 슬롯 타입 (영문/한글 모두 포함)
 
         if (findError) {
           console.error('traffic 테이블 조회 오류:', findError);
@@ -131,7 +132,7 @@ export async function DELETE(
             .delete()
             .eq('keyword', slotInfo.keyword)
             .eq('link_url', slotInfo.link_url)
-            .eq('slot_type', '쿠팡APP');
+            .in('slot_type', getSlotTypeVariants('쿠팡APP')); // 쿠팡APP 슬롯 타입 (영문/한글 모두 포함)
 
           if (deleteError) {
             console.error('traffic 테이블 삭제 오류:', deleteError);
@@ -294,7 +295,7 @@ export async function PUT(
           .select('*')
           .eq('keyword', data.keyword)
           .eq('link_url', data.link_url)
-          .eq('slot_type', '쿠팡APP');
+          .in('slot_type', getSlotTypeVariants('쿠팡APP')); // 쿠팡APP 슬롯 타입 (영문/한글 모두 포함)
 
         if (findError) {
           console.error('기존 쿠팡APP 키워드 조회 오류:', findError);
@@ -304,7 +305,7 @@ export async function PUT(
             .update({
               keyword: data.keyword,
               link_url: data.link_url,
-              slot_type: '쿠팡APP',
+              slot_type: normalizeSlotType('쿠팡APP'), // 항상 한글 버전으로 정규화
             })
             .eq('id', existingKeywords[0].id);
 
@@ -320,7 +321,7 @@ export async function PUT(
           const { error: insertError } = await supabase
             .from('keywords')
             .insert({
-              slot_type: '쿠팡APP',
+              slot_type: normalizeSlotType('쿠팡APP'), // 항상 한글 버전으로 정규화
               keyword: data.keyword,
               link_url: data.link_url,
               slot_count: 1,

@@ -161,6 +161,12 @@ export function CustomerPageContent() {
   };
 
   const handleDelete = async (customerId: string) => {
+    // 권한 체크: 총판회원은 삭제 불가
+    if (currentUser && currentUser.grade === '총판회원') {
+      alert('관리자에게 문의하세요.');
+      return;
+    }
+
     if (confirm('정말로 이 고객을 삭제하시겠습니까?')) {
       try {
         const response = await fetch(`/api/users/${customerId}`, {
@@ -383,66 +389,18 @@ export function CustomerPageContent() {
       // 동적으로 xlsx 라이브러리 import
       const XLSX = await import('xlsx');
 
-      // 예시 데이터 생성
+      // 예시 데이터 생성 (5개 컬럼: 순번, 소속총판, 아이디, 비밀번호, 이름)
       const templateData = [
-        [
-          '순번',
-          '소속총판',
-          '아이디',
-          '고객명',
-          '전화번호',
-          '가입일',
-          '슬롯수',
-        ],
-        [
-          1,
-          '총판아디',
-          'cosmos',
-          '안혜진',
-          '010-1234-5678',
-          '2025-09-01 9:38',
-          1,
-        ],
-        [
-          2,
-          '총판아디',
-          'pprcomme',
-          '이정호',
-          '010-2345-6789',
-          '2025-09-01 9:38',
-          1,
-        ],
-        [
-          3,
-          '총판아디',
-          'donmany8',
-          '김은미',
-          '010-3456-7890',
-          '2025-09-01 9:38',
-          1,
-        ],
-        [
-          4,
-          '총판아디',
-          'tnsgh0',
-          '권순호',
-          '010-4567-8901',
-          '2025-09-01 9:38',
-          1,
-        ],
-        [
-          5,
-          '총판아디',
-          'euni',
-          '김은호',
-          '010-5678-9012',
-          '2025-09-01 9:38',
-          1,
-        ],
-        ['', '', '', '', '', '', ''],
-        ['', '', '', '', '', '', ''],
-        ['', '', '', '', '', '', ''],
-        ['', '', '', '', '', '', ''],
+        ['순번', '소속총판', '아이디', '비밀번호', '이름'],
+        [1, '총판아디', 'cosmos', 'cosmos123', '안혜진'],
+        [2, '총판아디', 'pprcomme', 'pprcomme123', '이정호'],
+        [3, '총판아디', 'donmany8', 'donmany8123', '김은미'],
+        [4, '총판아디', 'tnsgh0', 'tnsgh0123', '권순호'],
+        [5, '총판아디', 'euni', 'euni123', '김은호'],
+        ['', '', '', '', ''],
+        ['', '', '', '', ''],
+        ['', '', '', '', ''],
+        ['', '', '', '', ''],
       ];
 
       // 워크북 생성
@@ -451,13 +409,11 @@ export function CustomerPageContent() {
 
       // 컬럼 너비 설정
       const colWidths = [
-        { wch: 5 }, // No
+        { wch: 5 }, // 순번
         { wch: 12 }, // 소속총판
         { wch: 20 }, // 아이디
-        { wch: 10 }, // 고객명
-        { wch: 15 }, // 전화번호
-        { wch: 20 }, // 가입일
-        { wch: 8 }, // 슬롯수
+        { wch: 15 }, // 비밀번호
+        { wch: 10 }, // 이름
       ];
       worksheet['!cols'] = colWidths;
 
@@ -520,12 +476,33 @@ export function CustomerPageContent() {
       const result = await response.json();
 
       if (response.ok) {
-        alert(result.message);
+        // 성공/실패 상세 정보 표시
+        if (result.results && result.results.failed > 0) {
+          const errorMessages = result.results.errors
+            ? result.results.errors.slice(0, 10).join('\n')
+            : '알 수 없는 오류';
+          alert(
+            `${result.message}\n\n실패한 항목:\n${errorMessages}${
+              result.results.errors.length > 10
+                ? `\n... 외 ${result.results.errors.length - 10}개`
+                : ''
+            }`
+          );
+        } else {
+          alert(result.message);
+        }
         setIsExcelImportModalOpen(false);
         setExcelImportFile(null);
         fetchCustomers(); // 목록 새로고침
       } else {
-        alert(result.error || '대량 등록에 실패했습니다.');
+        // 에러 상세 정보 표시
+        const errorMsg =
+          result.error || result.message || '대량 등록에 실패했습니다.';
+        const details = result.results?.errors
+          ? '\n\n상세 오류:\n' + result.results.errors.slice(0, 5).join('\n')
+          : '';
+        alert(errorMsg + details);
+        console.error('엑셀 대량 등록 실패:', result);
       }
     } catch (error) {
       console.error('대량 등록 오류:', error);
@@ -565,6 +542,12 @@ export function CustomerPageContent() {
 
   // 선택된 고객들 삭제
   const handleBulkDelete = async () => {
+    // 권한 체크: 총판회원은 삭제 불가
+    if (currentUser && currentUser.grade === '총판회원') {
+      alert('관리자에게 문의하세요.');
+      return;
+    }
+
     if (selectedCustomers.size === 0) {
       alert('삭제할 고객을 선택해주세요.');
       return;
@@ -1101,27 +1084,25 @@ export function CustomerPageContent() {
                   <div className="text-sm text-blue-800 space-y-2">
                     <p>
                       <strong>컬럼 순서:</strong> 순번, 소속총판, 아이디,
-                      고객명, 전화번호, 가입일, 슬롯수
+                      비밀번호, 이름
                     </p>
                     <p>
                       <strong>주의사항:</strong>
                     </p>
                     <ul className="list-disc list-inside space-y-1 text-xs">
                       <li>첫 번째 행은 반드시 헤더여야 합니다</li>
-                      <li>아이디와 고객명은 필수 입력 항목입니다</li>
-                      <li>전화번호는 선택사항입니다 (빈 값 가능)</li>
-                      <li>가입일 형식: YYYY-MM-DD HH:mm:ss 또는 YYYY-MM-DD</li>
-                      <li>슬롯수는 숫자로 입력해주세요</li>
+                      <li>아이디, 비밀번호, 이름은 필수 입력 항목입니다</li>
+                      <li>소속총판은 필수 입력 항목입니다</li>
+                      <li>순번은 참조용입니다 (실제 등록 순서와 무관)</li>
                     </ul>
                     <p>
                       <strong>예시:</strong>
                     </p>
                     <div className="bg-white p-2 rounded border text-xs font-mono">
-                      순번 소속총판 아이디 고객명 전화번호 가입일 슬롯수
+                      순번 소속총판 아이디 비밀번호 이름
                       <br />
-                      1 총판아디 cosmos 안혜진 010-1234-5678 2025-09-01 9:38 1
-                      <br />2 총판아디 pprcomme 이정호 010-2345-6789 2025-09-01
-                      9:38 1
+                      1 총판아디 cosmos cosmos123 안혜진
+                      <br />2 총판아디 pprcomme pprcomme123 이정호
                     </div>
                   </div>
                 </div>

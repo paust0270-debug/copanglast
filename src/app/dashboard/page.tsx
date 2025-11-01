@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import {
@@ -130,8 +131,26 @@ export default function DashboardPage() {
                 className="flex justify-between items-center p-3 sm:p-4 bg-white rounded-lg hover:bg-orange-50 transition-all group border border-transparent hover:border-orange-200 min-h-[56px]"
               >
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-orange-400 to-red-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-xs sm:text-sm font-bold">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#FF6E00] rounded-lg flex items-center justify-center flex-shrink-0 relative overflow-hidden">
+                    <Image
+                      src="/images/coupang-logo.png"
+                      alt="쿠팡 로고"
+                      width={28}
+                      height={28}
+                      className="object-contain w-full h-full"
+                      onError={e => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const fallback =
+                          target.parentElement?.querySelector('.fallback-text');
+                        if (fallback)
+                          (fallback as HTMLElement).style.display = 'flex';
+                      }}
+                    />
+                    <span
+                      className="fallback-text text-white text-xs sm:text-sm font-black leading-none absolute inset-0 items-center justify-center"
+                      style={{ display: 'none' }}
+                    >
                       쿠
                     </span>
                   </div>
@@ -236,8 +255,28 @@ export default function DashboardPage() {
                 className="flex justify-between items-center p-4 bg-white rounded-lg hover:bg-orange-50 transition-all group border border-transparent hover:border-orange-200"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-red-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-sm font-bold">쿠</span>
+                  <div className="w-8 h-8 bg-[#FF6E00] rounded-lg flex items-center justify-center flex-shrink-0 relative overflow-hidden">
+                    <Image
+                      src="/images/coupang-logo.png"
+                      alt="쿠팡 로고"
+                      width={32}
+                      height={32}
+                      className="object-contain w-full h-full"
+                      onError={e => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const fallback =
+                          target.parentElement?.querySelector('.fallback-text');
+                        if (fallback)
+                          (fallback as HTMLElement).style.display = 'flex';
+                      }}
+                    />
+                    <span
+                      className="fallback-text text-white text-sm font-black leading-none absolute inset-0 items-center justify-center"
+                      style={{ display: 'none' }}
+                    >
+                      쿠
+                    </span>
                   </div>
                   <span className="text-gray-800 font-medium group-hover:text-orange-700">
                     쿠팡

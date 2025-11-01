@@ -59,13 +59,14 @@ export async function GET(request: NextRequest) {
     // type 파라미터에 따라 다른 테이블 조회
     if (type === 'slot_status') {
       // slot_status 테이블 조회 (쿠팡 앱 추가 페이지용) - 키워드가 있는 레코드만, 쿠팡 슬롯 타입만
+      // 영문 'coupang'과 한글 '쿠팡' 모두 포함하도록 필터링
       let slotStatusQuery = supabase
         .from('slot_status')
         .select(
           '*, slot_sequence, traffic_counter, last_traffic_update, traffic_reset_date'
         ) // 트래픽 카운터 필드 포함
         .not('keyword', 'eq', '') // 키워드가 비어있지 않은 레코드만
-        .eq('slot_type', '쿠팡') // 쿠팡 슬롯 타입만 필터링
+        .in('slot_type', ['쿠팡', 'coupang']) // 쿠팡 슬롯 타입 (영문/한글 모두 포함)
         .order('created_at', { ascending: false });
 
       // 🔥 권한 기반 필터링 적용
@@ -116,7 +117,7 @@ export async function GET(request: NextRequest) {
               'id, customer_id, customer_name, slot_type, slot_count, payment_type, payer_name, payment_amount, payment_date, usage_days, memo, status, created_at, updated_at, work_group, keyword, link_url, equipment_group'
             )
             .eq('customer_id', username)
-            .eq('slot_type', '쿠팡') // 쿠팡 슬롯 타입만 필터링
+            .in('slot_type', ['쿠팡', 'coupang']) // 쿠팡 슬롯 타입 (영문/한글 모두 포함)
             .order('created_at', { ascending: false });
 
           if (slotsError) {
@@ -330,12 +331,13 @@ export async function GET(request: NextRequest) {
     }
 
     // 기본: slots 테이블 조회 (슬롯 현황 페이지용) - 쿠팡 슬롯 타입만
+    // 영문 'coupang'과 한글 '쿠팡' 모두 포함하도록 필터링
     let slotsQuery = supabase
       .from('slots')
       .select(
         'id, customer_id, customer_name, slot_type, slot_count, payment_type, payer_name, payment_amount, payment_date, usage_days, memo, status, created_at, updated_at, work_group, keyword, link_url, equipment_group'
       )
-      .eq('slot_type', '쿠팡') // 쿠팡 슬롯 타입만 필터링
+      .in('slot_type', ['쿠팡', 'coupang']) // 쿠팡 슬롯 타입 (영문/한글 모두 포함)
       .order('created_at', { ascending: false });
 
     // 🔥 권한 기반 필터링 적용 (slots 테이블)
@@ -749,13 +751,14 @@ export async function POST(request: NextRequest) {
 
     // 1. slots 테이블에서 해당 고객의 쿠팡 슬롯만 조회 (usage_days 내림차순)
     // 일시중지된 슬롯도 포함하여 조회 (재등록 시 사용 가능)
+    // 영문 'coupang'과 한글 '쿠팡' 모두 포함하도록 필터링
     const { data: availableSlots, error: slotsError } = await supabase
       .from('slots')
       .select(
         'id, customer_id, customer_name, slot_type, slot_count, payment_type, payer_name, payment_amount, payment_date, usage_days, memo, status, created_at, updated_at, work_group, keyword, link_url, equipment_group'
       )
       .eq('customer_id', customerId)
-      .eq('slot_type', '쿠팡') // 쿠팡 슬롯 타입만 조회
+      .in('slot_type', ['쿠팡', 'coupang']) // 쿠팡 슬롯 타입 (영문/한글 모두 포함)
       .in('status', ['active', 'inactive']) // active와 inactive 모두 포함
       .order('usage_days', { ascending: false }); // 잔여기간이 긴 순서로 정렬
 
@@ -919,7 +922,8 @@ export async function POST(request: NextRequest) {
         equipment_group: body.equipment_group || '지정안함',
         status: body.status || '작동중',
         memo: body.memo || '',
-        slot_type: body.slot_type || '쿠팡',
+        slot_type:
+          (body.slot_type === 'coupang' ? '쿠팡' : body.slot_type) || '쿠팡', // 영문 'coupang'을 한글 '쿠팡'으로 보정
         slot_sequence: existingRecord.slot_sequence || i + 1, // 기존 slot_sequence 보존, 없으면 순번 생성
         updated_at: getTimestampWithoutMs(), // 업데이트 시간 추가
         // usage_days, created_at, expiry_date는 보존 (변경하지 않음)
@@ -989,7 +993,8 @@ export async function POST(request: NextRequest) {
         const keywordRecords = updatedSlotStatus.map(slot => ({
           keyword: body.keyword,
           link_url: body.link_url,
-          slot_type: body.slot_type || '쿠팡',
+          slot_type:
+            (body.slot_type === 'coupang' ? '쿠팡' : body.slot_type) || '쿠팡', // 영문 'coupang'을 한글 '쿠팡'으로 보정
           slot_count: 1, // 각 레코드는 1개 슬롯을 의미
           current_rank: extractRankNumber(body.current_rank),
           slot_sequence: slot.slot_sequence, // slot_status의 순번을 그대로 사용
@@ -1017,7 +1022,8 @@ export async function POST(request: NextRequest) {
         const trafficRecords = updatedSlotStatus.map(slot => ({
           keyword: body.keyword,
           link_url: body.link_url,
-          slot_type: body.slot_type || '쿠팡',
+          slot_type:
+            (body.slot_type === 'coupang' ? '쿠팡' : body.slot_type) || '쿠팡', // 영문 'coupang'을 한글 '쿠팡'으로 보정
           slot_count: 1, // 각 레코드는 1개 슬롯을 의미
           current_rank: extractRankNumber(body.current_rank),
           last_check_date: null, // keywords와 동일하게 null

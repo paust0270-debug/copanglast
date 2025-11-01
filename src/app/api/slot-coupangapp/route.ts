@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getTimestampWithoutMs, calculateRemainingTimeKST } from '@/lib/utils';
+import { normalizeSlotType, getSlotTypeVariants } from '@/lib/slot-type-utils';
 
 // Supabase 연결 확인
 if (!supabase) {
@@ -119,7 +120,7 @@ export async function GET(request: NextRequest) {
               'id, customer_id, customer_name, slot_type, slot_count, payment_type, payer_name, payment_amount, payment_date, usage_days, memo, status, created_at, updated_at, work_group, keyword, link_url, equipment_group'
             )
             .eq('customer_id', username)
-            .eq('slot_type', '쿠팡APP') // 쿠팡APP 슬롯 타입만 필터링
+            .in('slot_type', getSlotTypeVariants('쿠팡APP')) // 쿠팡APP 슬롯 타입 (영문/한글 모두 포함)
             .order('created_at', { ascending: false });
 
           if (slotsError) {
@@ -885,7 +886,7 @@ export async function POST(request: NextRequest) {
         equipment_group: body.equipment_group || '지정안함',
         status: body.status || '작동중',
         memo: body.memo || '',
-        slot_type: body.slot_type || '쿠팡APP',
+        slot_type: normalizeSlotType(body.slot_type) || '쿠팡APP', // 항상 한글 버전으로 정규화
         slot_sequence: existingRecord.slot_sequence || i + 1, // 기존 slot_sequence 보존, 없으면 순번 생성
         updated_at: getTimestampWithoutMs(), // 업데이트 시간 추가
         // usage_days, created_at, expiry_date는 보존 (변경하지 않음)
@@ -958,7 +959,7 @@ export async function POST(request: NextRequest) {
         const keywordRecords = updatedSlotStatus.map(slot => ({
           keyword: body.keyword,
           link_url: body.link_url,
-          slot_type: body.slot_type || '쿠팡APP',
+          slot_type: normalizeSlotType(body.slot_type) || '쿠팡APP', // 항상 한글 버전으로 정규화
           slot_count: 1, // 각 레코드는 1개 슬롯을 의미
           current_rank: extractRankNumber(body.current_rank),
           slot_sequence: slot.slot_sequence, // slot_coupangapp의 순번을 그대로 사용
@@ -988,7 +989,7 @@ export async function POST(request: NextRequest) {
         const trafficRecords = updatedSlotStatus.map(slot => ({
           keyword: body.keyword,
           link_url: body.link_url,
-          slot_type: body.slot_type || '쿠팡APP',
+          slot_type: normalizeSlotType(body.slot_type) || '쿠팡APP', // 항상 한글 버전으로 정규화
           slot_count: 1, // 각 레코드는 1개 슬롯을 의미
           current_rank: extractRankNumber(body.current_rank),
           last_check_date: null, // keywords와 동일하게 null

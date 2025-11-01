@@ -1016,6 +1016,10 @@ function SlotAddPageContent() {
       // customerName이 비어있으면 username을 사용
       const finalCustomerName = customerName || username;
 
+      // slot_type을 항상 한글 '쿠팡'으로 보정 (영문 'coupang'이어도 '쿠팡'으로 변환)
+      const normalizedSlotType =
+        slotType === 'coupang' ? '쿠팡' : slotType || '쿠팡';
+
       // slot_status 테이블에 저장할 데이터 준비
       const slotStatusData = {
         customer_id: username,
@@ -1032,7 +1036,7 @@ function SlotAddPageContent() {
         equipment_group: form.equipmentGroup,
         usage_days: 30,
         status: '작동중',
-        slot_type: slotType || '쿠팡', // 슬롯 타입 (쿠팡, 네이버 등)
+        slot_type: normalizedSlotType, // 항상 한글 '쿠팡'으로 저장
       };
 
       // slot_status 테이블에 저장
@@ -1210,6 +1214,10 @@ function SlotAddPageContent() {
         // customerName이 비어있으면 username을 사용
         const finalCustomerName = customerName || username;
 
+        // slot_type을 항상 한글 '쿠팡'으로 보정 (영문 'coupang'이어도 '쿠팡'으로 변환)
+        const normalizedSlotType =
+          slotType === 'coupang' ? '쿠팡' : slotType || '쿠팡';
+
         const slotStatusData = {
           customer_id: username,
           customer_name: finalCustomerName,
@@ -1225,7 +1233,7 @@ function SlotAddPageContent() {
           equipment_group: bulkForm.equipmentGroup,
           usage_days: 30,
           status: '작동중',
-          slot_type: slotType || '쿠팡', // 슬롯 타입 (쿠팡, 네이버 등)
+          slot_type: normalizedSlotType, // 항상 한글 '쿠팡'으로 저장
         };
 
         // slot_status 테이블에 저장

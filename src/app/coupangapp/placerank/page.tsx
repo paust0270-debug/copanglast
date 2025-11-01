@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { calculateRemainingTimeKST, calculateTrafficKST } from '@/lib/utils';
 import { calculateTrafficFromWorkStart } from '@/lib/utils';
+import { normalizeSlotType } from '@/lib/slot-type-utils';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -873,7 +874,7 @@ function SlotAddPageContent() {
         equipment_group: form.equipmentGroup,
         usage_days: 30,
         status: '작동중',
-        slot_type: slotType || 'N플레이스순위체크', // 슬롯 타입 (쿠팡순위체크, N쇼핑순위체크 등)
+        slot_type: normalizeSlotType(slotType) || 'N플레이스순위체크', // 항상 한글 버전으로 정규화
       };
 
       // slot_placerank 테이블에 저장
@@ -1064,7 +1065,7 @@ function SlotAddPageContent() {
           equipment_group: bulkForm.equipmentGroup,
           usage_days: 30,
           status: '작동중',
-          slot_type: slotType || 'N플레이스순위체크', // 슬롯 타입 (쿠팡순위체크, N쇼핑순위체크 등)
+          slot_type: normalizeSlotType(slotType) || 'N플레이스순위체크', // 항상 한글 버전으로 정규화
         };
 
         // slot_placerank 테이블에 저장

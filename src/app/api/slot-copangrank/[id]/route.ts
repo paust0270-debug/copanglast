@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getTimestampWithoutMs } from '@/lib/utils';
+import { normalizeSlotType, getSlotTypeVariants } from '@/lib/slot-type-utils';
 
 // 특정 슬롯 삭제 (날짜 정보 보존)
 export async function DELETE(
@@ -48,7 +49,7 @@ export async function DELETE(
       equipment_group: '지정안함',
       status: '작동중',
       memo: '',
-      slot_type: '쿠팡순위체크',
+      slot_type: normalizeSlotType('쿠팡순위체크'), // 항상 한글 버전으로 정규화
       updated_at: getTimestampWithoutMs(), // 초기화 시 업데이트 시간 갱신
       // usage_days, created_at, expiry_date는 보존 (변경하지 않음)
     };
@@ -265,7 +266,7 @@ export async function PUT(
             .update({
               keyword: data.keyword,
               link_url: data.link_url,
-              slot_type: data.slot_type || '쿠팡순위체크',
+              slot_type: normalizeSlotType(data.slot_type) || '쿠팡순위체크', // 항상 한글 버전으로 정규화
             })
             .eq('id', existingKeywords[0].id);
 
@@ -278,7 +279,7 @@ export async function PUT(
           const { error: insertError } = await supabase
             .from('keywords')
             .insert({
-              slot_type: data.slot_type || '쿠팡순위체크',
+              slot_type: normalizeSlotType(data.slot_type) || '쿠팡순위체크', // 항상 한글 버전으로 정규화
               keyword: data.keyword,
               link_url: data.link_url,
               slot_count: 1,
