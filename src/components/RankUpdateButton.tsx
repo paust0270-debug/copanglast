@@ -266,7 +266,7 @@ export default function RankUpdateButton({
           customerId: customerId || null, // customerId가 없어도 처리 가능하도록
           slotType: slotType || '쿠팡',
           username: actualUsername, // 🔥 실제 username 사용
-          slotIds: slotIds.length < customers.length ? slotIds : undefined, // 🔥 선택된 슬롯 ID 전달 (전체면 undefined)
+          slotIds: slotIds, // 🔥 항상 slotIds 전달 (선택된 슬롯 또는 전체 슬롯)
         }),
       });
 

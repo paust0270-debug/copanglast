@@ -1372,20 +1372,6 @@ function SlotAddPageContent() {
         // 로컬 상태만 업데이트 (loadCustomers 호출하지 않음)
         setCustomers(prev => prev.filter(customer => customer.id !== id));
 
-        // 슬롯 현황 업데이트
-        setCustomerSlotStatus(prev => {
-          const newUsedSlots = Math.max(
-            0,
-            prev.usedSlots - (customerToDelete?.slotCount || 0)
-          );
-          const newRemainingSlots = prev.totalSlots - newUsedSlots;
-          return {
-            ...prev,
-            usedSlots: newUsedSlots,
-            remainingSlots: newRemainingSlots,
-          };
-        });
-
         // 작업등록 상태 재확인
         const updatedCustomers = customers.filter(
           customer => customer.id !== id
@@ -3049,27 +3035,23 @@ function SlotAddPageContent() {
                           <td className="border border-gray-300 p-1 text-center text-xs">
                             <div className="text-xs">
                               {(() => {
-                                if (!customer.created_at) {
-                                  return (
-                                    <span className="text-gray-400">-</span>
-                                  );
+                                const slotId = customer.id?.toString() || '';
+                                const workStartTime =
+                                  workStartTimes.get(slotId);
+                                const traffic =
+                                  calculateTrafficFromWorkStart(workStartTime);
+                                // 트래픽 계산
+                                if (isDevMode) {
+                                  console.log('📊 트래픽 계산:', {
+                                    slotId,
+                                    workStartTime,
+                                    traffic,
+                                    allWorkStartTimes: Array.from(
+                                      workStartTimes.entries()
+                                    ),
+                                  });
                                 }
-
-                                const slotTraffic =
-                                  customer.traffic_counter || 0;
-                                const isExpired = isSlotExpired(
-                                  customer.created_at
-                                );
-
-                                return (
-                                  <div className="space-y-1">
-                                    <div
-                                      className={`font-bold ${isExpired ? 'text-red-600' : 'text-blue-600'}`}
-                                    >
-                                      {slotTraffic}
-                                    </div>
-                                  </div>
-                                );
+                                return traffic;
                               })()}
                             </div>
                           </td>

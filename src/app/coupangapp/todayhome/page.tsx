@@ -1209,20 +1209,6 @@ function SlotAddPageContent() {
         // 로컬 상태만 업데이트 (loadCustomers 호출하지 않음)
         setCustomers(prev => prev.filter(customer => customer.id !== id));
 
-        // 슬롯 현황 업데이트
-        setCustomerSlotStatus(prev => {
-          const newUsedSlots = Math.max(
-            0,
-            prev.usedSlots - (customerToDelete?.slotCount || 0)
-          );
-          const newRemainingSlots = prev.totalSlots - newUsedSlots;
-          return {
-            ...prev,
-            usedSlots: newUsedSlots,
-            remainingSlots: newRemainingSlots,
-          };
-        });
-
         // 작업등록 상태 재확인
         const updatedCustomers = customers.filter(
           customer => customer.id !== id

@@ -3,7 +3,15 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Search, Link as LinkIcon, Package, DollarSign, TrendingUp, Calendar } from 'lucide-react';
+import {
+  Clock,
+  Search,
+  Link as LinkIcon,
+  Package,
+  DollarSign,
+  TrendingUp,
+  Calendar,
+} from 'lucide-react';
 import Navigation from '@/components/Navigation';
 
 // 키워드 데이터 타입 정의 (실제 DB 스키마와 일치)
@@ -33,10 +41,10 @@ export default function RankingStatusPage() {
     try {
       setLoading(true);
       console.log('🔄 키워드 목록 조회 중...');
-      
+
       const response = await fetch('/api/keywords');
       const result = await response.json();
-      
+
       if (result.success) {
         console.log('✅ 키워드 목록 조회 완료:', result.data);
         setKeywords(result.data);
@@ -93,8 +101,22 @@ export default function RankingStatusPage() {
       <div className="content-wrapper">
         <div className="container mx-auto p-2 pt-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">순위체크 현황</h1>
-            <p className="text-gray-600">키워드 순위 체크 현황을 확인할 수 있습니다.</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  순위체크 현황
+                </h1>
+                <p className="text-gray-600">
+                  키워드 순위 체크 현황을 확인할 수 있습니다.
+                </p>
+              </div>
+              <button
+                onClick={loadKeywords}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                새로고침
+              </button>
+            </div>
           </div>
 
           {/* 대기열 정보 카드 */}
@@ -105,19 +127,25 @@ export default function RankingStatusPage() {
                   <Clock className="h-8 w-8 text-blue-600" />
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">대기열</p>
-                    <p className="text-2xl font-bold text-gray-900">{keywords.length}개</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {keywords.length}개
+                    </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center">
                   <Search className="h-8 w-8 text-green-600" />
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">총 키워드</p>
-                    <p className="text-2xl font-bold text-gray-900">{totalKeywords}개</p>
+                    <p className="text-sm font-medium text-gray-600">
+                      총 키워드
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {totalKeywords}개
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -182,10 +210,13 @@ export default function RankingStatusPage() {
                             </div>
                           </td>
                           <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <div className="max-w-xs truncate" title={keyword.link_url}>
-                              <a 
-                                href={keyword.link_url} 
-                                target="_blank" 
+                            <div
+                              className="max-w-xs truncate"
+                              title={keyword.link_url}
+                            >
+                              <a
+                                href={keyword.link_url}
+                                target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-blue-600 hover:text-blue-800 flex items-center"
                               >

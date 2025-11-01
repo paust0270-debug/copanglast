@@ -13,6 +13,12 @@ const getTableName = (slotType: string) => {
     쿠팡APP: 'slot_coupangapp',
     쿠팡VIP: 'slot_coupangvip',
     쿠팡순위체크: 'slot_copangrank',
+    네이버쇼핑: 'slot_naver',
+    N쇼핑순위체크: 'slot_naverrank',
+    플레이스: 'slot_place',
+    N플레이스순위체크: 'slot_placerank',
+    오늘의집: 'slot_todayhome',
+    알리익스프레스: 'slot_aliexpress',
   };
   return mapping[slotType] || 'slot_status';
 };
@@ -33,8 +39,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 🔥 slotIds가 없고 customerId도 없으면 오류
-    if (!slotIds && !customerId) {
+    // 🔥 slotIds가 없거나 빈 배열이고 customerId도 없으면 오류
+    const hasSlotIds = slotIds && Array.isArray(slotIds) && slotIds.length > 0;
+    if (!hasSlotIds && !customerId) {
       return NextResponse.json(
         { success: false, error: 'customerId 또는 slotIds가 필요합니다.' },
         { status: 400 }
@@ -84,7 +91,7 @@ export async function POST(request: NextRequest) {
       .not('keyword', 'is', null);
 
     // 🔥 선택된 슬롯 ID가 있으면 필터링
-    if (slotIds && Array.isArray(slotIds) && slotIds.length > 0) {
+    if (hasSlotIds) {
       // ID를 숫자로 변환 (문자열일 수 있음)
       const numericSlotIds = slotIds
         .map(id => (typeof id === 'string' ? parseInt(id) : id))
@@ -155,18 +162,46 @@ export async function POST(request: NextRequest) {
     }));
 
     // keywords 테이블에 저장
-    const { error: insertError } = await supabase
+    console.log('🔵 keywords 테이블에 삽입할 데이터:', {
+      개수: keywordRecords.length,
+      샘플: keywordRecords.slice(0, 2),
+      slotType: slotType,
+    });
+
+    const { data: insertedData, error: insertError } = await supabase
       .from('keywords')
-      .insert(keywordRecords);
+      .insert(keywordRecords)
+      .select();
 
     if (insertError) {
-      console.error('keywords 테이블 삽입 오류:', insertError);
+      console.error('❌ keywords 테이블 삽입 오류:', insertError);
       return NextResponse.json(
         {
           success: false,
           error: `keywords 테이블 삽입 실패: ${insertError.message}`,
         },
         { status: 500 }
+      );
+    }
+
+    console.log('✅ keywords 테이블 삽입 성공:', {
+      삽입된개수: insertedData?.length || 0,
+      샘플: insertedData?.slice(0, 2),
+    });
+
+    // 🔥 원본 슬롯 테이블에도 last_check_date 업데이트
+    const slotIdsToUpdate = slotStatusData.map(slot => slot.id);
+    const { error: updateError } = await supabase
+      .from(tableName)
+      .update({ last_check_date: currentDateKST })
+      .in('id', slotIdsToUpdate);
+
+    if (updateError) {
+      console.error('슬롯 테이블 last_check_date 업데이트 오류:', updateError);
+      // 업데이트 실패해도 keywords 테이블 삽입은 성공했으므로 계속 진행 (경고만 로그)
+    } else {
+      console.log(
+        `✅ 원본 슬롯 테이블(${tableName}) last_check_date 업데이트 완료: ${slotIdsToUpdate.length}개`
       );
     }
 
